@@ -1,35 +1,59 @@
-import { useState } from 'react'
-import reactLogo from './assets/react.svg'
-import viteLogo from '/vite.svg'
-import './App.css'
+import { useEffect } from 'react';
+import { 
+  Table, Container, Button, Group, Title, LoadingOverlay, Paper
+} from '@mantine/core';
+import { useAppStore } from './store/useAppStore';
+import { Plus } from 'lucide-react';
 
-function App() {
-  const [count, setCount] = useState(0)
+export default function App() {
+  const { users, isLoading, fetchUsers } = useAppStore();
 
+  useEffect(() => {
+    fetchUsers();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  
   return (
-    <>
-      <div>
-        <a href="https://vite.dev" target="_blank">
-          <img src={viteLogo} className="logo" alt="Vite logo" />
-        </a>
-        <a href="https://react.dev" target="_blank">
-          <img src={reactLogo} className="logo react" alt="React logo" />
-        </a>
-      </div>
-      <h1>Vite + React</h1>
-      <div className="card">
-        <button onClick={() => setCount((count) => count + 1)}>
-          count is {count}
-        </button>
-        <p>
-          Edit <code>src/App.tsx</code> and save to test HMR
-        </p>
-      </div>
-      <p className="read-the-docs">
-        Click on the Vite and React logos to learn more
-      </p>
-    </>
-  )
-}
+    <Container size="md" py="xl" className="relative">
+      <LoadingOverlay visible={isLoading} />
+      
+      {/* Панель навигации */}
+      <Group justify="space-between" mb="lg">
+        <Title order={2}>Economikus DB</Title>
+        <Group>
+          <Button variant="outline" component="a" href="/login">
+            Войти
+          </Button>
+        </Group>
+      </Group>
+      
+      <Paper shadow="sm" p="md" withBorder radius="md">
+        <Group justify="space-between" mb="lg">
+          <Title order={2}>Economikus DB</Title>
+        </Group>
 
-export default App
+        <Table striped highlightOnHover>
+          <Table.Thead>
+            <Table.Tr>
+              <Table.Th>ID</Table.Th>
+              <Table.Th>Email</Table.Th>
+              <Table.Th>Имя Фамилия</Table.Th>
+              <Table.Th>Роль</Table.Th>
+            </Table.Tr>
+          </Table.Thead>
+          <Table.Tbody>
+            {users.map((user) => (
+              <Table.Tr key={user.id}>
+                <Table.Td>{user.id}</Table.Td>
+                <Table.Td>{user.email}</Table.Td>
+                <Table.Td>{`${user.firstName} ${user.lastName}`}</Table.Td>
+                <Table.Td>{user.role}</Table.Td>
+              </Table.Tr>
+            ))}
+          </Table.Tbody>
+        </Table>
+      </Paper>
+    </Container>
+  );
+}
