@@ -2,8 +2,8 @@ import { ReactNode, useEffect, useState } from 'react'
 import { AppShell, NavLink, Box, Text, Avatar, Menu, Group, Badge } from '@mantine/core'
 import { useNavigate, useLocation, Outlet } from 'react-router-dom'
 import {
-  IconDashboard, IconBook, IconSchool, IconTags,
-  IconUsers, IconLogout, IconUser, IconSettings
+  LayoutDashboard, BookOpen, GraduationCap, Tags,
+  Users, LogOut, User, Settings
 } from 'lucide-react'
 import { api } from '@/lib/api'
 
@@ -27,10 +27,16 @@ export function AdminLayout({ children }: AdminLayoutProps) {
 
   useEffect(() => {
     api.get('/user/me').then(res => {
-      if (res.data.role !== 'ADMIN') {
+      if (res.data.user.role !== 'ADMIN') {
         navigate('/')
       } else {
-        setProfile(res.data)
+        setProfile({
+          id: res.data.user.profile.id,
+          nickname: res.data.user.profile.nickname,
+          displayName: res.data.user.profile.displayName,
+          avatarUrl: res.data.user.profile.avatarUrl,
+          role: res.data.user.role
+        })
       }
     }).catch(() => {
       navigate('/login')
@@ -43,11 +49,11 @@ export function AdminLayout({ children }: AdminLayoutProps) {
   }
 
   const navItems = [
-    { label: 'Дашборд', icon: IconDashboard, path: '/admin' },
-    { label: 'Курсы', icon: IconBook, path: '/admin/courses' },
-    { label: 'Уроки', icon: IconSchool, path: '/admin/lessons' },
-    { label: 'Теги', icon: IconTags, path: '/admin/tags' },
-    { label: 'Пользователи', icon: IconUsers, path: '/admin/users' },
+    { label: 'Дашборд', icon: LayoutDashboard, path: '/admin' },
+    { label: 'Курсы', icon: BookOpen, path: '/admin/courses' },
+    { label: 'Уроки', icon: GraduationCap, path: '/admin/lessons' },
+    { label: 'Теги', icon: Tags, path: '/admin/tags' },
+    { label: 'Пользователи', icon: Users, path: '/admin/users' },
   ]
 
   return (
@@ -80,14 +86,14 @@ export function AdminLayout({ children }: AdminLayoutProps) {
                 </Group>
               </Menu.Target>
               <Menu.Dropdown>
-                <Menu.Item leftSection={<IconUser size={14} />} onClick={() => navigate('/profile')}>
+                <Menu.Item leftSection={<User size={14} />} onClick={() => navigate('/profile')}>
                   Мой профиль
                 </Menu.Item>
-                <Menu.Item leftSection={<IconSettings size={14} />} onClick={() => navigate('/')}>
+                <Menu.Item leftSection={<Settings size={14} />} onClick={() => navigate('/')}>
                   На сайт
                 </Menu.Item>
                 <Menu.Divider />
-                <Menu.Item color="red" leftSection={<IconLogout size={14} />} onClick={handleLogout}>
+                <Menu.Item color="red" leftSection={<LogOut size={14} />} onClick={handleLogout}>
                   Выйти
                 </Menu.Item>
               </Menu.Dropdown>
@@ -116,7 +122,7 @@ export function AdminLayout({ children }: AdminLayoutProps) {
         <Box mt="auto" p="xs">
           <NavLink
             label={!collapsed ? 'Свернуть' : ''}
-            leftSection={<IconSettings size={20} />}
+            leftSection={<Settings size={20} />}
             onClick={() => setCollapsed(!collapsed)}
             variant="subtle"
           />

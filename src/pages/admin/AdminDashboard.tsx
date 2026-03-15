@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { Grid, Paper, Text, Group, ThemeIcon, Skeleton, Card, Badge } from '@mantine/core'
-import { IconUsers, IconBook, IconSchool, IconEye, IconCrown, IconCheck } from 'lucide-react'
+import { Users, BookOpen, GraduationCap, Eye, Crown, Check } from 'lucide-react'
 import { api } from '@/lib/api'
 
 interface Stats {
@@ -28,33 +28,33 @@ export function AdminDashboard() {
     {
       label: 'Пользователей',
       value: stats?.usersCount || 0,
-      icon: IconUsers,
+      icon: Users,
       color: 'blue'
     },
     {
       label: 'Курсов',
       value: stats?.coursesCount || 0,
-      icon: IconBook,
+      icon: BookOpen,
       color: 'green',
       badge: stats ? `${stats.publishedCourses} опубликовано` : null
     },
     {
       label: 'Уроков',
       value: stats?.lessonsCount || 0,
-      icon: IconSchool,
+      icon: GraduationCap,
       color: 'violet',
       badge: stats ? `${stats.publishedLessons} опубликовано` : null
     },
     {
       label: 'Просмотров',
       value: stats?.totalViews || 0,
-      icon: IconEye,
+      icon: Eye,
       color: 'orange'
     },
     {
       label: 'Премиум',
       value: stats?.premiumUsers || 0,
-      icon: IconCrown,
+      icon: Crown,
       color: 'yellow'
     }
   ]
@@ -79,7 +79,7 @@ export function AdminDashboard() {
                 <Text size="xl" fw={700}>{stat.value.toLocaleString()}</Text>
                 {stat.badge && (
                   <Badge color="green" variant="light" size="sm" mt="xs">
-                    <IconCheck size={12} style={{ marginRight: 4 }} />
+                    <Check size={12} style={{ marginRight: 4 }} />
                     {stat.badge}
                   </Badge>
                 )}

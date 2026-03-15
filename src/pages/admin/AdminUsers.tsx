@@ -4,7 +4,7 @@ import {
   Select, Pagination, ActionIcon, Menu, Modal, Textarea,
   Avatar, Skeleton, Alert, Stack
 } from '@mantine/core'
-import { IconSearch, IconDots, IconEdit, IconTrash } from '@mantine/icons'
+import { Search, MoreVertical, Pencil, Trash2 } from 'lucide-react'
 import { api } from '@/lib/api'
 
 interface User {
@@ -117,7 +117,7 @@ export function AdminUsers() {
         <Group>
           <TextInput
             placeholder="Поиск по имени или email..."
-            leftSection={<IconSearch size={16} />}
+            leftSection={<Search size={16} />}
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             style={{ flex: 1 }}
@@ -198,14 +198,14 @@ export function AdminUsers() {
                     <Menu>
                       <Menu.Target>
                         <ActionIcon variant="subtle">
-                          <IconDots size={16} />
+                          <MoreVertical size={16} />
                         </ActionIcon>
                       </Menu.Target>
                       <Menu.Dropdown>
-                        <Menu.Item leftSection={<IconEdit size={14} />} onClick={() => openEditModal(user)}>
+                        <Menu.Item leftSection={<Pencil size={14} />} onClick={() => openEditModal(user)}>
                           Редактировать
                         </Menu.Item>
-                        <Menu.Item color="red" leftSection={<IconTrash size={14} />} onClick={() => handleDelete(user.id)}>
+                        <Menu.Item color="red" leftSection={<Trash2 size={14} />} onClick={() => handleDelete(user.id)}>
                           Удалить
                         </Menu.Item>
                       </Menu.Dropdown>

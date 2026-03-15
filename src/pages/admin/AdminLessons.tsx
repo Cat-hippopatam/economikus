@@ -4,7 +4,7 @@ import {
   Select, Pagination, Modal, Textarea, NumberInput, Checkbox,
   MultiSelect, ActionIcon, Menu, Skeleton, Alert, Stack
 } from '@mantine/core'
-import { IconPlus, IconSearch, IconDots, IconEdit, IconTrash } from '@mantine/icons'
+import { Plus, Search, MoreVertical, Pencil, Trash2 } from 'lucide-react'
 import { useDisclosure } from '@mantine/hooks'
 import { api } from '@/lib/api'
 
@@ -175,7 +175,7 @@ export function AdminLessons() {
     <Box>
       <Group justify="space-between" mb="lg">
         <Text size="xl" fw={700}>Уроки</Text>
-        <Button leftSection={<IconPlus size={16} />} onClick={openCreateModal}>
+        <Button leftSection={<Plus size={16} />} onClick={openCreateModal}>
           Создать урок
         </Button>
       </Group>
@@ -184,7 +184,7 @@ export function AdminLessons() {
         <Group>
           <TextInput
             placeholder="Поиск по названию..."
-            leftSection={<IconSearch size={16} />}
+            leftSection={<Search size={16} />}
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             style={{ flex: 1 }}
@@ -268,14 +268,14 @@ export function AdminLessons() {
                     <Menu>
                       <Menu.Target>
                         <ActionIcon variant="subtle">
-                          <IconDots size={16} />
+                          <MoreVertical size={16} />
                         </ActionIcon>
                       </Menu.Target>
                       <Menu.Dropdown>
-                        <Menu.Item leftSection={<IconEdit size={14} />} onClick={() => openEditModal(lesson)}>
+                        <Menu.Item leftSection={<Pencil size={14} />} onClick={() => openEditModal(lesson)}>
                           Редактировать
                         </Menu.Item>
-                        <Menu.Item color="red" leftSection={<IconTrash size={14} />} onClick={() => handleDelete(lesson.id)}>
+                        <Menu.Item color="red" leftSection={<Trash2 size={14} />} onClick={() => handleDelete(lesson.id)}>
                           Удалить
                         </Menu.Item>
                       </Menu.Dropdown>

@@ -4,7 +4,7 @@ import {
   Select, Pagination, Modal, Textarea, NumberInput, Checkbox,
   MultiSelect, ActionIcon, Menu, Skeleton, Alert, Stack
 } from '@mantine/core'
-import { IconPlus, IconSearch, IconDots, IconEdit, IconTrash, IconEye } from '@mantine/icons'
+import { Plus, Search, MoreVertical, Pencil, Trash2, Eye } from 'lucide-react'
 import { useDisclosure } from '@mantine/hooks'
 import { api } from '@/lib/api'
 
@@ -177,7 +177,7 @@ export function AdminCourses() {
     <Box>
       <Group justify="space-between" mb="lg">
         <Text size="xl" fw={700}>Курсы</Text>
-        <Button leftSection={<IconPlus size={16} />} onClick={openCreateModal}>
+        <Button leftSection={<Plus size={16} />} onClick={openCreateModal}>
           Создать курс
         </Button>
       </Group>
@@ -186,7 +186,7 @@ export function AdminCourses() {
         <Group>
           <TextInput
             placeholder="Поиск по названию..."
-            leftSection={<IconSearch size={16} />}
+            leftSection={<Search size={16} />}
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             style={{ flex: 1 }}
@@ -255,17 +255,17 @@ export function AdminCourses() {
                     <Menu>
                       <Menu.Target>
                         <ActionIcon variant="subtle">
-                          <IconDots size={16} />
+                          <MoreVertical size={16} />
                         </ActionIcon>
                       </Menu.Target>
                       <Menu.Dropdown>
-                        <Menu.Item leftSection={<IconEye size={14} />}>
+                        <Menu.Item leftSection={<Eye size={14} />}>
                           Просмотр
                         </Menu.Item>
-                        <Menu.Item leftSection={<IconEdit size={14} />} onClick={() => openEditModal(course)}>
+                        <Menu.Item leftSection={<Pencil size={14} />} onClick={() => openEditModal(course)}>
                           Редактировать
                         </Menu.Item>
-                        <Menu.Item color="red" leftSection={<IconTrash size={14} />} onClick={() => handleDelete(course.id)}>
+                        <Menu.Item color="red" leftSection={<Trash2 size={14} />} onClick={() => handleDelete(course.id)}>
                           Удалить
                         </Menu.Item>
                       </Menu.Dropdown>

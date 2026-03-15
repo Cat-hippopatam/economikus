@@ -14,19 +14,23 @@ async function requireAdmin(c: { req: { header: (name: string) => string | undef
   }
 
   const session = await prisma.session.findUnique({
-    where: { token: sessionToken },
-    include: { profile: true }
+    where: { sessionToken },
+    include: { 
+      user: {
+        include: { profile: true }
+      } 
+    }
   })
 
-  if (!session || session.expiresAt < new Date()) {
+  if (!session || session.expires < new Date()) {
     throw new AppError(401, 'Сессия истекла', 'SESSION_EXPIRED')
   }
 
-  if (session.profile.role !== 'ADMIN') {
+  if (session.user.role !== 'ADMIN') {
     throw new AppError(403, 'Доступ запрещён', 'FORBIDDEN')
   }
 
-  return { profile: session.profile }
+  return { user: session.user, profile: session.user.profile }
 }
 
 // === DASHBOARD ===
@@ -84,12 +88,12 @@ admin.get('/users', async (c) => {
     const where: Record<string, unknown> = {}
     if (search) {
       where.OR = [
-        { email: { contains: search } },
+        { user: { email: { contains: search } } },
         { nickname: { contains: search } },
         { displayName: { contains: search } }
       ]
     }
-    if (role) where.role = role
+    if (role) where.user = { role }
 
     const [items, total] = await Promise.all([
       prisma.profile.findMany({
@@ -99,13 +103,12 @@ admin.get('/users', async (c) => {
         orderBy: { createdAt: 'desc' },
         select: {
           id: true,
-          email: true,
           nickname: true,
           displayName: true,
           avatarUrl: true,
           bio: true,
-          role: true,
           createdAt: true,
+          user: { select: { id: true, email: true, role: true } },
           _count: { select: { courses: true, lessons: true } }
         }
       }),
@@ -113,7 +116,11 @@ admin.get('/users', async (c) => {
     ])
 
     return c.json({
-      items,
+      items: items.map(item => ({
+        ...item,
+        email: item.user.email,
+        role: item.user.role
+      })),
       pagination: { page, limit, total, totalPages: Math.ceil(total / limit) }
     })
   } catch (error) {
@@ -132,9 +139,22 @@ admin.patch('/users/:id', async (c) => {
     const id = c.req.param('id')
     const { role, displayName, bio } = await c.req.json()
 
+    const profile = await prisma.profile.findUnique({ where: { id } })
+    if (!profile) {
+      return c.json({ error: 'Профиль не найден' }, 404)
+    }
+
+    if (role) {
+      await prisma.user.update({
+        where: { id: profile.userId },
+        data: { role }
+      })
+    }
+
     const user = await prisma.profile.update({
       where: { id },
-      data: { role, displayName, bio }
+      data: { displayName, bio },
+      include: { user: { select: { id: true, email: true, role: true } } }
     })
 
     return c.json(user)

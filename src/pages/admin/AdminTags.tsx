@@ -3,7 +3,7 @@ import {
   Box, Button, Card, Group, Text, Badge, Table, TextInput,
   ActionIcon, Modal, Stack, ColorInput
 } from '@mantine/core'
-import { IconPlus, IconEdit, IconTrash } from '@mantine/icons'
+import { Plus, Pencil, Trash2 } from 'lucide-react'
 import { useDisclosure } from '@mantine/hooks'
 import { api } from '@/lib/api'
 
@@ -94,7 +94,7 @@ export function AdminTags() {
     <Box>
       <Group justify="space-between" mb="lg">
         <Text size="xl" fw={700}>Теги</Text>
-        <Button leftSection={<IconPlus size={16} />} onClick={openCreateModal}>
+        <Button leftSection={<Plus size={16} />} onClick={openCreateModal}>
           Создать тег
         </Button>
       </Group>
@@ -131,10 +131,10 @@ export function AdminTags() {
                 <Table.Td>
                   <Group gap="xs">
                     <ActionIcon variant="subtle" onClick={() => openEditModal(tag)}>
-                      <IconEdit size={16} />
+                      <Pencil size={16} />
                     </ActionIcon>
                     <ActionIcon variant="subtle" color="red" onClick={() => handleDelete(tag.id)}>
-                      <IconTrash size={16} />
+                      <Trash2 size={16} />
                     </ActionIcon>
                   </Group>
                 </Table.Td>
