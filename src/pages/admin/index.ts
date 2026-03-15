@@ -1,0 +1,6 @@
+export { AdminLayout } from './AdminLayout'
+export { AdminDashboard } from './AdminDashboard'
+export { AdminCourses } from './AdminCourses'
+export { AdminLessons } from './AdminLessons'
+export { AdminTags } from './AdminTags'
+export { AdminUsers } from './AdminUsers'

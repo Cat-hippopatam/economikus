@@ -6,9 +6,9 @@ import { useMutation } from '@tanstack/react-query'
 import { useNavigate, Link } from 'react-router-dom'
 import { 
   TextInput, PasswordInput, Button, Stack, Title, Text, 
-  Paper, Alert, Checkbox, Group, Box, Divider, Loader 
+  Paper, Alert, Checkbox, Group, Box, Divider 
 } from '@mantine/core'
-import { IconAlertCircle, IconCheck } from '@tabler/icons-react'
+import { AlertCircle, Check } from 'lucide-react'
 import { RegisterSchema, type RegisterInput, type ErrorResponse } from '../../shared/types'
 
 export default function RegisterPage() {
@@ -23,7 +23,12 @@ export default function RegisterPage() {
   } = useForm<RegisterInput>({
     resolver: zodResolver(RegisterSchema),
     defaultValues: {
-      email: '', firstName: '', lastName: '', password: '', nickname: '', acceptTerms: false
+      email: '', 
+      firstName: '', 
+      lastName: '', 
+      password: '', 
+      nickname: '', 
+      acceptTerms: false
     }
   })
 
@@ -62,48 +67,130 @@ export default function RegisterPage() {
   }
 
   return (
-    <Box component="main" py="xl" style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#F8F6F3' }}>
-      <Paper withBorder shadow="md" p="lg" radius="md" style={{ width: '100%', maxWidth: 480 }}>
-        <Title order={2} ta="center" mb="md" c="#264653">Создать аккаунт</Title>
-        <Text c="dimmed" size="sm" ta="center" mb="xl">Начните обучение финансам бесплатно</Text>
+    <Paper 
+      withBorder 
+      shadow="md" 
+      p="xl" 
+      radius="md" 
+      style={{ width: '100%', maxWidth: 480 }}
+    >
+      <Title order={2} ta="center" mb="xs" c="#264653">
+        Создать аккаунт
+      </Title>
+      <Text c="dimmed" size="sm" ta="center" mb="xl">
+        Начните обучение финансам бесплатно
+      </Text>
 
-        {serverError && (
-          <Alert icon={<IconAlertCircle size={16} />} color="red" variant="light" mb="md" onClose={() => setServerError(null)}>
-            {serverError}
-          </Alert>
-        )}
+      {serverError && (
+        <Alert 
+          icon={<AlertCircle size={16} />} 
+          color="red" 
+          variant="light" 
+          mb="md"
+        >
+          {serverError}
+        </Alert>
+      )}
 
-        <form onSubmit={handleSubmit(onSubmit)}>
-          <Stack gap="md">
-            <TextInput label="Email" placeholder="you@example.com" type="email" autoComplete="email" error={errors.email?.message} {...register('email')} required />
-            <Group grow gap="md">
-              <TextInput label="Имя" placeholder="Иван" autoComplete="given-name" error={errors.firstName?.message} {...register('firstName')} required />
-              <TextInput label="Фамилия" placeholder="Иванов" autoComplete="family-name" error={errors.lastName?.message} {...register('lastName')} required />
-            </Group>
-            <TextInput label="Никнейм" placeholder="ivan_petrov" description="Латинские буквы, цифры, подчёркивание" error={errors.nickname?.message} {...register('nickname')} required />
-            <PasswordInput label="Пароль" placeholder="••••••••" autoComplete="new-password" error={errors.password?.message} {...register('password')} required />
-            
-            {password && (
-              <Box pl="xs">
-                <Text size="xs" c={/[A-Z]/.test(password) ? 'green' : 'dimmed'}><IconCheck size={12} style={{ marginRight: 4 }} />Заглавная буква</Text>
-                <Text size="xs" c={/[a-z]/.test(password) ? 'green' : 'dimmed'}><IconCheck size={12} style={{ marginRight: 4 }} />Строчная буква</Text>
-                <Text size="xs" c={/[0-9]/.test(password) ? 'green' : 'dimmed'}><IconCheck size={12} style={{ marginRight: 4 }} />Цифра</Text>
-              </Box>
-            )}
+      <form onSubmit={handleSubmit(onSubmit)}>
+        <Stack gap="md">
+          <TextInput 
+            label="Email" 
+            placeholder="you@example.com" 
+            type="email" 
+            autoComplete="email" 
+            error={errors.email?.message} 
+            {...register('email')} 
+            required 
+          />
+          <Group grow gap="md">
+            <TextInput 
+              label="Имя" 
+              placeholder="Иван" 
+              autoComplete="given-name" 
+              error={errors.firstName?.message} 
+              {...register('firstName')} 
+              required 
+            />
+            <TextInput 
+              label="Фамилия" 
+              placeholder="Иванов" 
+              autoComplete="family-name" 
+              error={errors.lastName?.message} 
+              {...register('lastName')} 
+              required 
+            />
+          </Group>
+          <TextInput 
+            label="Никнейм" 
+            placeholder="ivan_petrov" 
+            description="Латинские буквы, цифры, подчёркивание" 
+            error={errors.nickname?.message} 
+            {...register('nickname')} 
+            required 
+          />
+          <PasswordInput 
+            label="Пароль" 
+            placeholder="••••••••" 
+            autoComplete="new-password" 
+            error={errors.password?.message} 
+            {...register('password')} 
+            required 
+          />
+          
+          {password && (
+            <Box pl="xs">
+              <Text size="xs" c={/[A-Z]/.test(password) ? 'green' : 'dimmed'}>
+                <Check size={12} style={{ marginRight: 4 }} />
+                Заглавная буква
+              </Text>
+              <Text size="xs" c={/[a-z]/.test(password) ? 'green' : 'dimmed'}>
+                <Check size={12} style={{ marginRight: 4 }} />
+                Строчная буква
+              </Text>
+              <Text size="xs" c={/[0-9]/.test(password) ? 'green' : 'dimmed'}>
+                <Check size={12} style={{ marginRight: 4 }} />
+                Цифра
+              </Text>
+            </Box>
+          )}
 
-            <Checkbox label={
-              <Text size="sm">Я принимаю <a href="/terms" target="_blank" rel="noopener noreferrer">условия использования</a> и <a href="/privacy" target="_blank" rel="noopener noreferrer">политику конфиденциальности</a></Text>
-            } error={errors.acceptTerms?.message} {...register('acceptTerms')} required />
+          <Checkbox 
+            label={
+              <Text size="sm">
+                Я принимаю{' '}
+                <a href="/terms" target="_blank" rel="noopener noreferrer">
+                  условия использования
+                </a>
+                {' '}и{' '}
+                <a href="/privacy" target="_blank" rel="noopener noreferrer">
+                  политику конфиденциальности
+                </a>
+              </Text>
+            } 
+            error={errors.acceptTerms?.message} 
+            {...register('acceptTerms')} 
+          />
 
-            <Button type="submit" fullWidth size="md" loading={isSubmitting || registerMutation.isPending} disabled={isSubmitting}>
-              Зарегистрироваться
-            </Button>
-          </Stack>
-        </form>
+          <Button 
+            type="submit" 
+            fullWidth 
+            size="md" 
+            loading={isSubmitting || registerMutation.isPending}
+            style={{ backgroundColor: '#2A9D8F' }}
+          >
+            Зарегистрироваться
+          </Button>
+        </Stack>
+      </form>
 
-        <Divider my="lg" />
-        <Text ta="center" size="sm">Уже есть аккаунт? <Link to="/login" style={{ textDecoration: 'none', color: '#2A9D8F' }}>Войти</Link></Text>
-      </Paper>
-    </Box>
+      <Divider my="lg" />
+      <Text ta="center" size="sm">
+        Уже есть аккаунт?{' '}
+        <Link to="/login" style={{ textDecoration: 'none', color: '#2A9D8F' }}>
+          Войти
+        </Link>
+      </Text>
+    </Paper>
   )
 }

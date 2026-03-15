@@ -99,7 +99,7 @@ export const { handlers, auth, signIn, signOut } = HonoAuth({
       if (token) {
         session.user.id = token.id as string
         session.user.role = token.role as string
-        session.user.profile = token.profile as any
+        session.user.profile = token.profile as { id: string; nickname: string; displayName: string }
       }
       return session
     }

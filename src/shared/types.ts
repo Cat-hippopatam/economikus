@@ -33,7 +33,11 @@ export const RegisterSchema = z.object({
   nickname: z.string()
     .min(3, 'Никнейм должен содержать минимум 3 символа')
     .max(50, 'Никнейм слишком длинный')
-    .regex(/^[a-zA-Z0-9_]+$/, 'Никнейм может содержать только латинские буквы, цифры и подчёркивание')
+    .regex(/^[a-zA-Z0-9_]+$/, 'Никнейм может содержать только латинские буквы, цифры и подчёркивание'),
+  
+  acceptTerms: z.boolean().refine((val) => val === true, {
+    message: 'Необходимо принять условия использования'
+  })
 })
 
 export type RegisterInput = z.infer<typeof RegisterSchema>

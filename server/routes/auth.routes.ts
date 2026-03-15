@@ -1,7 +1,6 @@
 // server/routes/auth.routes.ts
 import { Hono } from 'hono'
 import { hash, compare } from 'bcryptjs'
-import { z } from 'zod'
 import { prisma } from '../db'
 import { AppError } from '../lib/errors'
 import { RegisterSchema, LoginSchema } from '../../src/shared/types'
@@ -180,7 +179,7 @@ auth.get('/me', async (c) => {
     include: {
       user: {
         include: {
-          profile: { select: { profileId: true, nickname: true, displayName: true, avatarUrl: true, bio: true } }
+          profile: { select: { id: true, nickname: true, displayName: true, avatarUrl: true, bio: true } }
         }
       }
     }
