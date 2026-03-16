@@ -1,11 +1,9 @@
 import { ReactNode, useEffect, useState } from 'react'
 import { AppShell, NavLink, Box, Text, Avatar, Menu, Group, Badge } from '@mantine/core'
 import { useNavigate, useLocation, Outlet } from 'react-router-dom'
-import {
-  LayoutDashboard, BookOpen, GraduationCap, Tags,
-  Users, LogOut, User, Settings
-} from 'lucide-react'
+import { LogOut, User, Settings } from 'lucide-react'
 import { api } from '@/lib/api'
+import { ADMIN_NAV_LINKS, APP_CONFIG, COLORS } from '@/constants'
 
 interface AdminLayoutProps {
   children?: ReactNode
@@ -48,14 +46,6 @@ export function AdminLayout({ children }: AdminLayoutProps) {
     navigate('/login')
   }
 
-  const navItems = [
-    { label: 'Дашборд', icon: LayoutDashboard, path: '/admin' },
-    { label: 'Курсы', icon: BookOpen, path: '/admin/courses' },
-    { label: 'Уроки', icon: GraduationCap, path: '/admin/lessons' },
-    { label: 'Теги', icon: Tags, path: '/admin/tags' },
-    { label: 'Пользователи', icon: Users, path: '/admin/users' },
-  ]
-
   return (
     <AppShell
       padding="md"
@@ -70,7 +60,7 @@ export function AdminLayout({ children }: AdminLayoutProps) {
         <Group justify="space-between" h="100%">
           <Group>
             <Text fw={700} size="lg" c="blue.6">
-              Economikus Admin
+              {APP_CONFIG.name} Admin
             </Text>
             <Badge color="orange" variant="light" size="sm">
               Админ-панель
@@ -104,19 +94,22 @@ export function AdminLayout({ children }: AdminLayoutProps) {
 
       <AppShell.Navbar p="xs" bg="gray.0">
         <Box component="nav" py="sm">
-          {navItems.map((item) => (
-            <NavLink
-              key={item.path}
-              label={!collapsed ? item.label : ''}
-              leftSection={<item.icon size={20} />}
-              active={location.pathname === item.path}
-              onClick={() => navigate(item.path)}
-              variant="filled"
-              styles={{
-                root: { borderRadius: 8, marginBottom: 4 },
-              }}
-            />
-          ))}
+          {ADMIN_NAV_LINKS.map((item) => {
+            const IconComponent = item.icon
+            return (
+              <NavLink
+                key={item.to}
+                label={!collapsed ? item.label : ''}
+                leftSection={<IconComponent size={20} />}
+                active={location.pathname === item.to}
+                onClick={() => navigate(item.to)}
+                variant="filled"
+                styles={{
+                  root: { borderRadius: 8, marginBottom: 4 },
+                }}
+              />
+            )
+          })}
         </Box>
 
         <Box mt="auto" p="xs">

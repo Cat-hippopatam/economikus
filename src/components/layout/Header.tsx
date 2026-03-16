@@ -19,12 +19,12 @@ import {
   LogOut, 
   Settings, 
   ChevronDown,
-  Calculator,
-  Folder
+  PenTool
 } from 'lucide-react'
 import { useState, useEffect } from 'react'
+import { NAV_LINKS, APP_CONFIG, COLORS } from '@/constants'
 
-interface User {
+interface UserData {
   id: string
   email: string
   firstName: string
@@ -39,7 +39,7 @@ interface User {
 
 export function Header() {
   const [opened, { toggle, close }] = useDisclosure(false)
-  const [user, setUser] = useState<User | null>(null)
+  const [user, setUser] = useState<UserData | null>(null)
   const [scrolled, setScrolled] = useState(false)
 
   useEffect(() => {
@@ -49,7 +49,6 @@ export function Header() {
   }, [])
 
   useEffect(() => {
-    // Проверяем авторизацию при загрузке
     fetch('/api/auth/me', { credentials: 'include' })
       .then(res => res.ok ? res.json() : null)
       .then(data => data?.user ? setUser(data.user) : null)
@@ -65,12 +64,6 @@ export function Header() {
     window.location.href = '/'
   }
 
-  const navLinks = [
-    { to: '/catalog', label: 'Каталог', icon: Folder },
-    { to: '/courses', label: 'Курсы', icon: BookOpen },
-    { to: '/calculators', label: 'Калькуляторы', icon: Calculator },
-  ]
-
   return (
     <header 
       style={{ 
@@ -79,7 +72,7 @@ export function Header() {
         zIndex: 100,
         backgroundColor: scrolled ? 'rgba(255, 255, 255, 0.95)' : '#fff',
         backdropFilter: scrolled ? 'blur(10px)' : 'none',
-        borderBottom: '1px solid #E9ECEF',
+        borderBottom: `1px solid ${COLORS.border}`,
         transition: 'all 0.2s ease'
       }}
     >
@@ -95,30 +88,33 @@ export function Header() {
               gap: 8 
             }}
           >
-            <BookOpen size={28} color="#2A9D8F" />
+            <BookOpen size={28} color={COLORS.primary} />
             <Text 
               fw={700} 
               size="xl" 
-              style={{ color: '#264653' }}
+              style={{ color: COLORS.secondary }}
             >
-              Экономикус
+              {APP_CONFIG.name}
             </Text>
           </Link>
 
           {/* Навигация - десктоп */}
           <Group gap="sm" visibleFrom="sm">
-            {navLinks.map((link) => (
-              <Button
-                key={link.to}
-                variant="subtle"
-                component={Link}
-                to={link.to}
-                leftSection={<link.icon size={18} />}
-                style={{ color: '#264653' }}
-              >
-                {link.label}
-              </Button>
-            ))}
+            {NAV_LINKS.map((link) => {
+              const IconComponent = link.icon
+              return (
+                <Button 
+                  key={link.to}
+                  variant="subtle" 
+                  component={Link} 
+                  to={link.to}
+                  leftSection={<IconComponent size={18} />}
+                  style={{ color: COLORS.secondary }}
+                >
+                  {link.label}
+                </Button>
+              )
+            })}
           </Group>
 
           {/* Пользовательское меню - десктоп */}
@@ -139,7 +135,7 @@ export function Header() {
                       >
                         {user.firstName[0]}
                       </Avatar>
-                      <Text size="sm" style={{ color: '#264653' }}>
+                      <Text size="sm" style={{ color: COLORS.secondary }}>
                         {user.profile?.displayName || `${user.firstName} ${user.lastName}`}
                       </Text>
                       <ChevronDown size={16} />
@@ -152,9 +148,9 @@ export function Header() {
                   <Menu.Item 
                     leftSection={<User size={16} />}
                     component={Link}
-                    to="/profile"
+                    to={`/user/${user.profile?.nickname || 'me'}`}
                   >
-                    Профиль
+                    Мой профиль
                   </Menu.Item>
                   <Menu.Item 
                     leftSection={<Settings size={16} />}
@@ -163,6 +159,26 @@ export function Header() {
                   >
                     Настройки
                   </Menu.Item>
+                  
+                  {user.role === 'USER' && (
+                    <Menu.Item 
+                      leftSection={<PenTool size={16} />}
+                      component={Link}
+                      to="/become-author"
+                    >
+                      Стать автором
+                    </Menu.Item>
+                  )}
+                  
+                  {(user.role === 'AUTHOR' || user.role === 'ADMIN' || user.role === 'MODERATOR') && (
+                    <Menu.Item 
+                      leftSection={<PenTool size={16} />}
+                      component={Link}
+                      to="/author/dashboard"
+                    >
+                      Панель автора
+                    </Menu.Item>
+                  )}
                   
                   {user.role === 'ADMIN' && (
                     <>
@@ -194,7 +210,7 @@ export function Header() {
                   variant="subtle" 
                   component={Link} 
                   to="/login"
-                  style={{ color: '#264653' }}
+                  style={{ color: COLORS.secondary }}
                 >
                   Войти
                 </Button>
@@ -202,7 +218,7 @@ export function Header() {
                   component={Link} 
                   to="/register"
                   style={{ 
-                    backgroundColor: '#2A9D8F', 
+                    backgroundColor: COLORS.primary, 
                     color: '#fff' 
                   }}
                 >
@@ -211,7 +227,7 @@ export function Header() {
               </Group>
             )}
           </Group>
-
+              
           {/* Мобильное меню */}
           <Burger 
             opened={opened} 
@@ -235,20 +251,23 @@ export function Header() {
       >
         <Stack gap="md">
           {/* Навигация */}
-          {navLinks.map((link) => (
-            <Button
-              key={link.to}
-              variant="subtle"
-              component={Link}
-              to={link.to}
-              onClick={close}
-              leftSection={<link.icon size={18} />}
-              fullWidth
-              justify="flex-start"
-            >
-              {link.label}
-            </Button>
-          ))}
+          {NAV_LINKS.map((link) => {
+            const IconComponent = link.icon
+            return (
+              <Button
+                key={link.to}
+                variant="subtle"
+                component={Link}
+                to={link.to}
+                onClick={close}
+                leftSection={<IconComponent size={18} />}
+                fullWidth
+                justify="flex-start"
+              >
+                {link.label}
+              </Button>
+            )
+          })}
           
           <Divider />
           
@@ -274,13 +293,13 @@ export function Header() {
               <Button
                 variant="subtle"
                 component={Link}
-                to="/profile"
+                to={`/user/${user.profile?.nickname || 'me'}`}
                 onClick={close}
                 leftSection={<User size={18} />}
                 fullWidth
                 justify="flex-start"
               >
-                Профиль
+                Мой профиль
               </Button>
               <Button
                 variant="subtle"
@@ -293,6 +312,35 @@ export function Header() {
               >
                 Настройки
               </Button>
+              
+              {user.role === 'USER' && (
+                <Button
+                  variant="subtle"
+                  component={Link}
+                  to="/become-author"
+                  onClick={close}
+                  leftSection={<PenTool size={18} />}
+                  fullWidth
+                  justify="flex-start"
+                >
+                  Стать автором
+                </Button>
+              )}
+              
+              {(user.role === 'AUTHOR' || user.role === 'ADMIN' || user.role === 'MODERATOR') && (
+                <Button
+                  variant="subtle"
+                  component={Link}
+                  to="/author/dashboard"
+                  onClick={close}
+                  leftSection={<PenTool size={18} />}
+                  fullWidth
+                  justify="flex-start"
+                >
+                  Панель автора
+                </Button>
+              )}
+              
               <Button
                 variant="subtle"
                 color="red"
@@ -320,7 +368,7 @@ export function Header() {
                 to="/register"
                 onClick={close}
                 fullWidth
-                style={{ backgroundColor: '#2A9D8F', color: '#fff' }}
+                style={{ backgroundColor: COLORS.primary, color: '#fff' }}
               >
                 Регистрация
               </Button>

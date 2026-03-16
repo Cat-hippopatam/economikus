@@ -7,7 +7,6 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-
 enum Role {
   USER
   AUTHOR
@@ -37,6 +36,12 @@ enum VideoProvider {
 }
 
 enum ModerationStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+enum ApplicationStatus {
   PENDING
   APPROVED
   REJECTED
@@ -97,7 +102,6 @@ enum ReactionableType {
   LESSON
   COMMENT
 }
-
 
 model Course {
   id              String           @id @default(uuid()) @map("course_id") @db.Char(36)
@@ -473,36 +477,38 @@ model Authenticator {
 }
 
 model Profile {
-  id                String           @id @default(uuid()) @map("profile_id") @db.Char(36)
-  userId            String           @unique @map("user_id") @db.Char(36)
-  nickname          String           @unique @map("nickname") @db.VarChar(50)
-  displayName       String           @map("display_name") @db.VarChar(255)
-  avatarUrl         String?          @map("avatar_url") @db.Text
-  coverImage        String?          @map("cover_image") @db.Text
-  bio               String?          @db.Text
-  website           String?          @db.VarChar(255)
-  telegram          String?          @db.VarChar(100)
-  youtube           String?          @db.VarChar(100)
-  totalViews        Int              @default(0) @map("total_views")
-  subscribers       Int              @default(0)
-  createdAt         DateTime         @default(now()) @map("created_at")
-  updatedAt         DateTime         @default(now()) @updatedAt @map("updated_at")
-  businessEvents    BusinessEvent[]
-  certificates      Certificate[]
-  comments          Comment[]
-  moderatedComments Comment[]        @relation("ModeratedBy")
-  progress          CourseProgress[]
-  courses           Course[]
-  favorites         Favorite[]
-  history           History[]
-  lessonProgress    LessonProgress[]
-  lessons           Lesson[]
-  notifications     Notification[]
-  paymentMethods    PaymentMethod[]
-  user              User             @relation(fields: [userId], references: [id], onDelete: Cascade)
-  reactions         Reaction[]
-  subscriptions     Subscription[]
-  transactions      Transaction[]
+  id                   String              @id @default(uuid()) @map("profile_id") @db.Char(36)
+  userId               String              @unique @map("user_id") @db.Char(36)
+  nickname             String              @unique @map("nickname") @db.VarChar(50)
+  displayName          String              @map("display_name") @db.VarChar(255)
+  avatarUrl            String?             @map("avatar_url") @db.Text
+  coverImage           String?             @map("cover_image") @db.Text
+  bio                  String?             @db.Text
+  website              String?             @db.VarChar(255)
+  telegram             String?             @db.VarChar(100)
+  youtube              String?             @db.VarChar(100)
+  totalViews           Int                 @default(0) @map("total_views")
+  subscribers          Int                 @default(0)
+  createdAt            DateTime            @default(now()) @map("created_at")
+  updatedAt            DateTime            @default(now()) @updatedAt @map("updated_at")
+  businessEvents       BusinessEvent[]
+  certificates         Certificate[]
+  comments             Comment[]
+  moderatedComments    Comment[]           @relation("ModeratedBy")
+  progress             CourseProgress[]
+  courses              Course[]
+  favorites            Favorite[]
+  history              History[]
+  lessonProgress       LessonProgress[]
+  lessons              Lesson[]
+  notifications        Notification[]
+  paymentMethods       PaymentMethod[]
+  user                 User                @relation(fields: [userId], references: [id], onDelete: Cascade)
+  reactions            Reaction[]
+  subscriptions        Subscription[]
+  transactions         Transaction[]
+  authorApplications   AuthorApplication[]
+  reviewedApplications AuthorApplication[] @relation("ReviewedBy")
 
   @@index([userId])
   @@index([nickname])
@@ -653,4 +659,26 @@ model Notification {
   @@index([isRead])
   @@index([createdAt])
   @@map("notifications")
+}
+
+// AuthorApplication - заявки на статус автора
+model AuthorApplication {
+  id              String            @id @default(uuid()) @map("application_id") @db.Char(36)
+  profileId       String            @map("profile_id") @db.Char(36)
+  status          ApplicationStatus @default(PENDING)
+  motivation      String            @map("motivation") @db.Text
+  experience      String?           @map("experience") @db.Text
+  portfolioUrl    String?           @map("portfolio_url") @db.VarChar(500)
+  reviewedBy      String?           @map("reviewed_by") @db.Char(36)
+  reviewedAt      DateTime?         @map("reviewed_at")
+  rejectionReason String?           @map("rejection_reason") @db.Text
+  createdAt       DateTime          @default(now()) @map("created_at")
+  updatedAt       DateTime          @default(now()) @updatedAt @map("updated_at")
+
+  profile  Profile  @relation(fields: [profileId], references: [id], onDelete: Cascade)
+  reviewer Profile? @relation("ReviewedBy", fields: [reviewedBy], references: [id])
+
+  @@index([profileId])
+  @@index([status])
+  @@map("author_applications")
 }

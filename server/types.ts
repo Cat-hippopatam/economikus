@@ -21,6 +21,7 @@ export interface LessonWhereInput {
 
 export interface FavoriteWhereInput {
   profileId: string
+  type?: 'course' | 'lesson'
   collection?: string
 }
 

@@ -11,33 +11,15 @@ import {
   ActionIcon
 } from '@mantine/core'
 import { BookOpen, Github, Mail, Send } from 'lucide-react'
+import { FOOTER_LINKS, APP_CONFIG, COLORS } from '@/constants'
 
 export function Footer() {
   const currentYear = new Date().getFullYear()
 
-  const footerLinks = {
-    platform: [
-      { to: '/catalog', label: 'Каталог курсов' },
-      { to: '/courses', label: 'Все курсы' },
-      { to: '/calculators', label: 'Калькуляторы' },
-      { to: '/faq', label: 'FAQ' },
-    ],
-    company: [
-      { to: '/about', label: 'О нас' },
-      { to: '/contacts', label: 'Контакты' },
-      { to: '/team', label: 'Команда' },
-    ],
-    legal: [
-      { to: '/terms', label: 'Условия использования' },
-      { to: '/privacy', label: 'Политика конфиденциальности' },
-      { to: '/cookies', label: 'Политика cookie' },
-    ],
-  }
-
   return (
     <footer 
       style={{ 
-        backgroundColor: '#264653', 
+        backgroundColor: COLORS.secondary, 
         color: '#fff',
         marginTop: 'auto'
       }}
@@ -58,10 +40,10 @@ export function Footer() {
               }}
             >
               <BookOpen size={28} />
-              <Text fw={700} size="xl">Экономикус</Text>
+              <Text fw={700} size="xl">{APP_CONFIG.name}</Text>
             </Link>
             <Text size="sm" c="dimmed" style={{ color: 'rgba(255,255,255,0.7)' }}>
-              Образовательная платформа для изучения финансов и инвестиций. 
+              {APP_CONFIG.description}. 
               Учим управлять деньгами с 2024 года.
             </Text>
             
@@ -71,7 +53,7 @@ export function Footer() {
                 color="gray" 
                 size="lg"
                 component="a"
-                href="https://t.me/economikus"
+                href={APP_CONFIG.social.telegram}
                 target="_blank"
                 title="Telegram"
               >
@@ -82,7 +64,7 @@ export function Footer() {
                 color="gray" 
                 size="lg"
                 component="a"
-                href="mailto:hello@economikus.ru"
+                href={`mailto:${APP_CONFIG.social.email}`}
                 title="Email"
               >
                 <Mail size={20} />
@@ -92,7 +74,7 @@ export function Footer() {
                 color="gray" 
                 size="lg"
                 component="a"
-                href="https://github.com/Cat-hippopatam/fin"
+                href={APP_CONFIG.social.github}
                 target="_blank"
                 title="GitHub"
               >
@@ -105,7 +87,7 @@ export function Footer() {
           <Grid.Col span={{ base: 6, sm: 2 }}>
             <Text fw={600} mb="sm">Платформа</Text>
             <Stack gap="xs">
-              {footerLinks.platform.map((link) => (
+              {FOOTER_LINKS.platform.map((link) => (
                 <Anchor
                   key={link.to}
                   component={Link}
@@ -128,7 +110,7 @@ export function Footer() {
           <Grid.Col span={{ base: 6, sm: 2 }}>
             <Text fw={600} mb="sm">Компания</Text>
             <Stack gap="xs">
-              {footerLinks.company.map((link) => (
+              {FOOTER_LINKS.company.map((link) => (
                 <Anchor
                   key={link.to}
                   component={Link}
@@ -151,7 +133,7 @@ export function Footer() {
           <Grid.Col span={{ base: 6, sm: 2 }}>
             <Text fw={600} mb="sm">Правовая информация</Text>
             <Stack gap="xs">
-              {footerLinks.legal.map((link) => (
+              {FOOTER_LINKS.legal.map((link) => (
                 <Anchor
                   key={link.to}
                   component={Link}
@@ -175,7 +157,7 @@ export function Footer() {
 
         <Group justify="space-between" wrap="wrap" gap="sm">
           <Text size="sm" c="dimmed" style={{ color: 'rgba(255,255,255,0.5)' }}>
-            © {currentYear} Экономикус. Все права защищены.
+            © {currentYear} {APP_CONFIG.name}. Все права защищены.
           </Text>
           <Text size="sm" c="dimmed" style={{ color: 'rgba(255,255,255,0.5)' }}>
             Сделано с ❤️ для финансового образования

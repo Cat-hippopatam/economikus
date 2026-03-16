@@ -12,6 +12,8 @@ import tagsRoutes from './routes/tags.routes'
 import reactionsRoutes from './routes/reactions.routes'
 import commentsRoutes from './routes/comments.routes'
 import adminRoutes from './routes/admin.routes'
+import moderationRoutes from './routes/moderation.routes'
+import authorRoutes from './routes/author.routes'
 import 'dotenv/config'
 
 const app = new Hono()
@@ -568,6 +570,8 @@ app.route('/api/tags', tagsRoutes)
 app.route('/api/reactions', reactionsRoutes)
 app.route('/api/comments', commentsRoutes)
 app.route('/api/admin', adminRoutes)
+app.route('/api/admin/moderation', moderationRoutes)
+app.route('/api/author', authorRoutes)
 
 // Health check
 app.get('/api/health', (c) => c.json({ status: 'ok' }))

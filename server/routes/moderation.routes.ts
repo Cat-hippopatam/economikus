@@ -1,0 +1,166 @@
+// server/routes/moderation.routes.ts
+import { Hono } from 'hono'
+import { prisma } from '../db'
+import { requireAdmin } from '../middleware/auth'
+
+const moderation = new Hono()
+
+// Все роуты требуют права ADMIN (или MODERATOR в будущем)
+moderation.use('*', requireAdmin)
+
+// === GET /admin/moderation/comments — комментарии на модерации ===
+moderation.get('/comments', async (c) => {
+  const page = Math.max(1, parseInt(c.req.query('page') || '1'))
+  const limit = Math.min(100, Math.max(1, parseInt(c.req.query('limit') || '20')))
+  const status = c.req.query('status') || 'PENDING'
+  const skip = (page - 1) * limit
+
+  const where: Record<string, unknown> = { deletedAt: null }
+  if (status !== 'ALL') where.status = status
+
+  const [items, total] = await Promise.all([
+    prisma.comment.findMany({
+      where,
+      skip,
+      take: limit,
+      orderBy: { createdAt: 'asc' },
+      select: {
+        id: true,
+        text: true,
+        status: true,
+        createdAt: true,
+        commentableType: true,
+        commentableId: true,
+        author: { select: { id: true, nickname: true, displayName: true, avatarUrl: true } }
+      }
+    }),
+    prisma.comment.count({ where })
+  ])
+
+  return c.json({
+    items,
+    pagination: { page, limit, total, totalPages: Math.ceil(total / limit) }
+  })
+})
+
+// === PATCH /admin/moderation/comments/:id — изменить статус комментария ===
+moderation.patch('/comments/:id', async (c) => {
+  const id = c.req.param('id')
+  const { status } = await c.req.json()
+
+  if (!['APPROVED', 'REJECTED'].includes(status)) {
+    return c.json({ error: 'Неверный статус' }, 400)
+  }
+
+  const comment = await prisma.comment.findUnique({ where: { id } })
+  if (!comment) return c.json({ error: 'Комментарий не найден' }, 404)
+
+  const updated = await prisma.comment.update({
+    where: { id },
+    data: { status }
+  })
+
+  return c.json({ message: 'Статус обновлён', comment: updated })
+})
+
+// === DELETE /admin/moderation/comments/:id — удалить комментарий ===
+moderation.delete('/comments/:id', async (c) => {
+  const id = c.req.param('id')
+
+  await prisma.comment.update({
+    where: { id },
+    data: { deletedAt: new Date() }
+  })
+
+  return c.json({ message: 'Комментарий удалён' })
+})
+
+// === GET /admin/moderation/content — контент на модерации ===
+moderation.get('/content', async (c) => {
+  const page = Math.max(1, parseInt(c.req.query('page') || '1'))
+  const limit = Math.min(100, Math.max(1, parseInt(c.req.query('limit') || '20')))
+  const status = c.req.query('status') || 'PENDING_REVIEW'
+  const type = c.req.query('type')
+  const skip = (page - 1) * limit
+
+  const results: Array<{
+    id: string
+    title: string
+    type: 'COURSE' | 'LESSON'
+    status: string
+    createdAt: Date
+    author: { id: string; nickname: string; displayName: string; avatarUrl: string | null }
+  }> = []
+
+  let total = 0
+
+  if (!type || type === 'COURSE') {
+    const where = { deletedAt: null, status }
+    const [courses, count] = await Promise.all([
+      prisma.course.findMany({
+        where,
+        skip: type ? skip : undefined,
+        take: type ? limit : undefined,
+        orderBy: { createdAt: 'asc' },
+        select: {
+          id: true,
+          title: true,
+          status: true,
+          createdAt: true,
+          author: { select: { id: true, nickname: true, displayName: true, avatarUrl: true } }
+        }
+      }),
+      prisma.course.count({ where })
+    ])
+    results.push(...courses.map(c => ({ ...c, type: 'COURSE' as const })))
+    total += count
+  }
+
+  if (!type || type === 'LESSON') {
+    const where = { deletedAt: null, status }
+    const [lessons, count] = await Promise.all([
+      prisma.lesson.findMany({
+        where,
+        skip: type ? skip : undefined,
+        take: type ? limit : undefined,
+        orderBy: { createdAt: 'asc' },
+        select: {
+          id: true,
+          title: true,
+          status: true,
+          createdAt: true,
+          author: { select: { id: true, nickname: true, displayName: true, avatarUrl: true } }
+        }
+      }),
+      prisma.lesson.count({ where })
+    ])
+    results.push(...lessons.map(l => ({ ...l, type: 'LESSON' as const })))
+    total += count
+  }
+
+  results.sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime())
+  const paginated = type ? results : results.slice(skip, skip + limit)
+
+  return c.json({
+    items: paginated,
+    pagination: { page, limit, total, totalPages: Math.ceil(total / limit) }
+  })
+})
+
+// === GET /admin/moderation/stats — статистика модерации ===
+moderation.get('/stats', async (c) => {
+  const [pendingComments, pendingCourses, pendingLessons] = await Promise.all([
+    prisma.comment.count({ where: { status: 'PENDING', deletedAt: null } }),
+    prisma.course.count({ where: { status: 'PENDING_REVIEW', deletedAt: null } }),
+    prisma.lesson.count({ where: { status: 'PENDING_REVIEW', deletedAt: null } })
+  ])
+
+  return c.json({
+    pendingComments,
+    pendingContent: pendingCourses + pendingLessons,
+    pendingCourses,
+    pendingLessons
+  })
+})
+
+export default moderation

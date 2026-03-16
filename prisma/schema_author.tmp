@@ -1,0 +1,21 @@
+﻿// AuthorApplication - заявки на статус автора
+model AuthorApplication {
+  id              String              @id @default(uuid()) @map("application_id") @db.Char(36)
+  profileId       String              @map("profile_id") @db.Char(36)
+  status          ApplicationStatus   @default(PENDING)
+  motivation      String              @map("motivation") @db.Text
+  experience      String?             @map("experience") @db.Text
+  portfolioUrl    String?             @map("portfolio_url") @db.VarChar(500)
+  reviewedBy      String?             @map("reviewed_by") @db.Char(36)
+  reviewedAt      DateTime?           @map("reviewed_at")
+  rejectionReason String?             @map("rejection_reason") @db.Text
+  createdAt       DateTime            @default(now()) @map("created_at")
+  updatedAt       DateTime            @default(now()) @updatedAt @map("updated_at")
+  
+  profile         Profile             @relation(fields: [profileId], references: [id], onDelete: Cascade)
+  reviewer        Profile?            @relation("ReviewedBy", fields: [reviewedBy], references: [id])
+
+  @@index([profileId])
+  @@index([status])
+  @@map("author_applications")
+}

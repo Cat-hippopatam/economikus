@@ -5,23 +5,46 @@ import { z } from 'zod'
 export const RoleEnum = z.enum(['USER', 'AUTHOR', 'MODERATOR', 'ADMIN'])
 export type Role = z.infer<typeof RoleEnum>
 
+/**
+ * Функция для очистки строки от потенциально опасных символов
+ * Защита от XSS: удаляет HTML-теги и JavaScript
+ */
+function sanitizeString(val: string): string {
+  return val
+    .trim()
+    // Удаляем HTML теги
+    .replace(/<[^>]*>/g, '')
+    // Удаляем javascript:
+    .replace(/javascript:/gi, '')
+    // Удаляем on* атрибуты (onclick, onerror, etc.)
+    .replace(/on\w+\s*=/gi, '')
+}
+
 // === РЕГИСТРАЦИЯ ===
 export const RegisterSchema = z.object({
   email: z.string()
     .email('Некорректный формат email')
     .min(5, 'Email слишком короткий')
     .max(255, 'Email слишком длинный')
-    .transform((val) => val.toLowerCase()),
+    .transform((val) => val.toLowerCase().trim()),
   
   firstName: z.string()
     .min(2, 'Имя должно содержать минимум 2 символа')
     .max(100, 'Имя слишком длинное')
-    .regex(/^[\p{L}\s'-]+$/u, 'Имя может содержать только буквы, пробелы, дефисы и апострофы'),
+    .transform(sanitizeString)
+    .refine(
+      (val) => /^[\p{L}\s'-]+$/u.test(val),
+      'Имя может содержать только буквы, пробелы, дефисы и апострофы'
+    ),
   
   lastName: z.string()
     .min(2, 'Фамилия должна содержать минимум 2 символа')
     .max(100, 'Фамилия слишком длинная')
-    .regex(/^[\p{L}\s'-]+$/u, 'Фамилия может содержать только буквы, пробелы, дефисы и апострофы'),
+    .transform(sanitizeString)
+    .refine(
+      (val) => /^[\p{L}\s'-]+$/u.test(val),
+      'Фамилия может содержать только буквы, пробелы, дефисы и апострофы'
+    ),
   
   password: z.string()
     .min(6, 'Пароль должен содержать минимум 6 символов')
@@ -33,7 +56,11 @@ export const RegisterSchema = z.object({
   nickname: z.string()
     .min(3, 'Никнейм должен содержать минимум 3 символа')
     .max(50, 'Никнейм слишком длинный')
-    .regex(/^[a-zA-Z0-9_]+$/, 'Никнейм может содержать только латинские буквы, цифры и подчёркивание'),
+    .transform(sanitizeString)
+    .refine(
+      (val) => /^[a-zA-Z0-9_]+$/.test(val),
+      'Никнейм может содержать только латинские буквы, цифры и подчёркивание'
+    ),
   
   acceptTerms: z.boolean().refine((val) => val === true, {
     message: 'Необходимо принять условия использования'

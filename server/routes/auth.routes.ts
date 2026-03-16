@@ -4,6 +4,7 @@ import { hash, compare } from 'bcryptjs'
 import { prisma } from '../db'
 import { AppError } from '../lib/errors'
 import { RegisterSchema, LoginSchema } from '../../src/shared/types'
+import { limitUserSessions, cleanupExpiredSessions } from '../jobs/session-cleanup'
 import crypto from 'crypto'
 
 const auth = new Hono()
@@ -114,7 +115,7 @@ auth.post('/login', async (c) => {
       data: { lastLoginAt: new Date() }
     })
 
-    // Создаём сессию вручную (простая реализация без JWT для начала)
+    // Создаём сессию
     const session = await prisma.session.create({
       data: {
         sessionToken: crypto.randomUUID(),
@@ -122,6 +123,12 @@ auth.post('/login', async (c) => {
         expires: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000) // 30 дней
       }
     })
+
+    // Ограничиваем количество сессий и очищаем просроченные
+    await Promise.all([
+      limitUserSessions(user.id, 5),
+      cleanupExpiredSessions()
+    ])
 
     // Устанавливаем куки
     c.header('Set-Cookie', `session=${session.sessionToken}; Path=/; HttpOnly; SameSite=Strict; Max-Age=${30 * 24 * 60 * 60}`)
@@ -163,6 +170,39 @@ auth.post('/logout', async (c) => {
   
   c.header('Set-Cookie', 'session=; Path=/; HttpOnly; SameSite=Strict; Max-Age=0')
   return c.json({ message: 'Logged out successfully' })
+})
+
+// === POST /auth/logout-all — выйти со всех устройств ===
+auth.post('/logout-all', async (c) => {
+  try {
+    const cookie = c.req.header('Cookie')
+    const sessionMatch = cookie?.match(/session=([^;]+)/)
+    
+    if (!sessionMatch?.[1]) {
+      throw new AppError(401, 'Не авторизован', 'UNAUTHORIZED')
+    }
+
+    const session = await prisma.session.findUnique({
+      where: { sessionToken: sessionMatch[1] },
+      select: { userId: true }
+    })
+
+    if (!session) {
+      throw new AppError(401, 'Сессия не найдена', 'SESSION_NOT_FOUND')
+    }
+
+    // Удаляем все сессии пользователя
+    await prisma.session.deleteMany({ where: { userId: session.userId } })
+
+    c.header('Set-Cookie', 'session=; Path=/; HttpOnly; SameSite=Strict; Max-Age=0')
+    return c.json({ message: 'Все сессии завершены' })
+  } catch (error) {
+    if (error instanceof AppError) {
+      return c.json({ error: error.message, code: error.code }, error.statusCode)
+    }
+    console.error('Logout all error:', error)
+    return c.json({ error: 'Internal server error' }, 500)
+  }
 })
 
 // === GET /auth/me — проверка сессии ===
