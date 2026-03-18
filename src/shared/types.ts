@@ -105,3 +105,18 @@ export interface ErrorResponse {
   details?: Array<{ field: string; message: string }>
   code?: string
 }
+
+// === USER ===
+export interface User {
+  id: string
+  email: string
+  firstName: string
+  lastName: string
+  role: Role
+  profile?: {
+    id: string
+    nickname: string
+    displayName: string
+    avatarUrl?: string
+  }
+}

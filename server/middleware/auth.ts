@@ -14,6 +14,7 @@ interface User {
   lastName: string
   role: 'USER' | 'AUTHOR' | 'MODERATOR' | 'ADMIN'
   isBlocked: boolean
+  passwordHash: string
 }
 
 interface Profile {
@@ -67,6 +68,7 @@ async function getSessionData(sessionToken: string) {
       lastName: session.user.lastName,
       role: session.user.role,
       isBlocked: session.user.isBlocked,
+      passwordHash: session.user.passwordHash,
     },
     profile: session.user.profile
   }

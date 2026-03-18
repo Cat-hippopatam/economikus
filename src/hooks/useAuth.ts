@@ -2,24 +2,29 @@
 import { useState, useEffect, useCallback } from 'react'
 import { APP_CONFIG } from '../constants'
 
+interface Profile {
+  id: string
+  nickname: string
+  displayName: string
+  avatarUrl: string | null
+  bio: string | null
+  website?: string | null
+  telegram?: string | null
+  youtube?: string | null
+}
+
 interface User {
   id: string
   email: string
   firstName: string
   lastName: string
   role: 'USER' | 'AUTHOR' | 'MODERATOR' | 'ADMIN'
-  profile: {
-    id: string
-    nickname: string
-    displayName: string
-    avatarUrl: string | null
-    bio: string | null
-  } | null
+  profile: Profile | null
 }
 
 interface AuthState {
   user: User | null
-  profile: User['profile'] | null
+  profile: Profile | null
   loading: boolean
   isAuthenticated: boolean
 }

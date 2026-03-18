@@ -1,9 +1,10 @@
-import { ReactNode, useEffect, useState } from 'react'
+import type { ReactNode } from 'react'
+import { useEffect, useState } from 'react'
 import { AppShell, NavLink, Box, Text, Avatar, Menu, Group, Badge } from '@mantine/core'
 import { useNavigate, useLocation, Outlet } from 'react-router-dom'
 import { LogOut, User, Settings } from 'lucide-react'
 import { api } from '@/lib/api'
-import { ADMIN_NAV_LINKS, APP_CONFIG, COLORS } from '@/constants'
+import { ADMIN_NAV_LINKS, APP_CONFIG } from '@/constants'
 
 interface AdminLayoutProps {
   children?: ReactNode

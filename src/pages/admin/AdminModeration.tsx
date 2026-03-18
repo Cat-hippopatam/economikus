@@ -1,10 +1,10 @@
 import { useEffect, useState } from 'react'
 import {
   Box, Card, Group, Text, Badge, Table, Button, Tabs,
-  ActionIcon, Menu, Modal, Textarea, Avatar, Skeleton,
-  Alert, Stack, ScrollArea, Chip, Pagination
+  Modal, Textarea, Avatar, Skeleton,
+  Alert, Stack, Pagination
 } from '@mantine/core'
-import { Check, X, Eye, MoreVertical, Clock, AlertTriangle, MessageSquare, FileText } from 'lucide-react'
+import { Check, X, AlertTriangle, MessageSquare, FileText } from 'lucide-react'
 import { api } from '@/lib/api'
 
 interface Comment {

@@ -11,7 +11,9 @@ export const APP_CONFIG = {
   description: 'Образовательная платформа для изучения финансов и инвестиций',
   url: 'https://economikus.ru',
   version: '1.0.0',
-  apiUrl: import.meta.env.VITE_API_URL || 'http://localhost:3000/api',
+  apiUrl: import.meta.env.PROD 
+    ? (import.meta.env.VITE_API_URL || 'https://api.economikus.ru/api')
+    : '/api',
   
   // Контакты и соцсети
   social: {

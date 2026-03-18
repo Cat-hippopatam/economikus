@@ -131,7 +131,7 @@ class LocalStorageService {
    * Очистить весь кэш (кроме настроек)
    */
   clearCache(): void {
-    const preserveKeys = [STORAGE_KEYS.USER_PREFERENCES]
+    const preserveKeys: string[] = [STORAGE_KEYS.USER_PREFERENCES]
     
     Object.values(STORAGE_KEYS).forEach(key => {
       if (!preserveKeys.includes(key)) {

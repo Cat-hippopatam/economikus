@@ -11,6 +11,8 @@ const user = new Hono()
 // Защищённые роуты
 user.use('/me', requireAuth)
 user.use('/profile', requireAuth)
+user.use('/password', requireAuth)
+user.use('/avatar', requireAuth)
 user.use('/history', requireAuth)
 user.use('/favorites', requireAuth)
 user.use('/progress', requireAuth)
@@ -103,6 +105,69 @@ user.patch('/password', async (c) => {
   })
 
   return c.json({ message: 'Пароль успешно изменён' })
+})
+
+// === POST /user/avatar — загрузка аватара ===
+user.post('/avatar', async (c) => {
+  const profile = getCurrentProfile(c)
+  if (!profile) throw new AppError(400, 'Профиль не найден')
+
+  // Проверяем наличие файла
+  const contentType = c.req.header('content-type') || ''
+  if (!contentType.includes('multipart/form-data')) {
+    throw new AppError(400, 'Ожидается FormData')
+  }
+
+  // Получаем данные из FormData
+  const formData = await c.req.parseBody()
+  const file = formData.avatar as File | null
+
+  if (!file || !(file instanceof File)) {
+    throw new AppError(400, 'Файл не загружен')
+  }
+
+  // Проверяем тип файла
+  if (!file.type.startsWith('image/')) {
+    throw new AppError(400, 'Разрешены только изображения')
+  }
+
+  // Проверяем размер (макс 5MB)
+  if (file.size > 5 * 1024 * 1024) {
+    throw new AppError(400, 'Максимальный размер: 5MB')
+  }
+
+  // В продакшене здесь была бы загрузка в S3/Storage
+  // Для примера сохраняем как base64 (в реальном проекте - облачное хранилище)
+  
+  // В продакшене здесь была бы загрузка в S3/Storage
+  // Для примера сохраняем как base64 (в реальном проекте - облачное хранилище)
+  const arrayBuffer = await file.arrayBuffer()
+  const base64 = Buffer.from(arrayBuffer).toString('base64')
+  const dataUrl = `data:${file.type};base64,${base64}`
+
+  // Обновляем профиль
+  const updated = await prisma.profile.update({
+    where: { id: profile.id },
+    data: { avatarUrl: dataUrl }
+  })
+
+  return c.json({ 
+    message: 'Аватар загружен',
+    avatarUrl: updated.avatarUrl 
+  })
+})
+
+// === DELETE /user/avatar — удаление аватара ===
+user.delete('/avatar', async (c) => {
+  const profile = getCurrentProfile(c)
+  if (!profile) throw new AppError(400, 'Профиль не найден')
+
+  await prisma.profile.update({
+    where: { id: profile.id },
+    data: { avatarUrl: null }
+  })
+
+  return c.json({ message: 'Аватар удалён' })
 })
 
 // === GET /user/history — история просмотров ===

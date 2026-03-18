@@ -1,16 +1,22 @@
 // src/pages/profile/ProfileSettingsPage.tsx
+/**
+ * Страница настроек профиля
+ * Рефакторинг: использует AvatarUploader, ProtectedRoute
+ */
+
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import {
-  Container, Paper, Title, Stack, TextInput, Textarea, Button, Group, Avatar, Text, FileInput, Tabs, PasswordInput, Notification, Skeleton,
+  Container, Paper, Title, Stack, TextInput, Textarea, Button, Group, Text, Tabs, PasswordInput, Notification, Skeleton,
 } from '@mantine/core'
-import { User, Check, X, Image as ImageIcon } from 'lucide-react'
-import { useAuth } from '../../hooks/useAuth'
-import { APP_CONFIG } from '../../constants'
+import { Check, X } from 'lucide-react'
+import { useAuth } from '@/hooks'
+import { APP_CONFIG } from '@/constants'
+import { AvatarUploader } from '@/components/common'
 
 export function ProfileSettingsPage() {
   const navigate = useNavigate()
-  const { user, profile, refreshProfile } = useAuth()
+  const { user, profile, loading: authLoading, refreshProfile } = useAuth()
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [notification, setNotification] = useState<{ type: 'success' | 'error'; message: string } | null>(null)
@@ -24,10 +30,21 @@ export function ProfileSettingsPage() {
   const [newPassword, setNewPassword] = useState('')
   const [confirmPassword, setConfirmPassword] = useState('')
 
+  // Перенаправление неавторизованных пользователей
+  useEffect(() => {
+    if (!authLoading && !user) {
+      navigate('/login', { replace: true })
+    }
+  }, [authLoading, user, navigate])
+
+  // Загрузка данных профиля
   useEffect(() => {
     if (profile) {
       setDisplayName(profile.displayName || '')
       setBio(profile.bio || '')
+      setWebsite(profile.website || '')
+      setTelegram(profile.telegram || '')
+      setYoutube(profile.youtube || '')
       setLoading(false)
     }
   }, [profile])
@@ -88,20 +105,30 @@ export function ProfileSettingsPage() {
     }
   }
 
-  if (!user || !profile) {
-    navigate('/login')
-    return null
+  // Состояние загрузки
+  if (authLoading || loading) {
+    return (
+      <Container size="md" py="xl">
+        <Skeleton height={400} radius="md" />
+      </Container>
+    )
   }
 
-  if (loading) {
-    return <Container size="md" py="xl"><Skeleton height={400} radius="md" /></Container>
+  // Неавторизованный (редирект)
+  if (!user || !profile) {
+    return null
   }
 
   return (
     <Container size="md" py="xl">
       <Title order={2} mb="xl">Настройки профиля</Title>
       {notification && (
-        <Notification icon={notification.type === 'success' ? <Check /> : <X />} color={notification.type === 'success' ? 'green' : 'red'} onClose={() => setNotification(null)} mb="md">
+        <Notification 
+          icon={notification.type === 'success' ? <Check /> : <X />} 
+          color={notification.type === 'success' ? 'green' : 'red'} 
+          onClose={() => setNotification(null)} 
+          mb="md"
+        >
           {notification.message}
         </Notification>
       )}
@@ -114,18 +141,46 @@ export function ProfileSettingsPage() {
           </Tabs.List>
           <Tabs.Panel value="profile">
             <Stack gap="md">
-              <Group>
-                <Avatar src={profile.avatarUrl} size={80} radius="xl"><User size={40} /></Avatar>
-                <Stack gap={4}>
-                  <Text size="sm" fw={500}>Аватар</Text>
-                  <FileInput placeholder="Выберите изображение" accept="image/*" leftSection={<ImageIcon size={14} />} style={{ maxWidth: 300 }} />
-                </Stack>
-              </Group>
-              <TextInput label="Отображаемое имя" value={displayName} onChange={(e) => setDisplayName(e.target.value)} placeholder="Ваше имя" />
-              <Textarea label="О себе" value={bio} onChange={(e) => setBio(e.target.value)} placeholder="Расскажите о себе..." rows={4} />
-              <TextInput label="Сайт" value={website} onChange={(e) => setWebsite(e.target.value)} placeholder="https://example.com" />
-              <TextInput label="Telegram" value={telegram} onChange={(e) => setTelegram(e.target.value)} placeholder="@username" />
-              <TextInput label="YouTube" value={youtube} onChange={(e) => setYoutube(e.target.value)} placeholder="https://youtube.com/@username" />
+              {/* Загрузка аватара */}
+              <AvatarUploader
+                currentAvatar={profile.avatarUrl}
+                size={80}
+                onUploadSuccess={() => {
+                  setNotification({ type: 'success', message: 'Аватар обновлён' })
+                }}
+              />
+              
+              <TextInput
+                label="Отображаемое имя"
+                value={displayName}
+                onChange={(e) => setDisplayName(e.target.value)}
+                placeholder="Ваше имя"
+              />
+              <Textarea
+                label="О себе"
+                value={bio}
+                onChange={(e) => setBio(e.target.value)}
+                placeholder="Расскажите о себе..."
+                rows={4}
+              />
+              <TextInput
+                label="Сайт"
+                value={website}
+                onChange={(e) => setWebsite(e.target.value)}
+                placeholder="https://example.com"
+              />
+              <TextInput
+                label="Telegram"
+                value={telegram}
+                onChange={(e) => setTelegram(e.target.value)}
+                placeholder="@username"
+              />
+              <TextInput
+                label="YouTube"
+                value={youtube}
+                onChange={(e) => setYoutube(e.target.value)}
+                placeholder="https://youtube.com/@username"
+              />
               <Group justify="flex-end" mt="md">
                 <Button onClick={handleSaveProfile} loading={saving}>Сохранить изменения</Button>
               </Group>
@@ -133,9 +188,21 @@ export function ProfileSettingsPage() {
           </Tabs.Panel>
           <Tabs.Panel value="password">
             <Stack gap="md" maw={400}>
-              <PasswordInput label="Текущий пароль" value={currentPassword} onChange={(e) => setCurrentPassword(e.target.value)} />
-              <PasswordInput label="Новый пароль" value={newPassword} onChange={(e) => setNewPassword(e.target.value)} />
-              <PasswordInput label="Подтвердите новый пароль" value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} />
+              <PasswordInput
+                label="Текущий пароль"
+                value={currentPassword}
+                onChange={(e) => setCurrentPassword(e.target.value)}
+              />
+              <PasswordInput
+                label="Новый пароль"
+                value={newPassword}
+                onChange={(e) => setNewPassword(e.target.value)}
+              />
+              <PasswordInput
+                label="Подтвердите новый пароль"
+                value={confirmPassword}
+                onChange={(e) => setConfirmPassword(e.target.value)}
+              />
               <Button onClick={handleChangePassword} loading={saving} mt="md">Изменить пароль</Button>
             </Stack>
           </Tabs.Panel>

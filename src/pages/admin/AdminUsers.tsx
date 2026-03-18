@@ -1,110 +1,61 @@
-import { useEffect, useState } from 'react'
+// src/pages/admin/AdminUsers.tsx
+/**
+ * Страница управления пользователями
+ * Рефакторинг: использует UserModal, useUserList, RoleBadge, ConfirmDialog
+ */
+
+import { useState } from 'react'
 import {
-  Box, Card, Group, Text, Badge, Table, TextInput, Button,
-  Select, Pagination, ActionIcon, Menu, Modal, Textarea,
-  Avatar, Skeleton, Alert, Stack
+  Box, Card, Group, Text, Badge, Table, TextInput,
+  Select, Pagination, ActionIcon, Menu, Avatar, Skeleton, Alert, Stack
 } from '@mantine/core'
 import { Search, MoreVertical, Pencil, Trash2 } from 'lucide-react'
-import { api } from '@/lib/api'
-
-interface User {
-  id: string
-  nickname: string
-  displayName: string
-  email: string
-  avatarUrl: string | null
-  bio: string | null
-  role: string
-  createdAt: string
-  _count?: { courses: number; lessons: number }
-}
-
-const roleColors: Record<string, string> = {
-  USER: 'gray',
-  AUTHOR: 'blue',
-  ADMIN: 'red'
-}
-
-const roleLabels: Record<string, string> = {
-  USER: 'Пользователь',
-  AUTHOR: 'Автор',
-  ADMIN: 'Админ'
-}
+import { UserModal } from '@/components/modals'
+import { RoleBadge } from '@/components/common'
+import { ConfirmDialog } from '@/components/common'
+import { useUserList } from '@/hooks'
+import type { UserInput } from '@/types'
 
 export function AdminUsers() {
-  const [users, setUsers] = useState<User[]>([])
-  const [loading, setLoading] = useState(true)
-  const [page, setPage] = useState(1)
-  const [totalPages, setTotalPages] = useState(1)
-  const [search, setSearch] = useState('')
-  const [roleFilter, setRoleFilter] = useState<string | null>(null)
-  const [opened, setOpened] = useState(false)
-  const [editingUser, setEditingUser] = useState<User | null>(null)
-  const [saving, setSaving] = useState(false)
+  const {
+    users,
+    loading,
+    page,
+    setPage,
+    totalPages,
+    search,
+    setSearch,
+    roleFilter,
+    setRoleFilter,
+    modalOpened,
+    editingUser,
+    saving,
+    openEdit,
+    closeModal,
+    handleSave,
+    handleDelete,
+  } = useUserList()
 
-  // Form state
-  const [formDisplayName, setFormDisplayName] = useState('')
-  const [formBio, setFormBio] = useState('')
-  const [formRole, setFormRole] = useState<string>('USER')
+  // Состояние для диалога подтверждения удаления
+  const [deleteConfirm, setDeleteConfirm] = useState<{
+    opened: boolean
+    userId: string | null
+    userName: string
+  }>({ opened: false, userId: null, userName: '' })
 
-  useEffect(() => {
-    fetchUsers()
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [page, search, roleFilter])
+  const confirmDelete = (user: { id: string; displayName: string }) => {
+    setDeleteConfirm({ opened: true, userId: user.id, userName: user.displayName })
+  }
 
-  const fetchUsers = async () => {
-    setLoading(true)
-    try {
-      const params = new URLSearchParams()
-      params.append('page', page.toString())
-      params.append('limit', '10')
-      if (search) params.append('search', search)
-      if (roleFilter) params.append('role', roleFilter)
-
-      const res = await api.get(`/admin/users?${params}`)
-      setUsers(res.data.items)
-      setTotalPages(res.data.pagination.totalPages)
-    } catch (error) {
-      console.error(error)
-    } finally {
-      setLoading(false)
+  const executeDelete = async () => {
+    if (deleteConfirm.userId) {
+      await handleDelete(deleteConfirm.userId)
+      setDeleteConfirm({ opened: false, userId: null, userName: '' })
     }
   }
 
-  const openEditModal = (user: User) => {
-    setEditingUser(user)
-    setFormDisplayName(user.displayName)
-    setFormBio(user.bio || '')
-    setFormRole(user.role)
-    setOpened(true)
-  }
-
-  const handleSave = async () => {
-    if (!editingUser) return
-    setSaving(true)
-    try {
-      await api.patch(`/admin/users/${editingUser.id}`, {
-        displayName: formDisplayName,
-        bio: formBio,
-        role: formRole
-      })
-      setOpened(false)
-      fetchUsers()
-    } catch (error) {
-      console.error(error)
-    } finally {
-      setSaving(false)
-    }
-  }
-
-  const handleDelete = async (id: string) => {
-    if (!confirm('Удалить пользователя?')) return
-    try {
-      await api.delete(`/admin/users/${id}`)
-      fetchUsers()
-    } catch (error) {
-      console.error(error)
-    }
+  const onSave = async (data: UserInput) => {
+    await handleSave(data)
   }
 
   return (
@@ -128,10 +79,10 @@ export function AdminUsers() {
               { value: '', label: 'Все роли' },
               { value: 'USER', label: 'Пользователи' },
               { value: 'AUTHOR', label: 'Авторы' },
-              { value: 'ADMIN', label: 'Админы' }
+              { value: 'ADMIN', label: 'Админы' },
             ]}
             value={roleFilter}
-            onChange={setRoleFilter}
+            onChange={(v) => setRoleFilter(v || null)}
             clearable
             w={180}
           />
@@ -175,9 +126,7 @@ export function AdminUsers() {
                     <Text size="sm">{user.email}</Text>
                   </Table.Td>
                   <Table.Td>
-                    <Badge color={roleColors[user.role]}>
-                      {roleLabels[user.role]}
-                    </Badge>
+                    <RoleBadge role={user.role} />
                   </Table.Td>
                   <Table.Td>
                     <Group gap="xs">
@@ -191,7 +140,7 @@ export function AdminUsers() {
                   </Table.Td>
                   <Table.Td>
                     <Text size="sm" c="dimmed">
-                      {new Date(user.createdAt).toLocaleDateString('ru')}
+                      {user.createdAt ? new Date(user.createdAt).toLocaleDateString('ru') : '—'}
                     </Text>
                   </Table.Td>
                   <Table.Td>
@@ -202,10 +151,10 @@ export function AdminUsers() {
                         </ActionIcon>
                       </Menu.Target>
                       <Menu.Dropdown>
-                        <Menu.Item leftSection={<Pencil size={14} />} onClick={() => openEditModal(user)}>
+                        <Menu.Item leftSection={<Pencil size={14} />} onClick={() => openEdit(user)}>
                           Редактировать
                         </Menu.Item>
-                        <Menu.Item color="red" leftSection={<Trash2 size={14} />} onClick={() => handleDelete(user.id)}>
+                        <Menu.Item color="red" leftSection={<Trash2 size={14} />} onClick={() => confirmDelete({ id: user.id, displayName: user.displayName })}>
                           Удалить
                         </Menu.Item>
                       </Menu.Dropdown>
@@ -224,39 +173,25 @@ export function AdminUsers() {
         </Group>
       )}
 
-      <Modal
-        opened={opened}
-        onClose={() => setOpened(false)}
-        title="Редактировать пользователя"
-      >
-        <Stack gap="md">
-          <TextInput
-            label="Имя"
-            value={formDisplayName}
-            onChange={(e) => setFormDisplayName(e.target.value)}
-          />
-          <Textarea
-            label="О себе"
-            rows={2}
-            value={formBio}
-            onChange={(e) => setFormBio(e.target.value)}
-          />
-          <Select
-            label="Роль"
-            data={[
-              { value: 'USER', label: 'Пользователь' },
-              { value: 'AUTHOR', label: 'Автор' },
-              { value: 'ADMIN', label: 'Админ' }
-            ]}
-            value={formRole}
-            onChange={(v) => setFormRole(v || 'USER')}
-          />
-          <Group justify="flex-end" mt="md">
-            <Button variant="subtle" onClick={() => setOpened(false)}>Отмена</Button>
-            <Button onClick={handleSave} loading={saving}>Сохранить</Button>
-          </Group>
-        </Stack>
-      </Modal>
+      {/* Модальное окно редактирования */}
+      <UserModal
+        opened={modalOpened}
+        onClose={closeModal}
+        user={editingUser}
+        onSave={onSave}
+        loading={saving}
+      />
+
+      {/* Диалог подтверждения удаления */}
+      <ConfirmDialog
+        opened={deleteConfirm.opened}
+        onClose={() => setDeleteConfirm({ opened: false, userId: null, userName: '' })}
+        onConfirm={executeDelete}
+        title="Удалить пользователя?"
+        message={`Пользователь "${deleteConfirm.userName}" будет удалён. Это действие нельзя отменить.`}
+        confirmLabel="Удалить"
+        color="red"
+      />
     </Box>
   )
 }

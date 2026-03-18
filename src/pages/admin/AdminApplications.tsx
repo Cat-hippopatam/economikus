@@ -61,7 +61,7 @@ export function AdminApplications() {
       setNotification({ type: 'success', message: 'Заявка одобрена' })
       setModalOpened(false)
       fetchApplications()
-    } catch (error) {
+    } catch {
       setNotification({ type: 'error', message: 'Ошибка при одобрении' })
     } finally {
       setProcessing(false)
@@ -80,7 +80,7 @@ export function AdminApplications() {
       setNotification({ type: 'success', message: 'Заявка отклонена' })
       setModalOpened(false)
       fetchApplications()
-    } catch (error) {
+    } catch {
       setNotification({ type: 'error', message: 'Ошибка при отклонении' })
     } finally {
       setProcessing(false)

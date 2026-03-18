@@ -24,7 +24,6 @@ import {
   BookOpen,
   FileText,
   Award,
-  ExternalLink,
   Send,
   Youtube,
   Link as LinkIcon,
@@ -99,7 +98,13 @@ export function ProfilePage() {
     return (
       <Container size="lg" py="xl">
         <Skeleton height={200} radius="md" mb="xl" />
-        <Group><Skeleton circle size={100} /><Stack><Skeleton height={24} width={200} /><Skeleton height={16} width={150} /></Stack></Group>
+        <Group>
+          <Skeleton height={100} width={100} radius="xl" />
+          <Stack>
+            <Skeleton height={24} width={200} />
+            <Skeleton height={16} width={150} />
+          </Stack>
+        </Group>
       </Container>
     )
   }
