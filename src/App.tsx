@@ -2,6 +2,7 @@ import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
 import { MainLayout } from './layouts/MainLayout'
 import { AuthLayout } from './layouts/AuthLayout'
 import { ProtectedRoute } from './components/auth'
+import { AuthorLayout } from './components/author'
 import HomePage from './pages/HomePage'
 import LoginPage from './pages/auth/LoginPage'
 import RegisterPage from './pages/auth/RegisterPage'
@@ -11,6 +12,11 @@ import { ProfilePage } from './pages/profile/ProfilePage'
 import { ProfileSettingsPage } from './pages/profile/ProfileSettingsPage'
 import { BecomeAuthorPage } from './pages/profile/BecomeAuthorPage'
 import { AuthorDashboardPage } from './pages/author/AuthorDashboardPage'
+import { AuthorCoursesPage } from './pages/author/AuthorCoursesPage'
+import { AuthorCourseFormPage } from './pages/author/AuthorCourseFormPage'
+import { AuthorLessonsPage } from './pages/author/AuthorLessonsPage'
+import { AuthorLessonFormPage } from './pages/author/AuthorLessonFormPage'
+import { AuthorCourseModulesPage } from './pages/author/AuthorCourseModulesPage'
 
 export default function App() {
   return (
@@ -49,16 +55,6 @@ export default function App() {
               </ProtectedRoute>
             } 
           />
-          
-          {/* Панель автора */}
-          <Route 
-            path="/author/dashboard" 
-            element={
-              <ProtectedRoute roles={['AUTHOR', 'ADMIN']}>
-                <AuthorDashboardPage />
-              </ProtectedRoute>
-            } 
-          />
         </Route>
 
         {/* Страницы авторизации (только Header) */}
@@ -83,6 +79,26 @@ export default function App() {
           <Route path="users" element={<AdminUsers />} />
           <Route path="moderation" element={<AdminModeration />} />
           <Route path="applications" element={<AdminApplications />} />
+        </Route>
+
+        {/* Панель автора */}
+        <Route 
+          path="/author" 
+          element={
+            <ProtectedRoute roles={['AUTHOR', 'ADMIN']}>
+              <AuthorLayout />
+            </ProtectedRoute>
+          }
+        >
+          <Route index element={<Navigate to="/author/dashboard" replace />} />
+          <Route path="dashboard" element={<AuthorDashboardPage />} />
+          <Route path="courses" element={<AuthorCoursesPage />} />
+          <Route path="courses/new" element={<AuthorCourseFormPage />} />
+          <Route path="courses/:id" element={<AuthorCourseFormPage />} />
+          <Route path="courses/:id/modules" element={<AuthorCourseModulesPage />} />
+          <Route path="lessons" element={<AuthorLessonsPage />} />
+          <Route path="lessons/new" element={<AuthorLessonFormPage />} />
+          <Route path="lessons/:id" element={<AuthorLessonFormPage />} />
         </Route>
       </Routes>
     </BrowserRouter>

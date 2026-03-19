@@ -4,6 +4,7 @@ import { cors } from 'hono/cors'
 import { logger } from 'hono/logger'
 import { serve } from '@hono/node-server'
 import { swaggerUI } from '@hono/swagger-ui'
+import { AppError } from './lib/errors'
 import authRoutes from './routes/auth.routes'
 import coursesRoutes from './routes/courses.routes'
 import lessonsRoutes from './routes/lessons.routes'
@@ -22,7 +23,17 @@ const app = new Hono()
 app.use('*', logger())
 app.use('*', cors({ origin: process.env.FRONTEND_URL || 'http://localhost:5173', credentials: true }))
 
+// Глобальный обработчик ошибок
+app.onError((err, c) => {
+  if (err instanceof AppError) {
+    return c.json({ error: err.message, code: err.code }, err.statusCode)
+  }
+  console.error('Server error:', err)
+  return c.json({ error: 'Internal server error' }, 500)
+})
+
 // OpenAPI документация
+const API_SERVER_URL = process.env.API_URL || 'http://localhost:3000'
 app.get('/api/doc', (c) => {
   return c.json({
     openapi: '3.0.0',
@@ -32,7 +43,7 @@ app.get('/api/doc', (c) => {
       description: 'API образовательной платформы Economikus'
     },
     servers: [
-      { url: '/api', description: 'API Server' }
+      { url: API_SERVER_URL + '/api', description: 'API Server' }
     ],
     tags: [
       { name: 'Auth', description: 'Авторизация и регистрация' },
@@ -41,7 +52,8 @@ app.get('/api/doc', (c) => {
       { name: 'User', description: 'Пользователь' },
       { name: 'Tags', description: 'Теги' },
       { name: 'Reactions', description: 'Реакции' },
-      { name: 'Comments', description: 'Комментарии' }
+      { name: 'Comments', description: 'Комментарии' },
+      { name: 'Author', description: 'Панель автора' }
     ],
     paths: {
       '/auth/register': {
@@ -553,13 +565,247 @@ app.get('/api/doc', (c) => {
             '404': { description: 'Комментарий не найден' }
           }
         }
+      },
+      // === AUTHOR ENDPOINTS ===
+      '/author/stats': {
+        get: {
+          tags: ['Author'],
+          summary: 'Статистика автора',
+          responses: {
+            '200': { description: 'Статистика автора' },
+            '401': { description: 'Не авторизован' },
+            '403': { description: 'Доступ только для авторов' }
+          }
+        }
+      },
+      '/author/courses': {
+        get: {
+          tags: ['Author'],
+          summary: 'Список курсов автора',
+          parameters: [
+            { name: 'page', in: 'query', schema: { type: 'integer' } },
+            { name: 'limit', in: 'query', schema: { type: 'integer' } },
+            { name: 'search', in: 'query', schema: { type: 'string' } },
+            { name: 'status', in: 'query', schema: { type: 'string', enum: ['DRAFT', 'PENDING_REVIEW', 'PUBLISHED', 'ARCHIVED'] } }
+          ],
+          responses: {
+            '200': { description: 'Список курсов' },
+            '401': { description: 'Не авторизован' },
+            '403': { description: 'Доступ только для авторов' }
+          }
+        },
+        post: {
+          tags: ['Author'],
+          summary: 'Создать курс',
+          requestBody: {
+            required: true,
+            content: {
+              'application/json': {
+                schema: {
+                  type: 'object',
+                  required: ['title'],
+                  properties: {
+                    title: { type: 'string', minLength: 3 },
+                    slug: { type: 'string' },
+                    description: { type: 'string' },
+                    coverImage: { type: 'string' },
+                    difficultyLevel: { type: 'string', enum: ['BEGINNER', 'INTERMEDIATE', 'ADVANCED'] },
+                    isPremium: { type: 'boolean' },
+                    status: { type: 'string', enum: ['DRAFT', 'PENDING_REVIEW', 'PUBLISHED', 'ARCHIVED'] },
+                    tags: { type: 'array', items: { type: 'string', format: 'uuid' } }
+                  }
+                }
+              }
+            }
+          },
+          responses: {
+            '201': { description: 'Курс создан' },
+            '400': { description: 'Ошибка валидации' },
+            '401': { description: 'Не авторизован' },
+            '403': { description: 'Доступ только для авторов' }
+          }
+        }
+      },
+      '/author/courses/{id}': {
+        get: {
+          tags: ['Author'],
+          summary: 'Детали курса',
+          parameters: [
+            { name: 'id', in: 'path', required: true, schema: { type: 'string', format: 'uuid' } }
+          ],
+          responses: {
+            '200': { description: 'Детали курса' },
+            '401': { description: 'Не авторизован' },
+            '403': { description: 'Доступ только для авторов' },
+            '404': { description: 'Курс не найден' }
+          }
+        },
+        patch: {
+          tags: ['Author'],
+          summary: 'Обновить курс',
+          parameters: [
+            { name: 'id', in: 'path', required: true, schema: { type: 'string', format: 'uuid' } }
+          ],
+          requestBody: {
+            content: {
+              'application/json': {
+                schema: {
+                  type: 'object',
+                  properties: {
+                    title: { type: 'string', minLength: 3 },
+                    slug: { type: 'string' },
+                    description: { type: 'string' },
+                    coverImage: { type: 'string' },
+                    difficultyLevel: { type: 'string', enum: ['BEGINNER', 'INTERMEDIATE', 'ADVANCED'] },
+                    isPremium: { type: 'boolean' },
+                    status: { type: 'string', enum: ['DRAFT', 'PENDING_REVIEW', 'PUBLISHED', 'ARCHIVED'] },
+                    tags: { type: 'array', items: { type: 'string', format: 'uuid' } }
+                  }
+                }
+              }
+            }
+          },
+          responses: {
+            '200': { description: 'Курс обновлён' },
+            '401': { description: 'Не авторизован' },
+            '403': { description: 'Доступ только для авторов' },
+            '404': { description: 'Курс не найден' }
+          }
+        },
+        delete: {
+          tags: ['Author'],
+          summary: 'Удалить курс',
+          parameters: [
+            { name: 'id', in: 'path', required: true, schema: { type: 'string', format: 'uuid' } }
+          ],
+          responses: {
+            '200': { description: 'Курс удалён' },
+            '401': { description: 'Не авторизован' },
+            '403': { description: 'Доступ только для авторов' },
+            '404': { description: 'Курс не найден' }
+          }
+        }
+      },
+      '/author/lessons': {
+        get: {
+          tags: ['Author'],
+          summary: 'Список уроков автора',
+          parameters: [
+            { name: 'page', in: 'query', schema: { type: 'integer' } },
+            { name: 'limit', in: 'query', schema: { type: 'integer' } },
+            { name: 'search', in: 'query', schema: { type: 'string' } },
+            { name: 'status', in: 'query', schema: { type: 'string', enum: ['DRAFT', 'PENDING_REVIEW', 'PUBLISHED', 'ARCHIVED'] } },
+            { name: 'lessonType', in: 'query', schema: { type: 'string', enum: ['ARTICLE', 'VIDEO', 'AUDIO', 'QUIZ', 'CALCULATOR'] } }
+          ],
+          responses: {
+            '200': { description: 'Список уроков' },
+            '401': { description: 'Не авторизован' },
+            '403': { description: 'Доступ только для авторов' }
+          }
+        },
+        post: {
+          tags: ['Author'],
+          summary: 'Создать урок',
+          requestBody: {
+            required: true,
+            content: {
+              'application/json': {
+                schema: {
+                  type: 'object',
+                  required: ['title', 'lessonType'],
+                  properties: {
+                    title: { type: 'string', minLength: 3 },
+                    slug: { type: 'string' },
+                    description: { type: 'string' },
+                    lessonType: { type: 'string', enum: ['ARTICLE', 'VIDEO', 'AUDIO', 'QUIZ', 'CALCULATOR'] },
+                    moduleId: { type: 'string', format: 'uuid' },
+                    content: { type: 'string' },
+                    duration: { type: 'integer' },
+                    isPremium: { type: 'boolean' },
+                    status: { type: 'string', enum: ['DRAFT', 'PENDING_REVIEW', 'PUBLISHED', 'ARCHIVED'] },
+                    tags: { type: 'array', items: { type: 'string', format: 'uuid' } }
+                  }
+                }
+              }
+            }
+          },
+          responses: {
+            '201': { description: 'Урок создан' },
+            '400': { description: 'Ошибка валидации' },
+            '401': { description: 'Не авторизован' },
+            '403': { description: 'Доступ только для авторов' }
+          }
+        }
+      },
+      '/author/lessons/{id}': {
+        get: {
+          tags: ['Author'],
+          summary: 'Детали урока',
+          parameters: [
+            { name: 'id', in: 'path', required: true, schema: { type: 'string', format: 'uuid' } }
+          ],
+          responses: {
+            '200': { description: 'Детали урока' },
+            '401': { description: 'Не авторизован' },
+            '403': { description: 'Доступ только для авторов' },
+            '404': { description: 'Урок не найден' }
+          }
+        },
+        patch: {
+          tags: ['Author'],
+          summary: 'Обновить урок',
+          parameters: [
+            { name: 'id', in: 'path', required: true, schema: { type: 'string', format: 'uuid' } }
+          ],
+          requestBody: {
+            content: {
+              'application/json': {
+                schema: {
+                  type: 'object',
+                  properties: {
+                    title: { type: 'string', minLength: 3 },
+                    slug: { type: 'string' },
+                    description: { type: 'string' },
+                    lessonType: { type: 'string', enum: ['ARTICLE', 'VIDEO', 'AUDIO', 'QUIZ', 'CALCULATOR'] },
+                    moduleId: { type: 'string', format: 'uuid' },
+                    content: { type: 'string' },
+                    duration: { type: 'integer' },
+                    isPremium: { type: 'boolean' },
+                    status: { type: 'string', enum: ['DRAFT', 'PENDING_REVIEW', 'PUBLISHED', 'ARCHIVED'] },
+                    tags: { type: 'array', items: { type: 'string', format: 'uuid' } }
+                  }
+                }
+              }
+            }
+          },
+          responses: {
+            '200': { description: 'Урок обновлён' },
+            '401': { description: 'Не авторизован' },
+            '403': { description: 'Доступ только для авторов' },
+            '404': { description: 'Урок не найден' }
+          }
+        },
+        delete: {
+          tags: ['Author'],
+          summary: 'Удалить урок',
+          parameters: [
+            { name: 'id', in: 'path', required: true, schema: { type: 'string', format: 'uuid' } }
+          ],
+          responses: {
+            '200': { description: 'Урок удалён' },
+            '401': { description: 'Не авторизован' },
+            '403': { description: 'Доступ только для авторов' },
+            '404': { description: 'Урок не найден' }
+          }
+        }
       }
     }
   })
 })
 
 // Swagger UI
-app.get('/api/swagger', swaggerUI({ url: '/api/doc' }))
+const API_URL = process.env.API_URL || 'http://localhost:3000'
+app.get('/api/swagger', swaggerUI({ url: `${API_URL}/api/doc` }))
 
 // API роуты
 app.route('/api/auth', authRoutes)

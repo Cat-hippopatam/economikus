@@ -13,6 +13,10 @@ interface UseAvatarUploadReturn {
   deleteAvatar: () => Promise<void>
 }
 
+// Константы - единая точка изменения
+const MAX_FILE_SIZE = 2 * 1024 * 1024 // 2MB
+const ALLOWED_TYPES = ['image/jpeg', 'image/png', 'image/gif', 'image/webp']
+
 export function useAvatarUpload(): UseAvatarUploadReturn {
   const [uploading, setUploading] = useState(false)
   const { showError, showSuccess } = useNotification()
@@ -20,14 +24,15 @@ export function useAvatarUpload(): UseAvatarUploadReturn {
 
   // Загрузить аватар
   const uploadAvatar = useCallback(async (file: File): Promise<string | null> => {
-    // Валидация файла
-    if (!file.type.startsWith('image/')) {
-      showError('Выберите изображение')
+    // Валидация типа файла
+    if (!ALLOWED_TYPES.includes(file.type)) {
+      showError('Разрешены только JPG, PNG, GIF, WebP')
       return null
     }
 
-    if (file.size > 5 * 1024 * 1024) { // 5MB
-      showError('Максимальный размер файла: 5MB')
+    // Валидация размера файла
+    if (file.size > MAX_FILE_SIZE) {
+      showError('Максимальный размер файла: 2MB')
       return null
     }
 
@@ -42,12 +47,11 @@ export function useAvatarUpload(): UseAvatarUploadReturn {
         body: formData,
       })
 
+      const data = await response.json()
+      
       if (!response.ok) {
-        const data = await response.json()
         throw new Error(data.error || 'Ошибка загрузки')
       }
-
-      const data = await response.json()
       
       // Обновляем профиль
       await refreshProfile?.()
@@ -67,15 +71,21 @@ export function useAvatarUpload(): UseAvatarUploadReturn {
   const deleteAvatar = useCallback(async () => {
     setUploading(true)
     try {
-      await fetch('/api/user/avatar', {
+      const response = await fetch('/api/user/avatar', {
         method: 'DELETE',
         credentials: 'include',
       })
       
+      if (!response.ok) {
+        const data = await response.json()
+        throw new Error(data.error || 'Ошибка удаления')
+      }
+      
       await refreshProfile?.()
       showSuccess('Аватар удалён')
     } catch (error) {
-      showError('Ошибка удаления аватара')
+      const message = error instanceof Error ? error.message : 'Ошибка удаления аватара'
+      showError(message)
     } finally {
       setUploading(false)
     }

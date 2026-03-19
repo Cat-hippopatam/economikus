@@ -14,6 +14,10 @@ interface AvatarUploaderProps {
   onUploadSuccess?: (url: string) => void
 }
 
+// Константы - единая точка изменения
+const ACCEPTED_TYPES = 'image/jpeg,image/png,image/gif,image/webp'
+const HELPER_TEXT = 'JPG, PNG, GIF, WebP. Макс 2MB'
+
 export function AvatarUploader({ 
   currentAvatar, 
   size = 80,
@@ -64,7 +68,7 @@ export function AvatarUploader({
         <Group gap="xs">
           <FileInput
             placeholder="Выбрать"
-            accept="image/*"
+            accept={ACCEPTED_TYPES}
             leftSection={<Upload size={14} />}
             onChange={handleFileChange}
             disabled={uploading}
@@ -88,7 +92,7 @@ export function AvatarUploader({
         </Group>
         
         <Text size="xs" c="dimmed">
-          JPG, PNG, GIF. Макс 5MB
+          {HELPER_TEXT}
         </Text>
       </Stack>
     </Group>

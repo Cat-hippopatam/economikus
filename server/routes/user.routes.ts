@@ -109,52 +109,59 @@ user.patch('/password', async (c) => {
 
 // === POST /user/avatar — загрузка аватара ===
 user.post('/avatar', async (c) => {
-  const profile = getCurrentProfile(c)
-  if (!profile) throw new AppError(400, 'Профиль не найден')
+  try {
+    const profile = getCurrentProfile(c)
+    if (!profile) throw new AppError(400, 'Профиль не найден')
 
-  // Проверяем наличие файла
-  const contentType = c.req.header('content-type') || ''
-  if (!contentType.includes('multipart/form-data')) {
-    throw new AppError(400, 'Ожидается FormData')
+    // Проверяем наличие файла
+    const contentType = c.req.header('content-type') || ''
+    if (!contentType.includes('multipart/form-data')) {
+      throw new AppError(400, 'Ожидается FormData')
+    }
+
+    // Получаем данные из FormData
+    const formData = await c.req.parseBody()
+    const file = formData.avatar as File | null
+
+    if (!file || !(file instanceof File)) {
+      throw new AppError(400, 'Файл не загружен')
+    }
+
+    // Проверяем тип файла
+    if (!file.type.startsWith('image/')) {
+      throw new AppError(400, 'Разрешены только изображения')
+    }
+
+    // Проверяем размер (макс 2MB для base64)
+    if (file.size > 2 * 1024 * 1024) {
+      throw new AppError(400, 'Максимальный размер: 2MB')
+    }
+
+    // Конвертируем в base64
+    const arrayBuffer = await file.arrayBuffer()
+    const base64 = Buffer.from(arrayBuffer).toString('base64')
+    const dataUrl = `data:${file.type};base64,${base64}`
+
+    // Проверяем размер dataUrl (MySQL TEXT = 65535 байт)
+    if (dataUrl.length > 65535) {
+      throw new AppError(400, 'Изображение слишком большое. Загрузите файл меньше 1MB')
+    }
+
+    // Обновляем профиль
+    const updated = await prisma.profile.update({
+      where: { id: profile.id },
+      data: { avatarUrl: dataUrl }
+    })
+
+    return c.json({ 
+      message: 'Аватар загружен',
+      avatarUrl: updated.avatarUrl 
+    })
+  } catch (error) {
+    console.error('Error uploading avatar:', error)
+    if (error instanceof AppError) throw error
+    throw new AppError(500, 'Ошибка загрузки аватара')
   }
-
-  // Получаем данные из FormData
-  const formData = await c.req.parseBody()
-  const file = formData.avatar as File | null
-
-  if (!file || !(file instanceof File)) {
-    throw new AppError(400, 'Файл не загружен')
-  }
-
-  // Проверяем тип файла
-  if (!file.type.startsWith('image/')) {
-    throw new AppError(400, 'Разрешены только изображения')
-  }
-
-  // Проверяем размер (макс 5MB)
-  if (file.size > 5 * 1024 * 1024) {
-    throw new AppError(400, 'Максимальный размер: 5MB')
-  }
-
-  // В продакшене здесь была бы загрузка в S3/Storage
-  // Для примера сохраняем как base64 (в реальном проекте - облачное хранилище)
-  
-  // В продакшене здесь была бы загрузка в S3/Storage
-  // Для примера сохраняем как base64 (в реальном проекте - облачное хранилище)
-  const arrayBuffer = await file.arrayBuffer()
-  const base64 = Buffer.from(arrayBuffer).toString('base64')
-  const dataUrl = `data:${file.type};base64,${base64}`
-
-  // Обновляем профиль
-  const updated = await prisma.profile.update({
-    where: { id: profile.id },
-    data: { avatarUrl: dataUrl }
-  })
-
-  return c.json({ 
-    message: 'Аватар загружен',
-    avatarUrl: updated.avatarUrl 
-  })
 })
 
 // === DELETE /user/avatar — удаление аватара ===
