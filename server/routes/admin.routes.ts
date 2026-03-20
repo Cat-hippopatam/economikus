@@ -127,7 +127,22 @@ admin.delete('/courses/:id', async (c) => {
 admin.get('/modules', async (c) => {
   const courseId = c.req.query('courseId')
   if (!courseId) return c.json({ error: 'courseId обязателен' }, 400)
-  const modules = await prisma.module.findMany({ where: { courseId, deletedAt: null }, orderBy: { sortOrder: 'asc' }, include: { _count: { select: { lessons: true } } } })
+  
+  const modules = await prisma.module.findMany({ 
+    where: { courseId }, 
+    orderBy: { sortOrder: 'asc' }, 
+    include: { 
+      _count: { select: { lessons: true } },
+      lessons: {
+        where: { deletedAt: null },
+        select: { id: true, title: true, lessonType: true, status: true, sortOrder: true },
+        orderBy: { sortOrder: 'asc' }
+      },
+      course: {
+        select: { id: true, title: true }
+      }
+    }
+  })
   return c.json({ items: modules })
 })
 
@@ -325,6 +340,64 @@ admin.patch('/applications/:id', async (c) => {
   }
 
   return c.json({ error: 'Неверное действие' }, 400)
+})
+
+// === LESSON CONTENT (Moderation) ===
+admin.get('/lessons/:id/content', async (c) => {
+  const id = c.req.param('id')
+
+  const lesson = await prisma.lesson.findUnique({
+    where: { id, deletedAt: null },
+    select: {
+      id: true,
+      title: true,
+      slug: true,
+      lessonType: true,
+      status: true,
+      module: {
+        select: {
+          id: true,
+          title: true,
+          course: { select: { id: true, title: true, slug: true } }
+        }
+      },
+      author: { select: { id: true, nickname: true, displayName: true } }
+    }
+  })
+
+  if (!lesson) {
+    return c.json({ error: 'Урок не найден' }, 404)
+  }
+
+  // Получаем контент в зависимости от типа урока
+  let content = null
+
+  if (lesson.lessonType === 'ARTICLE') {
+    const textContent = await prisma.textContent.findUnique({
+      where: { lessonId: id }
+    })
+    content = textContent ? { type: 'text', body: textContent.body } : null
+  } else if (lesson.lessonType === 'VIDEO') {
+    const videoContent = await prisma.videoContent.findUnique({
+      where: { lessonId: id }
+    })
+    content = videoContent ? { type: 'video', videoUrl: videoContent.videoUrl, platform: videoContent.platform } : null
+  } else if (lesson.lessonType === 'AUDIO') {
+    const audioContent = await prisma.audioContent.findUnique({
+      where: { lessonId: id }
+    })
+    content = audioContent ? { type: 'audio', audioUrl: audioContent.audioUrl } : null
+  } else if (lesson.lessonType === 'QUIZ') {
+    const quizContent = await prisma.quizContent.findUnique({
+      where: { lessonId: id }
+    })
+    content = quizContent ? { type: 'quiz', questions: quizContent.questions, passingScore: quizContent.passingScore } : null
+  }
+
+  return c.json({
+    lesson,
+    content
+  })
 })
 
 export default admin

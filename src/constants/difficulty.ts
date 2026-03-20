@@ -9,6 +9,9 @@ export const DIFFICULTY_LEVELS = {
   ADVANCED: { color: 'red', label: 'Продвинутый', description: 'Требуется опыт и знания' },
 } as const
 
+// Алиас для обратной совместимости
+export const DIFFICULTY_CONFIG = DIFFICULTY_LEVELS
+
 export type DifficultyKey = keyof typeof DIFFICULTY_LEVELS
 
 // Массив для Select

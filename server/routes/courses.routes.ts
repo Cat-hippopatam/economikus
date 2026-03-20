@@ -64,6 +64,11 @@ courses.get('/', async (c) => {
           tags: {
             include: { tag: { select: { id: true, name: true, slug: true, color: true } } }
           },
+          modules: {
+            include: {
+              _count: { select: { lessons: { where: { deletedAt: null, status: 'PUBLISHED' } } } }
+            }
+          },
           _count: { select: { modules: true, progress: true } }
         }
       }),
@@ -71,26 +76,31 @@ courses.get('/', async (c) => {
     ])
 
     return c.json({
-      items: items.map(course => ({
-        id: course.id,
-        title: course.title,
-        slug: course.slug,
-        description: course.description,
-        coverImage: course.coverImage,
-        difficultyLevel: course.difficultyLevel,
-        duration: course.duration,
-        lessonsCount: course.lessonsCount,
-        modulesCount: course.modulesCount,
-        status: course.status,
-        isPremium: course.isPremium,
-        viewsCount: course.viewsCount,
-        likesCount: course.likesCount,
-        publishedAt: course.publishedAt,
-        createdAt: course.createdAt,
-        author: course.author,
-        tags: course.tags.map(t => t.tag),
-        _count: course._count
-      })),
+      items: items.map(course => {
+        // Вычисляем реальное количество уроков из модулей
+        const actualLessonsCount = course.modules.reduce((sum, m) => sum + (m._count?.lessons || 0), 0)
+        
+        return {
+          id: course.id,
+          title: course.title,
+          slug: course.slug,
+          description: course.description,
+          coverImage: course.coverImage,
+          difficultyLevel: course.difficultyLevel,
+          duration: course.duration,
+          lessonsCount: actualLessonsCount,
+          modulesCount: course.modules.length,
+          status: course.status,
+          isPremium: course.isPremium,
+          viewsCount: course.viewsCount,
+          likesCount: course.likesCount,
+          publishedAt: course.publishedAt,
+          createdAt: course.createdAt,
+          author: course.author,
+          tags: course.tags.map(t => t.tag),
+          _count: course._count
+        }
+      }),
       pagination: {
         page,
         limit,
@@ -108,6 +118,7 @@ courses.get('/', async (c) => {
 courses.get('/:slug', async (c) => {
   try {
     const slug = c.req.param('slug')
+    const includeUnpublished = c.req.query('includeUnpublished') === 'true'
 
     const course = await prisma.course.findUnique({
       where: { slug, deletedAt: null },
@@ -119,9 +130,24 @@ courses.get('/:slug', async (c) => {
           include: { tag: { select: { id: true, name: true, slug: true, color: true } } }
         },
         modules: {
-          where: { isPublished: true },
           orderBy: { sortOrder: 'asc' },
           include: {
+            lessons: {
+              where: includeUnpublished 
+                ? { deletedAt: null } 
+                : { deletedAt: null, status: 'PUBLISHED' },
+              orderBy: { sortOrder: 'asc' },
+              select: {
+                id: true,
+                title: true,
+                slug: true,
+                lessonType: true,
+                duration: true,
+                isPremium: true,
+                sortOrder: true,
+                status: true,
+              }
+            },
             _count: { select: { lessons: true } }
           }
         },
@@ -133,11 +159,16 @@ courses.get('/:slug', async (c) => {
       throw new AppError(404, 'Курс не найден', 'COURSE_NOT_FOUND')
     }
 
-    // Увеличиваем счётчик просмотров
-    await prisma.course.update({
-      where: { id: course.id },
-      data: { viewsCount: { increment: 1 } }
-    })
+    // Увеличиваем счётчик просмотров (только для опубликованных)
+    if (!includeUnpublished) {
+      await prisma.course.update({
+        where: { id: course.id },
+        data: { viewsCount: { increment: 1 } }
+      })
+    }
+
+    // Вычисляем реальное количество уроков
+    const actualLessonsCount = course.modules.reduce((sum, m) => sum + m.lessons.length, 0)
 
     return c.json({
       id: course.id,
@@ -147,11 +178,11 @@ courses.get('/:slug', async (c) => {
       coverImage: course.coverImage,
       difficultyLevel: course.difficultyLevel,
       duration: course.duration,
-      lessonsCount: course.lessonsCount,
-      modulesCount: course.modulesCount,
+      lessonsCount: actualLessonsCount,
+      modulesCount: course.modules.length,
       status: course.status,
       isPremium: course.isPremium,
-      viewsCount: course.viewsCount + 1,
+      viewsCount: course.viewsCount + (includeUnpublished ? 0 : 1),
       likesCount: course.likesCount,
       publishedAt: course.publishedAt,
       createdAt: course.createdAt,
@@ -162,8 +193,10 @@ courses.get('/:slug', async (c) => {
         title: m.title,
         description: m.description,
         sortOrder: m.sortOrder,
-        lessonsCount: m.lessonsCount,
+        lessonsCount: m.lessons.length,
         duration: m.duration,
+        isPublished: m.isPublished,
+        lessons: m.lessons,
         _count: m._count
       })),
       _count: course._count
@@ -173,6 +206,98 @@ courses.get('/:slug', async (c) => {
       return c.json({ error: error.message, code: error.code }, error.statusCode)
     }
     console.error('Get course error:', error)
+    return c.json({ error: 'Internal server error' }, 500)
+  }
+})
+
+// === GET /courses/:slug/lessons/:lessonSlug — урок с контентом ===
+courses.get('/:slug/lessons/:lessonSlug', async (c) => {
+  try {
+    const slug = c.req.param('slug')
+    const lessonSlug = c.req.param('lessonSlug')
+
+    const lesson = await prisma.lesson.findFirst({
+      where: { 
+        slug: lessonSlug,
+        deletedAt: null,
+        status: 'PUBLISHED',
+        module: {
+          course: { slug, deletedAt: null }
+        }
+      },
+      include: {
+        module: {
+          select: {
+            id: true,
+            title: true,
+            sortOrder: true,
+            course: {
+              select: { id: true, title: true, slug: true }
+            }
+          }
+        },
+        textContent: true,
+        videoContent: true,
+        audioContent: true,
+        quizContent: true,
+      }
+    })
+
+    if (!lesson) {
+      throw new AppError(404, 'Урок не найден', 'LESSON_NOT_FOUND')
+    }
+
+    // Формируем контент в зависимости от типа
+    let content = null
+    switch (lesson.lessonType) {
+      case 'ARTICLE':
+        content = lesson.textContent ? {
+          type: 'text',
+          body: lesson.textContent.body,
+        } : null
+        break
+      case 'VIDEO':
+        content = lesson.videoContent ? {
+          type: 'video',
+          videoUrl: lesson.videoContent.videoUrl,
+          platform: lesson.videoContent.platform,
+          body: lesson.videoContent.description,
+        } : null
+        break
+      case 'AUDIO':
+        content = lesson.audioContent ? {
+          type: 'audio',
+          audioUrl: lesson.audioContent.audioUrl,
+          body: lesson.audioContent.description,
+        } : null
+        break
+      case 'QUIZ':
+        content = lesson.quizContent ? {
+          type: 'quiz',
+          questions: lesson.quizContent.questions,
+          passingScore: lesson.quizContent.passingScore,
+        } : null
+        break
+    }
+
+    return c.json({
+      id: lesson.id,
+      title: lesson.title,
+      slug: lesson.slug,
+      description: lesson.description,
+      lessonType: lesson.lessonType,
+      duration: lesson.duration,
+      isPremium: lesson.isPremium,
+      sortOrder: lesson.sortOrder,
+      status: lesson.status,
+      content,
+      module: lesson.module
+    })
+  } catch (error) {
+    if (error instanceof AppError) {
+      return c.json({ error: error.message, code: error.code }, error.statusCode)
+    }
+    console.error('Get lesson error:', error)
     return c.json({ error: 'Internal server error' }, 500)
   }
 })

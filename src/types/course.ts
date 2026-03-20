@@ -19,6 +19,7 @@ export interface Course {
   author?: Profile
   authorProfileId?: string
   tags: Tag[]
+  modules?: Module[]
   createdAt?: string
   updatedAt?: string
   _count?: {
@@ -41,16 +42,35 @@ export interface CourseInput {
   tagIds?: string[]
 }
 
+// === LESSON (minimal for module) ===
+export interface LessonInModule {
+  id: string
+  title: string
+  slug: string
+  lessonType: LessonType
+  duration?: number
+  isPremium?: boolean
+  sortOrder?: number
+  status?: ContentStatus
+}
+
 // === MODULE ===
 export interface Module {
   id: string
   title: string
-  slug: string
+  slug?: string
   description?: string
-  order: number
-  courseId: string
+  sortOrder?: number
+  order?: number
+  courseId?: string
   lessonsCount: number
+  duration?: number
+  isPublished?: boolean
+  lessons?: LessonInModule[]
   createdAt?: string
+  _count?: {
+    lessons: number
+  }
 }
 
 // === MODULE INPUT ===
@@ -75,3 +95,4 @@ export interface CourseProgress {
 // === ENUMS ===
 export type ContentStatus = 'DRAFT' | 'PENDING_REVIEW' | 'PUBLISHED' | 'ARCHIVED' | 'DELETED'
 export type DifficultyLevel = 'BEGINNER' | 'INTERMEDIATE' | 'ADVANCED'
+export type LessonType = 'ARTICLE' | 'VIDEO' | 'AUDIO' | 'QUIZ' | 'CALCULATOR'

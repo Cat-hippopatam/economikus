@@ -15,6 +15,7 @@ import commentsRoutes from './routes/comments.routes'
 import adminRoutes from './routes/admin.routes'
 import moderationRoutes from './routes/moderation.routes'
 import authorRoutes from './routes/author.routes'
+import progressRoutes from './routes/progress.routes'
 import 'dotenv/config'
 
 const app = new Hono()
@@ -578,6 +579,102 @@ app.get('/api/doc', (c) => {
           }
         }
       },
+      '/author/analytics': {
+        get: {
+          tags: ['Author'],
+          summary: 'Детальная аналитика автора',
+          description: 'Возвращает расширенную статистику: курсы/уроки по статусам и типам, топ контент, последнюю активность',
+          responses: {
+            '200': {
+              description: 'Детальная аналитика',
+              content: {
+                'application/json': {
+                  schema: {
+                    type: 'object',
+                    properties: {
+                      overview: {
+                        type: 'object',
+                        properties: {
+                          totalCourses: { type: 'integer' },
+                          totalLessons: { type: 'integer' },
+                          totalViews: { type: 'integer' },
+                          totalStudents: { type: 'integer' },
+                          completedCourses: { type: 'integer' }
+                        }
+                      },
+                      coursesByStatus: {
+                        type: 'object',
+                        properties: {
+                          DRAFT: { type: 'integer' },
+                          PENDING_REVIEW: { type: 'integer' },
+                          PUBLISHED: { type: 'integer' },
+                          ARCHIVED: { type: 'integer' }
+                        }
+                      },
+                      lessonsByStatus: {
+                        type: 'object',
+                        properties: {
+                          DRAFT: { type: 'integer' },
+                          PENDING_REVIEW: { type: 'integer' },
+                          PUBLISHED: { type: 'integer' }
+                        }
+                      },
+                      lessonsByType: {
+                        type: 'object',
+                        properties: {
+                          ARTICLE: { type: 'integer' },
+                          VIDEO: { type: 'integer' },
+                          AUDIO: { type: 'integer' },
+                          QUIZ: { type: 'integer' }
+                        }
+                      },
+                      topCourses: {
+                        type: 'array',
+                        items: {
+                          type: 'object',
+                          properties: {
+                            id: { type: 'string' },
+                            title: { type: 'string' },
+                            viewsCount: { type: 'integer' },
+                            studentsCount: { type: 'integer' }
+                          }
+                        }
+                      },
+                      topLessons: {
+                        type: 'array',
+                        items: {
+                          type: 'object',
+                          properties: {
+                            id: { type: 'string' },
+                            title: { type: 'string' },
+                            lessonType: { type: 'string' },
+                            viewsCount: { type: 'integer' }
+                          }
+                        }
+                      },
+                      recentActivity: {
+                        type: 'array',
+                        items: {
+                          type: 'object',
+                          properties: {
+                            type: { type: 'string', enum: ['course', 'lesson'] },
+                            id: { type: 'string' },
+                            title: { type: 'string' },
+                            status: { type: 'string' },
+                            createdAt: { type: 'string', format: 'date-time' }
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            },
+            '401': { description: 'Не авторизован' },
+            '403': { description: 'Доступ только для авторов' }
+          }
+        }
+      },
       '/author/courses': {
         get: {
           tags: ['Author'],
@@ -818,6 +915,7 @@ app.route('/api/comments', commentsRoutes)
 app.route('/api/admin', adminRoutes)
 app.route('/api/admin/moderation', moderationRoutes)
 app.route('/api/author', authorRoutes)
+app.route('/api/progress', progressRoutes)
 
 // Health check
 app.get('/api/health', (c) => c.json({ status: 'ok' }))

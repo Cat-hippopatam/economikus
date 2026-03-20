@@ -73,3 +73,11 @@ export const API_ENDPOINTS = {
   comments: '/api/comments',
   admin: '/api/admin',
 } as const
+
+// Опции сортировки для каталога
+export const SORT_OPTIONS = [
+  { value: 'created_at_desc', label: 'Сначала новые' },
+  { value: 'created_at_asc', label: 'Сначала старые' },
+  { value: 'popular', label: 'По популярности' },
+  { value: 'title_asc', label: 'По названию (А-Я)' },
+] as const

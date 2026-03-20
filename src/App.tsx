@@ -8,6 +8,7 @@ import LoginPage from './pages/auth/LoginPage'
 import RegisterPage from './pages/auth/RegisterPage'
 import { AdminLayout, AdminDashboard, AdminCourses, AdminLessons, AdminTags, AdminUsers, AdminApplications } from './pages/admin'
 import { AdminModeration } from './pages/admin/AdminModeration'
+import { AdminContentModerationPage } from './pages/admin/AdminContentModerationPage'
 import { ProfilePage } from './pages/profile/ProfilePage'
 import { ProfileSettingsPage } from './pages/profile/ProfileSettingsPage'
 import { BecomeAuthorPage } from './pages/profile/BecomeAuthorPage'
@@ -17,6 +18,11 @@ import { AuthorCourseFormPage } from './pages/author/AuthorCourseFormPage'
 import { AuthorLessonsPage } from './pages/author/AuthorLessonsPage'
 import { AuthorLessonFormPage } from './pages/author/AuthorLessonFormPage'
 import { AuthorCourseModulesPage } from './pages/author/AuthorCourseModulesPage'
+import { AuthorAnalyticsPage } from './pages/author/AuthorAnalyticsPage'
+import CatalogPage from './pages/catalog/CatalogPage'
+import CoursePage from './pages/courses/CoursePage'
+import LessonPage from './pages/lessons/LessonPage'
+import { CalculatorsPage, CalculatorPage } from './pages/calculators'
 
 export default function App() {
   return (
@@ -25,9 +31,11 @@ export default function App() {
         {/* Основные страницы с Header и Footer */}
         <Route element={<MainLayout />}>
           <Route path="/" element={<HomePage />} />
-          <Route path="/catalog" element={<div style={{ padding: 40 }}>Каталог (в разработке)</div>} />
-          <Route path="/courses" element={<div style={{ padding: 40 }}>Курсы (в разработке)</div>} />
-          <Route path="/calculators" element={<div style={{ padding: 40 }}>Калькуляторы (в разработке)</div>} />
+          <Route path="/catalog" element={<CatalogPage />} />
+          <Route path="/courses/:slug" element={<CoursePage />} />
+          <Route path="/courses/:courseSlug/lessons/:lessonSlug" element={<LessonPage />} />
+          <Route path="/calculators" element={<CalculatorsPage />} />
+          <Route path="/calculators/:slug" element={<CalculatorPage />} />
           <Route path="/user/:nickname" element={<ProfilePage />} />
           
           {/* Защищённые роуты профиля */}
@@ -78,6 +86,7 @@ export default function App() {
           <Route path="tags" element={<AdminTags />} />
           <Route path="users" element={<AdminUsers />} />
           <Route path="moderation" element={<AdminModeration />} />
+          <Route path="content" element={<AdminContentModerationPage />} />
           <Route path="applications" element={<AdminApplications />} />
         </Route>
 
@@ -99,6 +108,7 @@ export default function App() {
           <Route path="lessons" element={<AuthorLessonsPage />} />
           <Route path="lessons/new" element={<AuthorLessonFormPage />} />
           <Route path="lessons/:id" element={<AuthorLessonFormPage />} />
+          <Route path="analytics" element={<AuthorAnalyticsPage />} />
         </Route>
       </Routes>
     </BrowserRouter>

@@ -19,9 +19,11 @@
 - **AuthorLessonsPage** - Список уроков с фильтрами
 - **AuthorLessonFormPage** - Создание/редактирование урока с контентом
 - **AuthorCourseModulesPage** - Управление модулями курса (Drag&Drop)
+- **AuthorAnalyticsPage** - Страница аналитики ✅ **НОВОЕ**
 
 #### ✅ API Endpoints
 - `/author/stats` - Статистика автора
+- `/author/analytics` - Детальная аналитика ✅ **НОВОЕ**
 - `/author/courses` - CRUD курсов
 - `/author/lessons` - CRUD уроков
 - `/author/modules` - CRUD модулей
@@ -43,16 +45,9 @@
 - `AudioContentEditor` - Форма для аудио URL
 - `QuizContentEditor` - Полноценный редактор тестов
 
-#### ⚠️ Частично реализовано / Требует доработки
-- **Аналитика** - Вкладка есть в навигации, но роут `/author/analytics` не реализован
-  - Ошибка: `No routes matched location "/author/analytics"`
-  - Требуется: Создать `AuthorAnalyticsPage` и добавить роут
-
-#### 🔲 Не реализовано
-- WYSIWYG редактор (Tiptap) - сейчас используется Textarea с Markdown
-- Загрузка медиа-файлов на сервер
-- Детальная статистика по курсам
-- Редактор калькуляторов
+#### ✅ Документация API
+- OpenAPI/Swagger документация для всех endpoints автора
+- Доступ: `http://localhost:3000/api/swagger`
 
 ---
 
@@ -70,7 +65,7 @@
 ├── /lessons            ✅ Список уроков автора
 │   ├── /new            ✅ Создание урока
 │   └── /:id            ✅ Редактирование урока (вкладки: Настройки / Контент)
-└── /analytics          ⚠️ Аналитика - РОУТ НЕ СУЩЕСТВУЕТ
+└── /analytics          ✅ Аналитика
 ```
 
 ### 2.2 Структура файлов
@@ -84,7 +79,7 @@ src/
 │   ├── AuthorLessonsPage.tsx        ✅ Готово
 │   ├── AuthorLessonFormPage.tsx     ✅ Готово (с редакторами контента)
 │   ├── AuthorCourseModulesPage.tsx  ✅ Готово (Drag&Drop)
-│   └── AuthorAnalyticsPage.tsx      🔲 НЕ СОЗДАН
+│   └── AuthorAnalyticsPage.tsx      ✅ Готово
 │
 ├── components/author/
 │   ├── AuthorLayout.tsx             ✅ Готово
@@ -116,6 +111,7 @@ src/
 | Endpoint | Метод | Статус | Описание |
 |----------|-------|--------|----------|
 | `/author/stats` | GET | ✅ | Статистика автора |
+| `/author/analytics` | GET | ✅ | Детальная аналитика |
 | `/author/courses` | GET | ✅ | Список курсов автора |
 | `/author/courses` | POST | ✅ | Создать курс |
 | `/author/courses/:id` | GET | ✅ | Детали курса |
@@ -175,21 +171,17 @@ src/
 - AudioContentEditor
 - QuizContentEditor (вопросы, варианты, правильный ответ)
 
-### Этап 5: Аналитика 🔲 НЕ НАЧАТ
-**Проблема:** Роут `/author/analytics` не существует
-**Ошибка:** `No routes matched location "/author/analytics"`
-
-**Требуется:**
-1. Создать `AuthorAnalyticsPage.tsx`
-2. Добавить роут в `App.tsx`
-3. Реализовать API для детальной статистики
-4. Добавить графики (Recharts/Chart.js)
+### Этап 5: Аналитика ✅ ЗАВЕРШЁН
+- AuthorAnalyticsPage создана
+- API endpoint `/author/analytics` реализован
+- OpenAPI документация добавлена
+- Базовая статистика: overview, курсы/уроки по статусам, топ контент
 
 ### Этап 6: Улучшения 🔲 ПЛАНИРУЕТСЯ
 - WYSIWYG редактор (Tiptap) вместо Textarea
 - Загрузка медиа на сервер (S3/MinIO)
 - Редактор калькуляторов
-- Детальная статистика по курсам
+- Графики статистики (Recharts)
 
 ---
 
@@ -233,15 +225,19 @@ const finalStatus = allowedStatuses.includes(status) ? status : 'DRAFT'
 
 ---
 
-## 6. Известные проблемы
+## 6. Правила разработки
 
-### 6.1 Аналитика ⚠️
-**Проблема:** Роут `/author/analytics` не существует
-**Решение:** Создать страницу и добавить роут
+### 6.1 Тестирование API
+**Правило:** При создании новых API endpoints обязательно проводить тестирование:
+1. Проверить доступ без авторизации (должен вернуть 401)
+2. Проверить доступ с авторизацией
+3. Проверить валидацию данных
+4. Добавить документацию в Swagger/OpenAPI
 
-### 6.2 WYSIWYG редактор
-**Текущее состояние:** Textarea с Markdown
-**План:** Интегрировать Tiptap для удобства авторов
+### 6.2 Документация
+- Все новые endpoints должны быть задокументированы в OpenAPI
+- Обновлять AUTHOR_PANEL_PLAN.md при добавлении нового функционала
+- Обновлять TECHNICAL_DOCUMENTATION_4.md при изменении статуса
 
 ---
 
@@ -270,5 +266,5 @@ const finalStatus = allowedStatuses.includes(status) ? status : 'DRAFT'
 ---
 
 *Создано: Март 2026*
-*Версия: 2.0*
-*Обновлено: Добавлена информация о проблеме с аналитикой, текущий статус реализации*
+*Версия: 3.0*
+*Обновлено: Добавлен этап 5 - Аналитика, обновлён статус реализации*

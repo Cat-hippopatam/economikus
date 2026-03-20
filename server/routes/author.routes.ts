@@ -156,6 +156,142 @@ author.get('/stats', async (c) => {
   })
 })
 
+// === GET /author/analytics — детальная аналитика автора ===
+author.get('/analytics', async (c) => {
+  const profile = getCurrentProfile(c)
+  const user = getCurrentUser(c)
+  
+  if (!profile) throw new AppError(400, 'Профиль не найден. Создайте профиль.')
+  if (user.role !== 'AUTHOR' && user.role !== 'ADMIN' && user.role !== 'MODERATOR') {
+    throw new AppError(403, 'Доступ только для авторов')
+  }
+
+  // Получаем все курсы автора с детальной статистикой
+  const courses = await prisma.course.findMany({
+    where: { authorProfileId: profile.id, deletedAt: null },
+    select: {
+      id: true,
+      title: true,
+      slug: true,
+      status: true,
+      viewsCount: true,
+      createdAt: true,
+      publishedAt: true,
+      _count: { select: { modules: true, progress: true } },
+      progress: {
+        select: { completedAt: true }
+      }
+    },
+    orderBy: { createdAt: 'desc' }
+  })
+
+  // Получаем все уроки автора
+  const lessons = await prisma.lesson.findMany({
+    where: { authorProfileId: profile.id, deletedAt: null },
+    select: {
+      id: true,
+      title: true,
+      lessonType: true,
+      status: true,
+      viewsCount: true,
+      createdAt: true,
+    },
+    orderBy: { createdAt: 'desc' }
+  })
+
+  // Подсчёт статистики по статусам
+  const coursesByStatus = {
+    DRAFT: courses.filter(c => c.status === 'DRAFT').length,
+    PENDING_REVIEW: courses.filter(c => c.status === 'PENDING_REVIEW').length,
+    PUBLISHED: courses.filter(c => c.status === 'PUBLISHED').length,
+    ARCHIVED: courses.filter(c => c.status === 'ARCHIVED').length,
+  }
+
+  const lessonsByStatus = {
+    DRAFT: lessons.filter(l => l.status === 'DRAFT').length,
+    PENDING_REVIEW: lessons.filter(l => l.status === 'PENDING_REVIEW').length,
+    PUBLISHED: lessons.filter(l => l.status === 'PUBLISHED').length,
+  }
+
+  const lessonsByType = {
+    ARTICLE: lessons.filter(l => l.lessonType === 'ARTICLE').length,
+    VIDEO: lessons.filter(l => l.lessonType === 'VIDEO').length,
+    AUDIO: lessons.filter(l => l.lessonType === 'AUDIO').length,
+    QUIZ: lessons.filter(l => l.lessonType === 'QUIZ').length,
+  }
+
+  // Общая статистика
+  const totalViews = courses.reduce((sum, c) => sum + c.viewsCount, 0) +
+                     lessons.reduce((sum, l) => sum + l.viewsCount, 0)
+  
+  const totalStudents = courses.reduce((sum, c) => sum + c._count.progress, 0)
+  
+  // Завершённые курсы
+  const completedCourses = courses.reduce((sum, c) => 
+    sum + c.progress.filter(p => p.completedAt).length, 0
+  )
+
+  // Топ курсы по просмотрам
+  const topCourses = courses
+    .sort((a, b) => b.viewsCount - a.viewsCount)
+    .slice(0, 5)
+    .map(c => ({
+      id: c.id,
+      title: c.title,
+      slug: c.slug,
+      viewsCount: c.viewsCount,
+      studentsCount: c._count.progress,
+      modulesCount: c._count.modules,
+    }))
+
+  // Топ уроки по просмотрам
+  const topLessons = lessons
+    .sort((a, b) => b.viewsCount - a.viewsCount)
+    .slice(0, 5)
+    .map(l => ({
+      id: l.id,
+      title: l.title,
+      lessonType: l.lessonType,
+      viewsCount: l.viewsCount,
+    }))
+
+  // Последняя активность (последние 5 курсов/уроков)
+  const recentActivity = [
+    ...courses.map(c => ({
+      type: 'course' as const,
+      id: c.id,
+      title: c.title,
+      status: c.status,
+      createdAt: c.createdAt,
+    })),
+    ...lessons.map(l => ({
+      type: 'lesson' as const,
+      id: l.id,
+      title: l.title,
+      status: l.status,
+      createdAt: l.createdAt,
+    }))
+  ]
+    .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
+    .slice(0, 10)
+
+  return c.json({
+    overview: {
+      totalCourses: courses.length,
+      totalLessons: lessons.length,
+      totalViews,
+      totalStudents,
+      completedCourses,
+    },
+    coursesByStatus,
+    lessonsByStatus,
+    lessonsByType,
+    topCourses,
+    topLessons,
+    recentActivity,
+  })
+})
+
 // === GET /author/courses — список курсов автора ===
 author.get('/courses', async (c) => {
   const profile = getCurrentProfile(c)

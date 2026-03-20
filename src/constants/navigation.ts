@@ -44,6 +44,7 @@ export const ADMIN_NAV_LINKS = [
   { to: '/admin/tags', label: 'Теги', icon: Tags },
   { to: '/admin/users', label: 'Пользователи', icon: Users },
   { to: '/admin/moderation', label: 'Модерация', icon: Shield },
+  { to: '/admin/content', label: 'Контент', icon: FileText },
   { to: '/admin/applications', label: 'Заявки авторов', icon: FileText },
 ] as const
 
