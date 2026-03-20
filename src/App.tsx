@@ -23,6 +23,7 @@ import CatalogPage from './pages/catalog/CatalogPage'
 import CoursePage from './pages/courses/CoursePage'
 import LessonPage from './pages/lessons/LessonPage'
 import { CalculatorsPage, CalculatorPage } from './pages/calculators'
+import NotFoundPage from './pages/NotFoundPage'
 
 export default function App() {
   return (
@@ -110,6 +111,9 @@ export default function App() {
           <Route path="lessons/:id" element={<AuthorLessonFormPage />} />
           <Route path="analytics" element={<AuthorAnalyticsPage />} />
         </Route>
+
+        {/* Страница 404 */}
+        <Route path="*" element={<NotFoundPage />} />
       </Routes>
     </BrowserRouter>
   )
