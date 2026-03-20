@@ -120,9 +120,33 @@ export function ProfilePage() {
     )
   }
 
+  const [coverImageError, setCoverImageError] = useState(false)
+
+  // Обработчик ошибки загрузки обложки
+  const handleCoverError = () => {
+    setCoverImageError(true)
+  }
+
+  // Определяем background для обложки
+  const coverBackground = coverImageError || !profile.coverImage
+    ? `linear-gradient(135deg, ${COLORS.primary} 0%, ${COLORS.secondary} 100%)`
+    : `url(${profile.coverImage})`
+
   return (
     <Container size="lg" py="xl">
-      <Paper shadow="sm" radius="md" style={{ height: 200, backgroundImage: profile.coverImage ? `url(${profile.coverImage})` : `linear-gradient(135deg, ${COLORS.primary} 0%, ${COLORS.secondary} 100%)`, backgroundSize: 'cover', backgroundPosition: 'center', position: 'relative', marginBottom: 0 }}>
+      <Paper 
+        shadow="sm" 
+        radius="md" 
+        style={{ 
+          height: 200, 
+          backgroundImage: coverBackground, 
+          backgroundSize: 'cover', 
+          backgroundPosition: 'center', 
+          position: 'relative', 
+          marginBottom: 0 
+        }}
+        onError={handleCoverError}
+      >
         {isOwnProfile && (
           <Tooltip label="Редактировать профиль">
             <ActionIcon component={Link} to="/profile/settings" variant="white" size="lg" style={{ position: 'absolute', top: 16, right: 16 }}><Edit size={18} /></ActionIcon>

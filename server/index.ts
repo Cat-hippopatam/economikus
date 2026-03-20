@@ -54,7 +54,10 @@ app.get('/api/doc', (c) => {
       { name: 'Tags', description: 'Теги' },
       { name: 'Reactions', description: 'Реакции' },
       { name: 'Comments', description: 'Комментарии' },
-      { name: 'Author', description: 'Панель автора' }
+      { name: 'Author', description: 'Панель автора' },
+      { name: 'Admin', description: 'Админ-панель' },
+      { name: 'Moderation', description: 'Модерация контента' },
+      { name: 'Progress', description: 'Прогресс обучения' }
     ],
     paths: {
       '/auth/register': {
@@ -893,6 +896,656 @@ app.get('/api/doc', (c) => {
             '401': { description: 'Не авторизован' },
             '403': { description: 'Доступ только для авторов' },
             '404': { description: 'Урок не найден' }
+          }
+        }
+      },
+      // === ADMIN ENDPOINTS ===
+      '/admin/stats': {
+        get: {
+          tags: ['Admin'],
+          summary: 'Общая статистика платформы',
+          description: 'Возвращает статистику: пользователи, курсы, уроки, реакции, комментарии',
+          responses: {
+            '200': { description: 'Статистика платформы' },
+            '401': { description: 'Не авторизован' },
+            '403': { description: 'Доступ только для админов' }
+          }
+        }
+      },
+      '/admin/users': {
+        get: {
+          tags: ['Admin'],
+          summary: 'Список пользователей',
+          parameters: [
+            { name: 'page', in: 'query', schema: { type: 'integer' } },
+            { name: 'limit', in: 'query', schema: { type: 'integer' } },
+            { name: 'search', in: 'query', schema: { type: 'string' } },
+            { name: 'role', in: 'query', schema: { type: 'string', enum: ['USER', 'AUTHOR', 'MODERATOR', 'ADMIN'] } },
+            { name: 'isBlocked', in: 'query', schema: { type: 'boolean' } }
+          ],
+          responses: {
+            '200': { description: 'Список пользователей' },
+            '401': { description: 'Не авторизован' },
+            '403': { description: 'Доступ только для админов' }
+          }
+        },
+        post: {
+          tags: ['Admin'],
+          summary: 'Создать пользователя',
+          requestBody: {
+            required: true,
+            content: {
+              'application/json': {
+                schema: {
+                  type: 'object',
+                  required: ['email', 'password', 'firstName', 'lastName', 'nickname'],
+                  properties: {
+                    email: { type: 'string', format: 'email' },
+                    password: { type: 'string', minLength: 6 },
+                    firstName: { type: 'string' },
+                    lastName: { type: 'string' },
+                    nickname: { type: 'string' },
+                    role: { type: 'string', enum: ['USER', 'AUTHOR', 'MODERATOR', 'ADMIN'] }
+                  }
+                }
+              }
+            }
+          },
+          responses: {
+            '201': { description: 'Пользователь создан' },
+            '400': { description: 'Ошибка валидации' },
+            '401': { description: 'Не авторизован' },
+            '403': { description: 'Доступ только для админов' }
+          }
+        }
+      },
+      '/admin/users/{id}': {
+        get: {
+          tags: ['Admin'],
+          summary: 'Детали пользователя',
+          parameters: [
+            { name: 'id', in: 'path', required: true, schema: { type: 'string', format: 'uuid' } }
+          ],
+          responses: {
+            '200': { description: 'Детали пользователя' },
+            '401': { description: 'Не авторизован' },
+            '403': { description: 'Доступ только для админов' },
+            '404': { description: 'Пользователь не найден' }
+          }
+        },
+        patch: {
+          tags: ['Admin'],
+          summary: 'Обновить пользователя',
+          parameters: [
+            { name: 'id', in: 'path', required: true, schema: { type: 'string', format: 'uuid' } }
+          ],
+          requestBody: {
+            content: {
+              'application/json': {
+                schema: {
+                  type: 'object',
+                  properties: {
+                    role: { type: 'string', enum: ['USER', 'AUTHOR', 'MODERATOR', 'ADMIN'] },
+                    isBlocked: { type: 'boolean' },
+                    firstName: { type: 'string' },
+                    lastName: { type: 'string' },
+                    displayName: { type: 'string' }
+                  }
+                }
+              }
+            }
+          },
+          responses: {
+            '200': { description: 'Пользователь обновлён' },
+            '401': { description: 'Не авторизован' },
+            '403': { description: 'Доступ только для админов' },
+            '404': { description: 'Пользователь не найден' }
+          }
+        },
+        delete: {
+          tags: ['Admin'],
+          summary: 'Удалить пользователя',
+          parameters: [
+            { name: 'id', in: 'path', required: true, schema: { type: 'string', format: 'uuid' } }
+          ],
+          responses: {
+            '200': { description: 'Пользователь удалён' },
+            '401': { description: 'Не авторизован' },
+            '403': { description: 'Доступ только для админов' },
+            '404': { description: 'Пользователь не найден' }
+          }
+        }
+      },
+      '/admin/courses': {
+        get: {
+          tags: ['Admin'],
+          summary: 'Список всех курсов',
+          parameters: [
+            { name: 'page', in: 'query', schema: { type: 'integer' } },
+            { name: 'limit', in: 'query', schema: { type: 'integer' } },
+            { name: 'search', in: 'query', schema: { type: 'string' } },
+            { name: 'status', in: 'query', schema: { type: 'string', enum: ['DRAFT', 'PENDING_REVIEW', 'PUBLISHED', 'ARCHIVED'] } },
+            { name: 'difficulty', in: 'query', schema: { type: 'string', enum: ['BEGINNER', 'INTERMEDIATE', 'ADVANCED'] } }
+          ],
+          responses: {
+            '200': { description: 'Список курсов' },
+            '401': { description: 'Не авторизован' },
+            '403': { description: 'Доступ только для админов' }
+          }
+        }
+      },
+      '/admin/courses/{id}': {
+        get: {
+          tags: ['Admin'],
+          summary: 'Детали курса',
+          parameters: [
+            { name: 'id', in: 'path', required: true, schema: { type: 'string', format: 'uuid' } }
+          ],
+          responses: {
+            '200': { description: 'Детали курса' },
+            '401': { description: 'Не авторизован' },
+            '403': { description: 'Доступ только для админов' },
+            '404': { description: 'Курс не найден' }
+          }
+        },
+        patch: {
+          tags: ['Admin'],
+          summary: 'Обновить курс',
+          parameters: [
+            { name: 'id', in: 'path', required: true, schema: { type: 'string', format: 'uuid' } }
+          ],
+          requestBody: {
+            content: {
+              'application/json': {
+                schema: {
+                  type: 'object',
+                  properties: {
+                    title: { type: 'string' },
+                    description: { type: 'string' },
+                    coverImage: { type: 'string' },
+                    difficultyLevel: { type: 'string', enum: ['BEGINNER', 'INTERMEDIATE', 'ADVANCED'] },
+                    isPremium: { type: 'boolean' },
+                    status: { type: 'string', enum: ['DRAFT', 'PENDING_REVIEW', 'PUBLISHED', 'ARCHIVED'] }
+                  }
+                }
+              }
+            }
+          },
+          responses: {
+            '200': { description: 'Курс обновлён' },
+            '401': { description: 'Не авторизован' },
+            '403': { description: 'Доступ только для админов' },
+            '404': { description: 'Курс не найден' }
+          }
+        },
+        delete: {
+          tags: ['Admin'],
+          summary: 'Удалить курс',
+          parameters: [
+            { name: 'id', in: 'path', required: true, schema: { type: 'string', format: 'uuid' } }
+          ],
+          responses: {
+            '200': { description: 'Курс удалён' },
+            '401': { description: 'Не авторизован' },
+            '403': { description: 'Доступ только для админов' },
+            '404': { description: 'Курс не найден' }
+          }
+        }
+      },
+      '/admin/modules': {
+        get: {
+          tags: ['Admin'],
+          summary: 'Список модулей',
+          parameters: [
+            { name: 'courseId', in: 'query', schema: { type: 'string', format: 'uuid' } }
+          ],
+          responses: {
+            '200': { description: 'Список модулей' },
+            '401': { description: 'Не авторизован' },
+            '403': { description: 'Доступ только для админов' }
+          }
+        },
+        post: {
+          tags: ['Admin'],
+          summary: 'Создать модуль',
+          requestBody: {
+            required: true,
+            content: {
+              'application/json': {
+                schema: {
+                  type: 'object',
+                  required: ['title', 'courseId'],
+                  properties: {
+                    title: { type: 'string' },
+                    courseId: { type: 'string', format: 'uuid' },
+                    description: { type: 'string' },
+                    order: { type: 'integer' }
+                  }
+                }
+              }
+            }
+          },
+          responses: {
+            '201': { description: 'Модуль создан' },
+            '400': { description: 'Ошибка валидации' },
+            '401': { description: 'Не авторизован' },
+            '403': { description: 'Доступ только для админов' }
+          }
+        }
+      },
+      '/admin/modules/{id}': {
+        patch: {
+          tags: ['Admin'],
+          summary: 'Обновить модуль',
+          parameters: [
+            { name: 'id', in: 'path', required: true, schema: { type: 'string', format: 'uuid' } }
+          ],
+          requestBody: {
+            content: {
+              'application/json': {
+                schema: {
+                  type: 'object',
+                  properties: {
+                    title: { type: 'string' },
+                    description: { type: 'string' },
+                    order: { type: 'integer' }
+                  }
+                }
+              }
+            }
+          },
+          responses: {
+            '200': { description: 'Модуль обновлён' },
+            '401': { description: 'Не авторизован' },
+            '403': { description: 'Доступ только для админов' },
+            '404': { description: 'Модуль не найден' }
+          }
+        },
+        delete: {
+          tags: ['Admin'],
+          summary: 'Удалить модуль',
+          parameters: [
+            { name: 'id', in: 'path', required: true, schema: { type: 'string', format: 'uuid' } }
+          ],
+          responses: {
+            '200': { description: 'Модуль удалён' },
+            '401': { description: 'Не авторизован' },
+            '403': { description: 'Доступ только для админов' },
+            '404': { description: 'Модуль не найден' }
+          }
+        }
+      },
+      '/admin/lessons': {
+        get: {
+          tags: ['Admin'],
+          summary: 'Список всех уроков',
+          parameters: [
+            { name: 'page', in: 'query', schema: { type: 'integer' } },
+            { name: 'limit', in: 'query', schema: { type: 'integer' } },
+            { name: 'search', in: 'query', schema: { type: 'string' } },
+            { name: 'status', in: 'query', schema: { type: 'string', enum: ['DRAFT', 'PENDING_REVIEW', 'PUBLISHED', 'ARCHIVED'] } },
+            { name: 'lessonType', in: 'query', schema: { type: 'string', enum: ['ARTICLE', 'VIDEO', 'AUDIO', 'QUIZ', 'CALCULATOR'] } }
+          ],
+          responses: {
+            '200': { description: 'Список уроков' },
+            '401': { description: 'Не авторизован' },
+            '403': { description: 'Доступ только для админов' }
+          }
+        }
+      },
+      '/admin/lessons/{id}': {
+        get: {
+          tags: ['Admin'],
+          summary: 'Детали урока',
+          parameters: [
+            { name: 'id', in: 'path', required: true, schema: { type: 'string', format: 'uuid' } }
+          ],
+          responses: {
+            '200': { description: 'Детали урока' },
+            '401': { description: 'Не авторизован' },
+            '403': { description: 'Доступ только для админов' },
+            '404': { description: 'Урок не найден' }
+          }
+        },
+        patch: {
+          tags: ['Admin'],
+          summary: 'Обновить урок',
+          parameters: [
+            { name: 'id', in: 'path', required: true, schema: { type: 'string', format: 'uuid' } }
+          ],
+          requestBody: {
+            content: {
+              'application/json': {
+                schema: {
+                  type: 'object',
+                  properties: {
+                    title: { type: 'string' },
+                    description: { type: 'string' },
+                    content: { type: 'string' },
+                    status: { type: 'string', enum: ['DRAFT', 'PENDING_REVIEW', 'PUBLISHED', 'ARCHIVED'] }
+                  }
+                }
+              }
+            }
+          },
+          responses: {
+            '200': { description: 'Урок обновлён' },
+            '401': { description: 'Не авторизован' },
+            '403': { description: 'Доступ только для админов' },
+            '404': { description: 'Урок не найден' }
+          }
+        },
+        delete: {
+          tags: ['Admin'],
+          summary: 'Удалить урок',
+          parameters: [
+            { name: 'id', in: 'path', required: true, schema: { type: 'string', format: 'uuid' } }
+          ],
+          responses: {
+            '200': { description: 'Урок удалён' },
+            '401': { description: 'Не авторизован' },
+            '403': { description: 'Доступ только для админов' },
+            '404': { description: 'Урок не найден' }
+          }
+        }
+      },
+      '/admin/tags': {
+        get: {
+          tags: ['Admin'],
+          summary: 'Список тегов',
+          responses: {
+            '200': { description: 'Список тегов' },
+            '401': { description: 'Не авторизован' },
+            '403': { description: 'Доступ только для админов' }
+          }
+        },
+        post: {
+          tags: ['Admin'],
+          summary: 'Создать тег',
+          requestBody: {
+            required: true,
+            content: {
+              'application/json': {
+                schema: {
+                  type: 'object',
+                  required: ['name', 'slug'],
+                  properties: {
+                    name: { type: 'string' },
+                    slug: { type: 'string' },
+                    color: { type: 'string' },
+                    description: { type: 'string' }
+                  }
+                }
+              }
+            }
+          },
+          responses: {
+            '201': { description: 'Тег создан' },
+            '400': { description: 'Ошибка валидации' },
+            '401': { description: 'Не авторизован' },
+            '403': { description: 'Доступ только для админов' }
+          }
+        }
+      },
+      '/admin/tags/{id}': {
+        patch: {
+          tags: ['Admin'],
+          summary: 'Обновить тег',
+          parameters: [
+            { name: 'id', in: 'path', required: true, schema: { type: 'string', format: 'uuid' } }
+          ],
+          requestBody: {
+            content: {
+              'application/json': {
+                schema: {
+                  type: 'object',
+                  properties: {
+                    name: { type: 'string' },
+                    slug: { type: 'string' },
+                    color: { type: 'string' },
+                    description: { type: 'string' }
+                  }
+                }
+              }
+            }
+          },
+          responses: {
+            '200': { description: 'Тег обновлён' },
+            '401': { description: 'Не авторизован' },
+            '403': { description: 'Доступ только для админов' },
+            '404': { description: 'Тег не найден' }
+          }
+        },
+        delete: {
+          tags: ['Admin'],
+          summary: 'Удалить тег',
+          parameters: [
+            { name: 'id', in: 'path', required: true, schema: { type: 'string', format: 'uuid' } }
+          ],
+          responses: {
+            '200': { description: 'Тег удалён' },
+            '401': { description: 'Не авторизован' },
+            '403': { description: 'Доступ только для админов' },
+            '404': { description: 'Тег не найден' }
+          }
+        }
+      },
+      '/admin/applications': {
+        get: {
+          tags: ['Admin'],
+          summary: 'Список заявок на авторство',
+          parameters: [
+            { name: 'status', in: 'query', schema: { type: 'string', enum: ['PENDING', 'APPROVED', 'REJECTED'] } }
+          ],
+          responses: {
+            '200': { description: 'Список заявок' },
+            '401': { description: 'Не авторизован' },
+            '403': { description: 'Доступ только для админов' }
+          }
+        }
+      },
+      '/admin/applications/{id}': {
+        patch: {
+          tags: ['Admin'],
+          summary: 'Обработать заявку',
+          parameters: [
+            { name: 'id', in: 'path', required: true, schema: { type: 'string', format: 'uuid' } }
+          ],
+          requestBody: {
+            required: true,
+            content: {
+              'application/json': {
+                schema: {
+                  type: 'object',
+                  required: ['action'],
+                  properties: {
+                    action: { type: 'string', enum: ['approve', 'reject'] },
+                    comment: { type: 'string' }
+                  }
+                }
+              }
+            }
+          },
+          responses: {
+            '200': { description: 'Заявка обработана' },
+            '400': { description: 'Ошибка валидации' },
+            '401': { description: 'Не авторизован' },
+            '403': { description: 'Доступ только для админов' },
+            '404': { description: 'Заявка не найдена' }
+          }
+        }
+      },
+      // === MODERATION ENDPOINTS ===
+      '/moderation/content': {
+        get: {
+          tags: ['Moderation'],
+          summary: 'Контент на модерации',
+          description: 'Возвращает курсы и уроки со статусом PENDING_REVIEW',
+          parameters: [
+            { name: 'type', in: 'query', schema: { type: 'string', enum: ['course', 'lesson', 'all'] } },
+            { name: 'page', in: 'query', schema: { type: 'integer' } },
+            { name: 'limit', in: 'query', schema: { type: 'integer' } }
+          ],
+          responses: {
+            '200': { description: 'Контент на модерации' },
+            '401': { description: 'Не авторизован' },
+            '403': { description: 'Доступ только для модераторов/админов' }
+          }
+        }
+      },
+      '/moderation/content/{type}/{id}': {
+        patch: {
+          tags: ['Moderation'],
+          summary: 'Одобрить/отклонить контент',
+          parameters: [
+            { name: 'type', in: 'path', required: true, schema: { type: 'string', enum: ['course', 'lesson'] } },
+            { name: 'id', in: 'path', required: true, schema: { type: 'string', format: 'uuid' } }
+          ],
+          requestBody: {
+            required: true,
+            content: {
+              'application/json': {
+                schema: {
+                  type: 'object',
+                  required: ['action'],
+                  properties: {
+                    action: { type: 'string', enum: ['approve', 'reject'] },
+                    comment: { type: 'string' }
+                  }
+                }
+              }
+            }
+          },
+          responses: {
+            '200': { description: 'Контент обработан' },
+            '400': { description: 'Ошибка валидации' },
+            '401': { description: 'Не авторизован' },
+            '403': { description: 'Доступ только для модераторов/админов' },
+            '404': { description: 'Контент не найден' }
+          }
+        }
+      },
+      '/moderation/reports': {
+        get: {
+          tags: ['Moderation'],
+          summary: 'Список жалоб',
+          parameters: [
+            { name: 'status', in: 'query', schema: { type: 'string', enum: ['pending', 'reviewed', 'resolved'] } },
+            { name: 'page', in: 'query', schema: { type: 'integer' } },
+            { name: 'limit', in: 'query', schema: { type: 'integer' } }
+          ],
+          responses: {
+            '200': { description: 'Список жалоб' },
+            '401': { description: 'Не авторизован' },
+            '403': { description: 'Доступ только для модераторов/админов' }
+          }
+        }
+      },
+      '/moderation/reports/{id}': {
+        patch: {
+          tags: ['Moderation'],
+          summary: 'Обработать жалобу',
+          parameters: [
+            { name: 'id', in: 'path', required: true, schema: { type: 'string', format: 'uuid' } }
+          ],
+          requestBody: {
+            required: true,
+            content: {
+              'application/json': {
+                schema: {
+                  type: 'object',
+                  required: ['status'],
+                  properties: {
+                    status: { type: 'string', enum: ['reviewed', 'resolved', 'dismissed'] },
+                    resolution: { type: 'string' }
+                  }
+                }
+              }
+            }
+          },
+          responses: {
+            '200': { description: 'Жалоба обработана' },
+            '400': { description: 'Ошибка валидации' },
+            '401': { description: 'Не авторизован' },
+            '403': { description: 'Доступ только для модераторов/админов' },
+            '404': { description: 'Жалоба не найдена' }
+          }
+        }
+      },
+      // === PROGRESS ENDPOINTS ===
+      '/progress': {
+        get: {
+          tags: ['Progress'],
+          summary: 'Прогресс пользователя',
+          description: 'Возвращает прогресс по всем курсам и урокам',
+          responses: {
+            '200': { description: 'Прогресс пользователя' },
+            '401': { description: 'Не авторизован' }
+          }
+        }
+      },
+      '/progress/courses': {
+        get: {
+          tags: ['Progress'],
+          summary: 'Прогресс по курсам',
+          parameters: [
+            { name: 'courseId', in: 'query', schema: { type: 'string', format: 'uuid' } }
+          ],
+          responses: {
+            '200': { description: 'Прогресс по курсам' },
+            '401': { description: 'Не авторизован' }
+          }
+        }
+      },
+      '/progress/lessons/{lessonId}': {
+        get: {
+          tags: ['Progress'],
+          summary: 'Прогресс по уроку',
+          parameters: [
+            { name: 'lessonId', in: 'path', required: true, schema: { type: 'string', format: 'uuid' } }
+          ],
+          responses: {
+            '200': { description: 'Прогресс по уроку' },
+            '401': { description: 'Не авторизован' },
+            '404': { description: 'Урок не найден' }
+          }
+        },
+        post: {
+          tags: ['Progress'],
+          summary: 'Обновить прогресс урока',
+          parameters: [
+            { name: 'lessonId', in: 'path', required: true, schema: { type: 'string', format: 'uuid' } }
+          ],
+          requestBody: {
+            content: {
+              'application/json': {
+                schema: {
+                  type: 'object',
+                  properties: {
+                    progressPercent: { type: 'integer', minimum: 0, maximum: 100 },
+                    lastPosition: { type: 'integer' },
+                    quizScore: { type: 'integer', minimum: 0, maximum: 100 },
+                    quizCompleted: { type: 'boolean' },
+                    completed: { type: 'boolean' }
+                  }
+                }
+              }
+            }
+          },
+          responses: {
+            '200': { description: 'Прогресс обновлён' },
+            '400': { description: 'Ошибка валидации' },
+            '401': { description: 'Не авторизован' }
+          }
+        }
+      },
+      '/progress/certificates': {
+        get: {
+          tags: ['Progress'],
+          summary: 'Сертификаты пользователя',
+          responses: {
+            '200': { description: 'Сертификаты' },
+            '401': { description: 'Не авторизован' }
           }
         }
       }

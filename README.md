@@ -1,54 +1,108 @@
-# React + TypeScript + Vite
+# Документация проекта Economikus
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+> Единая точка входа в документацию проекта
 
-Currently, two official plugins are available:
+---
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+## 📚 Основная документация
 
-## Expanding the ESLint configuration
+| Файл | Описание | Статус |
+|------|----------|--------|
+| **[TECHNICAL_DOCUMENTATION.md](../TECHNICAL_DOCUMENTATION.md)** | Единая техническая документация | ✅ Актуальна |
+| `OPTIMIZATION_GUIDE.md` | Правила оптимизации и стандарты | ✅ Актуален |
+| `REFACTORING_PLAN.md` | План рефакторинга | ✅ Актуален |
+| `AUTHOR_PANEL_PLAN.md` | План панели автора | ✅ Актуален |
+| `docs/LESSON_CONTENT_PLAN.md` | План контента уроков | ✅ Актуален |
 
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
+---
 
-```js
-export default tseslint.config({
-  extends: [
-    // Remove ...tseslint.configs.recommended and replace with this
-    ...tseslint.configs.recommendedTypeChecked,
-    // Alternatively, use this for stricter rules
-    ...tseslint.configs.strictTypeChecked,
-    // Optionally, add this for stylistic rules
-    ...tseslint.configs.stylisticTypeChecked,
-  ],
-  languageOptions: {
-    // other options...
-    parserOptions: {
-      project: ['./tsconfig.node.json', './tsconfig.app.json'],
-      tsconfigRootDir: import.meta.dirname,
-    },
-  },
-})
+## 🚀 Быстрый старт
+
+### Чтение документации
+
+1. **Для новых разработчиков:**
+   - Начните с `TECHNICAL_DOCUMENTATION.md`
+   - Прочитайте `OPTIMIZATION_GUIDE.md`
+
+2. **Для работы с API:**
+   - Swagger: `http://localhost:3000/api/swagger`
+   - OpenAPI JSON: `http://localhost:3000/api/doc`
+
+---
+
+## 📊 Статистика проекта
+
+### Готовность модулей
+
+| Модуль | Готовность |
+|--------|------------|
+| Аутентификация | 90% |
+| Каталог курсов | 90% |
+| Страница курса | 85% |
+| Страница урока | 80% |
+| Админ-панель | 70% |
+| Панель автора | 80% |
+| Калькуляторы | 100% |
+| Прогресс обучения | 80% |
+
+### Покрытие Swagger документацией
+
+| Раздел | Покрытие |
+|--------|----------|
+| Auth | 100% |
+| Courses | 100% |
+| Lessons | 100% |
+| User | 100% |
+| Tags | 100% |
+| Reactions | 100% |
+| Comments | 100% |
+| Author | 100% |
+| Admin | 100% |
+| Moderation | 100% |
+| Progress | 100% |
+| **Всего** | **100%** |
+
+---
+
+## 🛠️ Техническая информация
+
+### Запуск проекта
+
+```bash
+# Установка зависимостей
+npm install
+
+# Запуск frontend
+npm run dev
+
+# Генерация ключа
+auth secret
+
+# Запуск backend
+cd server && npx tsx index.ts
 ```
 
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
+### Доступ к сервисам
 
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
+| Сервис | URL |
+|--------|-----|
+| Frontend | http://localhost:5173 |
+| Backend API | http://localhost:3000 |
+| Swagger | http://localhost:3000/api/swagger |
+| OpenAPI JSON | http://localhost:3000/api/doc |
 
-export default tseslint.config({
-  plugins: {
-    // Add the react-x and react-dom plugins
-    'react-x': reactX,
-    'react-dom': reactDom,
-  },
-  rules: {
-    // other rules...
-    // Enable its recommended typescript rules
-    ...reactX.configs['recommended-typescript'].rules,
-    ...reactDom.configs.recommended.rules,
-  },
-})
-```
+---
+
+## 📝 Версии документации
+
+| Версия | Дата | Изменения |
+|--------|------|-----------|
+| 5.0 | Март 2026 | Объединённая документация |
+| 4.0 | Март 2026 | TECHNICAL_DOCUMENTATION_4 |
+| 3.0 | Март 2026 | TECHNICAL_DOCUMENTATION_3 |
+| 2.0 | Март 2026 | TECHNICAL_DOCUMENTATION_2 |
+| 1.0 | Март 2026 | TECHNICAL_DOCUMENTATION |
+
+---
+
+*Обновлено: Март 2026*

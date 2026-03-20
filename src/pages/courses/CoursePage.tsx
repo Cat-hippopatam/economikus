@@ -250,6 +250,9 @@ export default function CoursePage() {
                 <img
                   src={course.coverImage}
                   alt={course.title}
+                  onError={(e) => {
+                    e.currentTarget.style.display = 'none'
+                  }}
                   style={{
                     width: '100%',
                     borderRadius: 12,
