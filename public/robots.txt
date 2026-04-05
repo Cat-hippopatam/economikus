@@ -1,0 +1,20 @@
+# Robots.txt для Экономикус
+# https://economikus.ru
+
+User-agent: *
+Allow: /
+
+# Запрещённые разделы
+Disallow: /admin
+Disallow: /author
+Disallow: /api
+Disallow: /profile
+Disallow: /profile/*
+Disallow: /user/
+Disallow: /become-author
+
+# Карта сайта
+Sitemap: https://economikus.ru/sitemap.xml
+
+# Основной хост
+Host: economikus.ru
