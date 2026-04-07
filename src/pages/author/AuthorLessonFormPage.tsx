@@ -499,6 +499,9 @@ export function AuthorLessonFormPage() {
     }
   }
 
+  // Для отображения типа контента при создании (из формы, ещё не сохранено)
+  const lessonTypeFromForm = watch('lessonType')
+
   const onSubmit = async (data: LessonFormValues) => {
     const lessonData = {
       title: data.title,
@@ -512,9 +515,20 @@ export function AuthorLessonFormPage() {
       status: data.status,
       tags: data.tags || [],
     }
-    const success = await saveLesson(lessonData, id)
-    if (success) {
-      navigate('/author/lessons')
+
+    if (isEdit) {
+      const success = await saveLesson(lessonData, id)
+      if (success) {
+        navigate('/author/lessons')
+      }
+    } else {
+      // При создании - сначала сохраняем урок, потом переходим на редактирование
+      const success = await saveLesson(lessonData)
+      if (success) {
+        // Нужно получить ID созданного урока из ответа
+        // Пока делаем редирект на список, позже можно улучшить
+        navigate('/author/lessons')
+      }
     }
   }
 
@@ -551,114 +565,158 @@ export function AuthorLessonFormPage() {
         </Group>
       </Group>
 
-      {/* Вкладки */}
-      {isEdit ? (
-        <Tabs value={activeTab} onChange={setActiveTab}>
-          <Tabs.List>
-            <Tabs.Tab value="settings" leftSection={<FileText size={16} />}>
-              Настройки
-            </Tabs.Tab>
-            <Tabs.Tab value="content" leftSection={<FileText size={16} />}>
-              Контент
-            </Tabs.Tab>
-          </Tabs.List>
+      {/* Вкладки - показываем всегда */}
+      <Tabs value={activeTab} onChange={setActiveTab}>
+        <Tabs.List>
+          <Tabs.Tab value="settings" leftSection={<FileText size={16} />}>
+            Настройки
+          </Tabs.Tab>
+          <Tabs.Tab value="content" leftSection={<FileText size={16} />}>
+            Контент
+          </Tabs.Tab>
+        </Tabs.List>
 
-          <Tabs.Panel value="settings" pt="lg">
-            <SettingsForm
-              register={register}
-              errors={errors}
-              control={control}
-              watch={watch}
-              setValue={setValue}
-              courses={courses}
-              tags={tags}
-              coverImage={coverImage}
-              handleCoverUpload={handleCoverUpload}
-              onSubmit={handleSubmit(onSubmit)}
-            />
-          </Tabs.Panel>
+        <Tabs.Panel value="settings" pt="lg">
+          <SettingsForm
+            register={register}
+            errors={errors}
+            control={control}
+            watch={watch}
+            setValue={setValue}
+            courses={courses}
+            tags={tags}
+            coverImage={coverImage}
+            handleCoverUpload={handleCoverUpload}
+            onSubmit={handleSubmit(onSubmit)}
+          />
+        </Tabs.Panel>
 
-          <Tabs.Panel value="content" pt="lg">
-            <Stack gap="md">
-              <Paper p="md" withBorder>
-                <Group gap="md">
-                  <Text fw={500}>Тип контента:</Text>
-                  <Badge size="lg" variant="light">
-                    {lesson?.lessonType === 'ARTICLE' && 'Статья'}
-                    {lesson?.lessonType === 'VIDEO' && 'Видео'}
-                    {lesson?.lessonType === 'AUDIO' && 'Аудио'}
-                    {lesson?.lessonType === 'QUIZ' && 'Тест'}
-                    {lesson?.lessonType === 'CALCULATOR' && 'Калькулятор'}
-                    {!lesson?.lessonType && 'Не указан'}
-                  </Badge>
-                </Group>
+        <Tabs.Panel value="content" pt="lg">
+          <Stack gap="md">
+            <Paper p="md" withBorder>
+              <Group gap="md">
+                <Text fw={500}>Тип контента:</Text>
+                <Badge size="lg" variant="light">
+                  {/* При редактировании - из загруженного урока, при создании - из формы */}
+                  {(isEdit ? lesson?.lessonType : lessonTypeFromForm) === 'ARTICLE' && 'Статья'}
+                  {(isEdit ? lesson?.lessonType : lessonTypeFromForm) === 'VIDEO' && 'Видео'}
+                  {(isEdit ? lesson?.lessonType : lessonTypeFromForm) === 'AUDIO' && 'Аудио'}
+                  {(isEdit ? lesson?.lessonType : lessonTypeFromForm) === 'QUIZ' && 'Тест'}
+                  {(isEdit ? lesson?.lessonType : lessonTypeFromForm) === 'CALCULATOR' && 'Калькулятор'}
+                  {!(isEdit ? lesson?.lessonType : lessonTypeFromForm) && 'Не указан'}
+                </Badge>
+              </Group>
+            </Paper>
+
+            {/* При создании - предупреждение, если не выбран тип */}
+            {!isEdit && !lessonTypeFromForm && (
+              <Paper p="xl" withBorder>
+                <Text c="dimmed" ta="center">
+                  Сначала укажите тип урока во вкладке «Настройки»
+                </Text>
               </Paper>
+            )}
 
-              {!lesson?.lessonType && (
-                <Paper p="xl" withBorder>
-                  <Text c="dimmed" ta="center">
-                    Сначала укажите тип урока во вкладке «Настройки»
-                  </Text>
-                </Paper>
-              )}
+            {/* При редактировании - если тип не выбран */}
+            {isEdit && !lesson?.lessonType && (
+              <Paper p="xl" withBorder>
+                <Text c="dimmed" ta="center">
+                  Сначала укажите тип урока во вкладке «Настройки»
+                </Text>
+              </Paper>
+            )}
 
-              {lesson?.lessonType === 'ARTICLE' && (
-                <Card withBorder padding="md">
+            {/* ARTICLE */}
+            {(isEdit ? lesson?.lessonType : lessonTypeFromForm) === 'ARTICLE' && (
+              <Card withBorder padding="md">
+                {isEdit ? (
                   <TextContentEditor
                     initialContent={content?.textContent?.body || ''}
                     onSave={saveTextContent}
                     saving={contentSaving}
                   />
-                </Card>
-              )}
+                ) : (
+                  <Paper p="xl" withBorder>
+                    <Stack align="center" gap="md">
+                      <Text c="dimmed">Сохраните урок, чтобы добавить контент</Text>
+                      <Button onClick={handleSubmit(onSubmit)} loading={saving}>
+                        Создать урок
+                      </Button>
+                    </Stack>
+                  </Paper>
+                )}
+              </Card>
+            )}
 
-              {lesson?.lessonType === 'VIDEO' && (
-                <Card withBorder padding="md">
+            {/* VIDEO */}
+            {(isEdit ? lesson?.lessonType : lessonTypeFromForm) === 'VIDEO' && (
+              <Card withBorder padding="md">
+                {isEdit ? (
                   <VideoContentEditor
                     initialUrl={content?.videoContent?.videoUrl || ''}
                     onSave={saveVideoContent}
                     saving={contentSaving}
                   />
-                </Card>
-              )}
+                ) : (
+                  <Paper p="xl" withBorder>
+                    <Stack align="center" gap="md">
+                      <Text c="dimmed">Сохраните урок, чтобы добавить видео</Text>
+                      <Button onClick={handleSubmit(onSubmit)} loading={saving}>
+                        Создать урок
+                      </Button>
+                    </Stack>
+                  </Paper>
+                )}
+              </Card>
+            )}
 
-              {lesson?.lessonType === 'AUDIO' && (
-                <Card withBorder padding="md">
+            {/* AUDIO */}
+            {(isEdit ? lesson?.lessonType : lessonTypeFromForm) === 'AUDIO' && (
+              <Card withBorder padding="md">
+                {isEdit ? (
                   <AudioContentEditor
                     initialUrl={content?.audioContent?.audioUrl || ''}
                     onSave={saveAudioContent}
                     saving={contentSaving}
                   />
-                </Card>
-              )}
+                ) : (
+                  <Paper p="xl" withBorder>
+                    <Stack align="center" gap="md">
+                      <Text c="dimmed">Сохраните урок, чтобы добавить аудио</Text>
+                      <Button onClick={handleSubmit(onSubmit)} loading={saving}>
+                        Создать урок
+                      </Button>
+                    </Stack>
+                  </Paper>
+                )}
+              </Card>
+            )}
 
-              {lesson?.lessonType === 'QUIZ' && (
-                <Card withBorder padding="md">
+            {/* QUIZ */}
+            {(isEdit ? lesson?.lessonType : lessonTypeFromForm) === 'QUIZ' && (
+              <Card withBorder padding="md">
+                {isEdit ? (
                   <QuizContentEditor
                     initialQuestions={content?.quizContent?.questions || []}
                     initialPassingScore={content?.quizContent?.passingScore || 70}
                     onSave={saveQuizContent}
                     saving={contentSaving}
                   />
-                </Card>
-              )}
-            </Stack>
-          </Tabs.Panel>
-        </Tabs>
-      ) : (
-        <SettingsForm
-          register={register}
-          errors={errors}
-          control={control}
-          watch={watch}
-          setValue={setValue}
-          courses={courses}
-          tags={tags}
-          coverImage={coverImage}
-          handleCoverUpload={handleCoverUpload}
-          onSubmit={handleSubmit(onSubmit)}
-        />
-      )}
+                ) : (
+                  <Paper p="xl" withBorder>
+                    <Stack align="center" gap="md">
+                      <Text c="dimmed">Сохраните урок, чтобы создать тест</Text>
+                      <Button onClick={handleSubmit(onSubmit)} loading={saving}>
+                        Создать урок
+                      </Button>
+                    </Stack>
+                  </Paper>
+                )}
+              </Card>
+            )}
+          </Stack>
+        </Tabs.Panel>
+      </Tabs>
     </Stack>
   )
 }
