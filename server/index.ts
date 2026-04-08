@@ -1586,8 +1586,8 @@ app.get('/api/doc', (c) => {
 })
 
 // Swagger UI
-const API_URL = process.env.API_URL || 'http://localhost:3000'
-app.get('/api/swagger', swaggerUI({ url: `${API_URL}/api/doc` }))
+const API_URL = process.env.API_URL || '/api'
+app.get('/api/swagger', swaggerUI({ url: `${API_URL}/doc` }))
 
 // API роуты
 app.route('/api/auth', authRoutes)

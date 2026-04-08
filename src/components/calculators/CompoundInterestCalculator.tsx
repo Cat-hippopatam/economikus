@@ -17,6 +17,7 @@ import {
   ThemeIcon,
   Table,
   ScrollArea,
+  SegmentedControl,
 } from '@mantine/core'
 import { TrendingUp, PiggyBank, Percent, Calendar, RefreshCw } from 'lucide-react'
 import { 
@@ -24,6 +25,8 @@ import {
   formatCurrency, 
   formatPercent 
 } from '@/utils/calculators'
+import { AreaChart, DonutChart } from '@/components/charts'
+import { PrintButton } from '@/components/print'
 import type { CompoundInterestParams } from '@/types/calculator'
 
 const ICON_SIZE = 18
@@ -37,7 +40,65 @@ export function CompoundInterestCalculator() {
     compoundFrequency: 'monthly',
   })
 
+  const [viewMode, setViewMode] = useState<'table' | 'chart'>('table')
+
   const result = useMemo(() => calculateCompoundInterest(params), [params])
+
+  // Данные для графиков
+  const areaChartData = useMemo(() => {
+    let cumulativeInterest = 0
+    return result.yearlyBreakdown.map((row) => {
+      cumulativeInterest += row.interest
+      return {
+        year: row.year,
+        endBalance: row.endBalance,
+        totalContributions: row.year === 1 
+          ? params.principal + row.contribution 
+          : result.yearlyBreakdown[row.year - 2].endBalance + row.contribution,
+        interest: cumulativeInterest,
+      }
+    })
+  }, [result, params.principal])
+
+  const donutChartData = useMemo(() => [
+    { name: 'Ваши взносы', value: result.totalContributions, color: '#264653' },
+    { name: 'Доход от процентов', value: result.totalInterest, color: '#2A9D8F' },
+  ], [result])
+
+  // Данные для PDF-отчёта
+  const reportData = useMemo(() => ({
+    title: 'Калькулятор сложного процента',
+    subtitle: 'Расчёт инвестиций с капитализацией процентов',
+    date: new Date().toLocaleDateString('ru-RU', {
+      day: 'numeric',
+      month: 'long',
+      year: 'numeric',
+    }),
+    params: {
+      'Начальная сумма': formatCurrency(params.principal),
+      'Ежемесячный взнос': formatCurrency(params.monthlyContribution),
+      'Годовая доходность': `${params.annualRate}%`,
+      'Срок инвестирования': `${params.years} лет`,
+      'Капитализация': params.compoundFrequency === 'monthly' ? 'Ежемесячно' 
+        : params.compoundFrequency === 'quarterly' ? 'Ежеквартально' : 'Ежегодно',
+    },
+    results: {
+      'Итоговая сумма': formatCurrency(result.finalAmount),
+      'Ваши взносы': formatCurrency(result.totalContributions),
+      'Доход от процентов': formatCurrency(result.totalInterest),
+      'Доходность': formatPercent((result.finalAmount / result.totalContributions - 1) * 100),
+    },
+    tableData: result.yearlyBreakdown.map(row => ({
+      label: `Год ${row.year}`,
+      values: [
+        formatCurrency(row.startBalance),
+        formatCurrency(row.contribution),
+        formatCurrency(row.interest),
+        formatCurrency(row.endBalance),
+      ],
+    })),
+    tableHeaders: ['Год', 'Начало года', 'Взносы', 'Проценты', 'Конец года'],
+  }), [params, result])
 
   const handleReset = () => {
     setParams({
@@ -202,31 +263,73 @@ export function CompoundInterestCalculator() {
 
       {/* Детализация по годам */}
       <Paper p="lg" withBorder>
-        <Text fw={600} size="lg" mb="md">Динамика по годам</Text>
-        <ScrollArea>
-          <Table striped highlightOnHover miw={600}>
-            <Table.Thead>
-              <Table.Tr>
-                <Table.Th>Год</Table.Th>
-                <Table.Th>Начало года</Table.Th>
-                <Table.Th>Взносы за год</Table.Th>
-                <Table.Th>Проценты</Table.Th>
-                <Table.Th>Конец года</Table.Th>
-              </Table.Tr>
-            </Table.Thead>
-            <Table.Tbody>
-              {result.yearlyBreakdown.map((row) => (
-                <Table.Tr key={row.year}>
-                  <Table.Td fw={500}>{row.year}</Table.Td>
-                  <Table.Td>{formatCurrency(row.startBalance)}</Table.Td>
-                  <Table.Td>{formatCurrency(row.contribution)}</Table.Td>
-                  <Table.Td c="teal">{formatCurrency(row.interest)}</Table.Td>
-                  <Table.Td fw={600}>{formatCurrency(row.endBalance)}</Table.Td>
+        <Group justify="space-between" mb="md">
+          <Text fw={600} size="lg">Динамика по годам</Text>
+          <SegmentedControl
+            value={viewMode}
+            onChange={(value) => setViewMode(value as 'table' | 'chart')}
+            data={[
+              { value: 'table', label: 'Таблица' },
+              { value: 'chart', label: 'График' },
+            ]}
+            size="sm"
+          />
+        </Group>
+
+        {viewMode === 'table' ? (
+          <ScrollArea>
+            <Table striped highlightOnHover miw={600}>
+              <Table.Thead>
+                <Table.Tr>
+                  <Table.Th>Год</Table.Th>
+                  <Table.Th>Начало года</Table.Th>
+                  <Table.Th>Взносы за год</Table.Th>
+                  <Table.Th>Проценты</Table.Th>
+                  <Table.Th>Конец года</Table.Th>
                 </Table.Tr>
-              ))}
-            </Table.Tbody>
-          </Table>
-        </ScrollArea>
+              </Table.Thead>
+              <Table.Tbody>
+                {result.yearlyBreakdown.map((row) => (
+                  <Table.Tr key={row.year}>
+                    <Table.Td fw={500}>{row.year}</Table.Td>
+                    <Table.Td>{formatCurrency(row.startBalance)}</Table.Td>
+                    <Table.Td>{formatCurrency(row.contribution)}</Table.Td>
+                    <Table.Td c="teal">{formatCurrency(row.interest)}</Table.Td>
+                    <Table.Td fw={600}>{formatCurrency(row.endBalance)}</Table.Td>
+                  </Table.Tr>
+                ))}
+              </Table.Tbody>
+            </Table>
+          </ScrollArea>
+        ) : (
+          <Stack gap="xl">
+            {/* График роста капитала */}
+            <Box>
+              <Text size="sm" fw={500} mb="md">Рост капитала</Text>
+              <AreaChart
+                data={areaChartData}
+                xKey="year"
+                lines={[
+                  { key: 'endBalance', name: 'Общий баланс', color: '#2A9D8F' },
+                  { key: 'totalContributions', name: 'Ваши взносы', color: '#264653' },
+                  { key: 'interest', name: 'Накопленные проценты', color: '#F4A261' },
+                ]}
+                height={300}
+              />
+            </Box>
+
+            {/* Круговая диаграмма */}
+            <Box>
+              <Text size="sm" fw={500} mb="md">Соотношение взносов и дохода</Text>
+              <DonutChart
+                data={donutChartData}
+                height={280}
+                innerRadius={50}
+                outerRadius={90}
+              />
+            </Box>
+          </Stack>
+        )}
       </Paper>
 
       {/* Информация */}
@@ -245,6 +348,15 @@ export function CompoundInterestCalculator() {
           </Box>
         </Group>
       </Paper>
+
+      {/* Кнопка печати */}
+      <Group justify="center">
+        <PrintButton 
+          data={reportData} 
+          filename="compound-interest-report.pdf"
+          size="md"
+        />
+      </Group>
     </Stack>
   )
 }

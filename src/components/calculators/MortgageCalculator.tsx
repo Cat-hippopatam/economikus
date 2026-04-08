@@ -28,6 +28,8 @@ import {
   formatCurrency,
   formatNumber,
 } from '@/utils/calculators'
+import { StackedBarChart, AreaChart, DonutChart } from '@/components/charts'
+import { PrintButton } from '@/components/print'
 import type { MortgageParams } from '@/types/calculator'
 
 const ICON_SIZE = 18
@@ -44,6 +46,8 @@ export function MortgageCalculator() {
     maternityCapitalAmount: MATERNITY_CAPITAL_ACTUAL,
   })
 
+  const [viewMode, setViewMode] = useState<'table' | 'chart'>('table')
+
   const result = useMemo(() => {
     // Рассчитываем amount как разницу между стоимостью и взносом
     const amount = params.propertyValue - params.downPayment;
@@ -52,6 +56,28 @@ export function MortgageCalculator() {
       amount
     });
   }, [params])
+
+  // Данные для графиков
+  const chartData = useMemo(() => {
+    const maxPoints = 60
+    const step = Math.max(1, Math.floor(result.schedule.length / maxPoints))
+    return result.schedule.filter((_, i) => i % step === 0 || i === result.schedule.length - 1)
+  }, [result])
+
+  const stackedBarData = useMemo(() => {
+    return chartData.map(row => ({
+      month: row.month,
+      principal: row.principal,
+      interest: row.interest,
+    }))
+  }, [chartData])
+
+  const donutChartData = useMemo(() => {
+    return [
+      { name: 'Основной долг', value: params.propertyValue - params.downPayment, color: '#264653' },
+      { name: 'Переплата (проценты)', value: result.totalInterest, color: '#E76F51' },
+    ]
+  }, [params.propertyValue, params.downPayment, result.totalInterest])
 
   const handleReset = () => {
     setParams({
@@ -77,6 +103,42 @@ export function MortgageCalculator() {
     if (m === 0) return `${years} ${years === 1 ? 'год' : years < 5 ? 'года' : 'лет'}`
     return `${years} ${years === 1 ? 'год' : years < 5 ? 'года' : 'лет'} ${m} мес.`
   }
+
+  // Данные для PDF-отчёта
+  const reportData = useMemo(() => ({
+    title: 'Ипотечный калькулятор',
+    subtitle: params.type === 'annuity' ? 'Аннуитетный платёж' : 'Дифференцированный платёж',
+    date: new Date().toLocaleDateString('ru-RU', {
+      day: 'numeric',
+      month: 'long',
+      year: 'numeric',
+    }),
+    params: {
+      'Стоимость недвижимости': formatCurrency(params.propertyValue),
+      'Первоначальный взнос': formatCurrency(params.downPayment),
+      'Годовая ставка': `${params.annualRate}%`,
+      'Срок ипотеки': formatTerm(params.termMonths),
+      'Тип платежа': params.type === 'annuity' ? 'Аннуитетный' : 'Дифференцированный',
+      ...(params.useMaternityCapital ? { 'Материнский капитал': formatCurrency(params.maternityCapitalAmount) } : {}),
+    },
+    results: {
+      'Сумма кредита': formatCurrency(loanAmount),
+      [params.type === 'annuity' ? 'Ежемесячный платёж' : 'Первый платёж']: formatCurrency(result.monthlyPayment),
+      'Переплата': formatCurrency(result.totalInterest),
+      'Рекомендуемый доход': formatCurrency(result.requiredIncome),
+      'Налоговый вычет': formatCurrency(result.taxDeduction + result.interestDeduction),
+    },
+    tableData: result.schedule.slice(0, 24).map(row => ({
+      label: `Месяц ${row.month}`,
+      values: [
+        formatCurrency(row.payment),
+        formatCurrency(row.principal),
+        formatCurrency(row.interest),
+        formatCurrency(row.balance),
+      ],
+    })),
+    tableHeaders: ['Месяц', 'Платёж', 'Основной долг', 'Проценты', 'Остаток'],
+  }), [params, result, loanAmount, formatTerm])
 
   return (
     <Stack gap="xl">
@@ -322,40 +384,96 @@ export function MortgageCalculator() {
       {/* График платежей */}
       <Paper p="lg" withBorder>
         <Group justify="space-between" mb="md">
-          <Text fw={600} size="lg">График платежей</Text>
-          <Badge variant="light" color="gray">
-            {params.termMonths} платежей
-          </Badge>
+          <Group gap="sm">
+            <Text fw={600} size="lg">График платежей</Text>
+            <Badge variant="light" color="gray">
+              {params.termMonths} платежей
+            </Badge>
+          </Group>
+          <SegmentedControl
+            value={viewMode}
+            onChange={(value) => setViewMode(value as 'table' | 'chart')}
+            data={[
+              { value: 'table', label: 'Таблица' },
+              { value: 'chart', label: 'График' },
+            ]}
+            size="sm"
+          />
         </Group>
-        <ScrollArea h={300}>
-          <Table striped highlightOnHover miw={500}>
-            <Table.Thead>
-              <Table.Tr>
-                <Table.Th>Месяц</Table.Th>
-                <Table.Th>Платёж</Table.Th>
-                <Table.Th>Основной долг</Table.Th>
-                <Table.Th>Проценты</Table.Th>
-                <Table.Th>Остаток</Table.Th>
-              </Table.Tr>
-            </Table.Thead>
-            <Table.Tbody>
-              {result.schedule.slice(0, 36).map((row) => (
-                <Table.Tr key={row.month}>
-                  <Table.Td fw={500}>{row.month}</Table.Td>
-                  <Table.Td>{formatCurrency(row.payment)}</Table.Td>
-                  <Table.Td>{formatCurrency(row.principal)}</Table.Td>
-                  <Table.Td c="orange">{formatCurrency(row.interest)}</Table.Td>
-                  <Table.Td>{formatCurrency(row.balance)}</Table.Td>
+
+        {viewMode === 'table' ? (
+          <ScrollArea h={300}>
+            <Table striped highlightOnHover miw={500}>
+              <Table.Thead>
+                <Table.Tr>
+                  <Table.Th>Месяц</Table.Th>
+                  <Table.Th>Платёж</Table.Th>
+                  <Table.Th>Основной долг</Table.Th>
+                  <Table.Th>Проценты</Table.Th>
+                  <Table.Th>Остаток</Table.Th>
                 </Table.Tr>
-              ))}
-            </Table.Tbody>
-          </Table>
-          {params.termMonths > 36 && (
-            <Text size="sm" c="dimmed" ta="center" mt="md">
-              Показаны первые 36 месяцев из {params.termMonths}
-            </Text>
-          )}
-        </ScrollArea>
+              </Table.Thead>
+              <Table.Tbody>
+                {result.schedule.slice(0, 36).map((row) => (
+                  <Table.Tr key={row.month}>
+                    <Table.Td fw={500}>{row.month}</Table.Td>
+                    <Table.Td>{formatCurrency(row.payment)}</Table.Td>
+                    <Table.Td>{formatCurrency(row.principal)}</Table.Td>
+                    <Table.Td c="orange">{formatCurrency(row.interest)}</Table.Td>
+                    <Table.Td>{formatCurrency(row.balance)}</Table.Td>
+                  </Table.Tr>
+                ))}
+              </Table.Tbody>
+            </Table>
+            {params.termMonths > 36 && (
+              <Text size="sm" c="dimmed" ta="center" mt="md">
+                Показаны первые 36 месяцев из {params.termMonths}
+              </Text>
+            )}
+          </ScrollArea>
+        ) : (
+          <Stack gap="xl">
+            {/* Структура платежей */}
+            <Box>
+              <Text size="sm" fw={500} mb="md">Структура платежей (основной долг vs проценты)</Text>
+              <StackedBarChart
+                data={stackedBarData}
+                xKey="month"
+                bars={[
+                  { dataKey: 'principal', name: 'Основной долг', color: '#2A9D8F' },
+                  { dataKey: 'interest', name: 'Проценты', color: '#E76F51' },
+                ]}
+                height={280}
+                formatX={(v) => `М${v}`}
+              />
+            </Box>
+
+            {/* Остаток долга */}
+            <Box>
+              <Text size="sm" fw={500} mb="md">Остаток задолженности</Text>
+              <AreaChart
+                data={chartData}
+                xKey="month"
+                lines={[
+                  { key: 'balance', name: 'Остаток долга', color: '#264653' },
+                ]}
+                height={220}
+                formatX={(v) => `М${v}`}
+              />
+            </Box>
+
+            {/* Соотношение долга и переплаты */}
+            <Box>
+              <Text size="sm" fw={500} mb="md">Соотношение суммы кредита и переплаты</Text>
+              <DonutChart
+                data={donutChartData}
+                height={250}
+                innerRadius={50}
+                outerRadius={90}
+              />
+            </Box>
+          </Stack>
+        )}
       </Paper>
 
       {/* Информация */}
@@ -374,6 +492,15 @@ export function MortgageCalculator() {
           </Box>
         </Group>
       </Paper>
+
+      {/* Кнопка печати */}
+      <Group justify="center">
+        <PrintButton 
+          data={reportData} 
+          filename="mortgage-report.pdf"
+          size="md"
+        />
+      </Group>
     </Stack>
   )
 }

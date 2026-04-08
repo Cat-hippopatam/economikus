@@ -25,6 +25,8 @@ import {
   formatCurrency, 
   formatPercent 
 } from '@/utils/calculators'
+import { StackedBarChart, AreaChart } from '@/components/charts'
+import { PrintButton } from '@/components/print'
 import type { LoanParams } from '@/types/calculator'
 
 const ICON_SIZE = 18
@@ -37,7 +39,24 @@ export function LoanCalculator() {
     type: 'annuity',
   })
 
+  const [viewMode, setViewMode] = useState<'table' | 'chart'>('table')
+
   const result = useMemo(() => calculateLoan(params), [params])
+
+  // Данные для графиков - семплируем если слишком много месяцев
+  const chartData = useMemo(() => {
+    const maxPoints = 60
+    const step = Math.max(1, Math.floor(result.schedule.length / maxPoints))
+    return result.schedule.filter((_, i) => i % step === 0 || i === result.schedule.length - 1)
+  }, [result])
+
+  const stackedBarData = useMemo(() => {
+    return chartData.map(row => ({
+      month: row.month,
+      principal: row.principal,
+      interest: row.interest,
+    }))
+  }, [chartData])
 
   const handleReset = () => {
     setParams({
@@ -55,6 +74,39 @@ export function LoanCalculator() {
     if (m === 0) return `${years} ${years === 1 ? 'год' : years < 5 ? 'года' : 'лет'}`
     return `${years} ${years === 1 ? 'год' : years < 5 ? 'года' : 'лет'} ${m} мес.`
   }
+
+  // Данные для PDF-отчёта
+  const reportData = useMemo(() => ({
+    title: 'Кредитный калькулятор',
+    subtitle: params.type === 'annuity' ? 'Аннуитетный платёж' : 'Дифференцированный платёж',
+    date: new Date().toLocaleDateString('ru-RU', {
+      day: 'numeric',
+      month: 'long',
+      year: 'numeric',
+    }),
+    params: {
+      'Сумма кредита': formatCurrency(params.amount),
+      'Годовая ставка': `${params.annualRate}%`,
+      'Срок кредита': formatTerm(params.termMonths),
+      'Тип платежа': params.type === 'annuity' ? 'Аннуитетный' : 'Дифференцированный',
+    },
+    results: {
+      [params.type === 'annuity' ? 'Ежемесячный платёж' : 'Первый платёж']: formatCurrency(result.monthlyPayment),
+      'Общая сумма выплат': formatCurrency(result.totalPayment),
+      'Переплата по процентам': formatCurrency(result.totalInterest),
+      'Переплата': formatPercent(result.overpaymentPercent),
+    },
+    tableData: result.schedule.slice(0, 24).map(row => ({
+      label: `Месяц ${row.month}`,
+      values: [
+        formatCurrency(row.payment),
+        formatCurrency(row.principal),
+        formatCurrency(row.interest),
+        formatCurrency(row.balance),
+      ],
+    })),
+    tableHeaders: ['Месяц', 'Платёж', 'Основной долг', 'Проценты', 'Остаток'],
+  }), [params, result, formatTerm])
 
   return (
     <Stack gap="xl">
@@ -197,40 +249,85 @@ export function LoanCalculator() {
       {/* График платежей */}
       <Paper p="lg" withBorder>
         <Group justify="space-between" mb="md">
-          <Text fw={600} size="lg">График платежей</Text>
-          <Badge variant="light" color="gray">
-            {params.termMonths} платежей
-          </Badge>
+          <Group gap="sm">
+            <Text fw={600} size="lg">График платежей</Text>
+            <Badge variant="light" color="gray">
+              {params.termMonths} платежей
+            </Badge>
+          </Group>
+          <SegmentedControl
+            value={viewMode}
+            onChange={(value) => setViewMode(value as 'table' | 'chart')}
+            data={[
+              { value: 'table', label: 'Таблица' },
+              { value: 'chart', label: 'График' },
+            ]}
+            size="sm"
+          />
         </Group>
-        <ScrollArea h={400}>
-          <Table striped highlightOnHover miw={500}>
-            <Table.Thead>
-              <Table.Tr>
-                <Table.Th>Месяц</Table.Th>
-                <Table.Th>Платёж</Table.Th>
-                <Table.Th>Основной долг</Table.Th>
-                <Table.Th>Проценты</Table.Th>
-                <Table.Th>Остаток</Table.Th>
-              </Table.Tr>
-            </Table.Thead>
-            <Table.Tbody>
-              {result.schedule.slice(0, 60).map((row) => (
-                <Table.Tr key={row.month}>
-                  <Table.Td fw={500}>{row.month}</Table.Td>
-                  <Table.Td>{formatCurrency(row.payment)}</Table.Td>
-                  <Table.Td>{formatCurrency(row.principal)}</Table.Td>
-                  <Table.Td c="orange">{formatCurrency(row.interest)}</Table.Td>
-                  <Table.Td>{formatCurrency(row.balance)}</Table.Td>
+
+        {viewMode === 'table' ? (
+          <ScrollArea h={400}>
+            <Table striped highlightOnHover miw={500}>
+              <Table.Thead>
+                <Table.Tr>
+                  <Table.Th>Месяц</Table.Th>
+                  <Table.Th>Платёж</Table.Th>
+                  <Table.Th>Основной долг</Table.Th>
+                  <Table.Th>Проценты</Table.Th>
+                  <Table.Th>Остаток</Table.Th>
                 </Table.Tr>
-              ))}
-            </Table.Tbody>
-          </Table>
-          {params.termMonths > 60 && (
-            <Text size="sm" c="dimmed" ta="center" mt="md">
-              Показаны первые 60 месяцев из {params.termMonths}
-            </Text>
-          )}
-        </ScrollArea>
+              </Table.Thead>
+              <Table.Tbody>
+                {result.schedule.slice(0, 60).map((row) => (
+                  <Table.Tr key={row.month}>
+                    <Table.Td fw={500}>{row.month}</Table.Td>
+                    <Table.Td>{formatCurrency(row.payment)}</Table.Td>
+                    <Table.Td>{formatCurrency(row.principal)}</Table.Td>
+                    <Table.Td c="orange">{formatCurrency(row.interest)}</Table.Td>
+                    <Table.Td>{formatCurrency(row.balance)}</Table.Td>
+                  </Table.Tr>
+                ))}
+              </Table.Tbody>
+            </Table>
+            {params.termMonths > 60 && (
+              <Text size="sm" c="dimmed" ta="center" mt="md">
+                Показаны первые 60 месяцев из {params.termMonths}
+              </Text>
+            )}
+          </ScrollArea>
+        ) : (
+          <Stack gap="xl">
+            {/* Структура платежей */}
+            <Box>
+              <Text size="sm" fw={500} mb="md">Структура платежей (основной долг vs проценты)</Text>
+              <StackedBarChart
+                data={stackedBarData}
+                xKey="month"
+                bars={[
+                  { dataKey: 'principal', name: 'Основной долг', color: '#2A9D8F' },
+                  { dataKey: 'interest', name: 'Проценты', color: '#E76F51' },
+                ]}
+                height={300}
+                formatX={(v) => `М${v}`}
+              />
+            </Box>
+
+            {/* Остаток долга */}
+            <Box>
+              <Text size="sm" fw={500} mb="md">Остаток задолженности</Text>
+              <AreaChart
+                data={chartData}
+                xKey="month"
+                lines={[
+                  { key: 'balance', name: 'Остаток долга', color: '#264653' },
+                ]}
+                height={250}
+                formatX={(v) => `М${v}`}
+              />
+            </Box>
+          </Stack>
+        )}
       </Paper>
 
       {/* Информация */}
@@ -249,6 +346,15 @@ export function LoanCalculator() {
           </Box>
         </Group>
       </Paper>
+
+      {/* Кнопка печати */}
+      <Group justify="center">
+        <PrintButton 
+          data={reportData} 
+          filename="loan-report.pdf"
+          size="md"
+        />
+      </Group>
     </Stack>
   )
 }
