@@ -131,8 +131,8 @@ export function Header() {
             </Text>
           </Link>
 
- {/* Навигация - десктоп (только для больших экранов) */}
-<Group gap="xs" visibleFrom="lg">
+ {/* Навигация - десктоп */}
+<Group gap="xs" visibleFrom="sm">
  {NAV_LINKS.filter(link => 
  ['/catalog', '/calculators', '/info'].includes(link.to)
  ).map((link) => {
@@ -151,7 +151,7 @@ export function Header() {
  )
  })}
 
- {/* Меню "Ещё" - только для больших экранов (Group уже ограничивает) */}
+ {/* Меню "Ещё" */}
 <Menu position="bottom-end" shadow="md" width={180}>
 <Menu.Target>
 <Button 
@@ -182,8 +182,8 @@ export function Header() {
 </Menu>
 </Group>
 
- {/* Кнопки входа/регистрации - видны только на больших экранах */}
-<Group gap="xs" visibleFrom="lg">
+ {/* Кнопки входа/регистрации - видны всегда на десктопе */}
+<Group gap="xs" visibleFrom="sm">
  {user ? (
 <Menu position="bottom-end" shadow="md" width={200}>
 <Menu.Target>
@@ -300,11 +300,11 @@ export function Header() {
  )}
 </Group>
      
- {/* Бургер меню - для экранов меньше lg */}
+ {/* Бургер меню - для экранов меньше md */}
 <Burger 
  opened={opened} 
  onClick={toggle} 
- hiddenFrom="lg"
+ hiddenFrom="md"
  size="sm"
 />
         </Group>

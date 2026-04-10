@@ -33,7 +33,7 @@ import { PrintButton } from '@/components/print'
 import type { MortgageParams } from '@/types/calculator'
 
 const ICON_SIZE = 18
-const MATERNITY_CAPITAL_ACTUAL = 690267
+const MATERNITY_CAPITAL_2024 = 586946
 
 export function MortgageCalculator() {
   const [params, setParams] = useState<Omit<MortgageParams, 'amount'>>({
@@ -43,7 +43,7 @@ export function MortgageCalculator() {
     termMonths: 240,
     type: 'annuity',
     useMaternityCapital: false,
-    maternityCapitalAmount: MATERNITY_CAPITAL_ACTUAL,
+    maternityCapitalAmount: MATERNITY_CAPITAL_2024,
   })
 
   const [viewMode, setViewMode] = useState<'table' | 'chart'>('table')
@@ -87,7 +87,7 @@ export function MortgageCalculator() {
       termMonths: 240,
       type: 'annuity',
       useMaternityCapital: false,
-      maternityCapitalAmount: MATERNITY_CAPITAL_ACTUAL,
+      maternityCapitalAmount: MATERNITY_CAPITAL_2024,
     })
   }
 
@@ -301,7 +301,7 @@ export function MortgageCalculator() {
                   onChange={(value) => setParams({ ...params, maternityCapitalAmount: Number(value) || 0 })}
                   thousandSeparator=" "
                   suffix=" ₽"
-                  description={`В 2025 году: ${formatCurrency(MATERNITY_CAPITAL_ACTUAL)}`}
+                  description={`В 2024 году: ${formatCurrency(MATERNITY_CAPITAL_2024)}`}
                 />
               </Box>
             </Collapse>
