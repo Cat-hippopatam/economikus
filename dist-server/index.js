@@ -22369,8 +22369,8 @@ app.get("/api/doc", (c) => {
     }
   });
 });
-var API_URL = process.env.API_URL || "http://localhost:3000";
-app.get("/api/swagger", middleware({ url: `${API_URL}/api/doc` }));
+var API_URL = process.env.API_URL || "/api";
+app.get("/api/swagger", middleware({ url: `${API_URL}/doc` }));
 app.route("/api/auth", auth_routes_default);
 app.route("/api/courses", courses_routes_default);
 app.route("/api/lessons", lessons_routes_default);

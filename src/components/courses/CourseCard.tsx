@@ -177,7 +177,7 @@ export function CourseCard({ course }: CourseCardProps) {
         {course.author && (
           <Group gap="xs">
             <Text size="sm" c="dimmed">
-              {course.author.displayName || course.author.nickname}
+              {course.author?.displayName || course.author?.nickname || 'Неизвестно'}
             </Text>
           </Group>
         )}

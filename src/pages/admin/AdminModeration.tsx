@@ -194,10 +194,17 @@ export function AdminModeration() {
                 <Card key={comment.id} shadow="xs" padding="md" radius="md" withBorder>
                   <Group justify="space-between" wrap="nowrap">
                     <Group wrap="nowrap">
-                      <Avatar src={comment.author.avatarUrl} radius="xl" size="md" />
+                      <Avatar 
+                        src={comment.author?.avatarUrl} 
+                        radius="xl" 
+                        size="md"
+                        color="blue"
+                      >
+                        {comment.author?.displayName?.[0] || '?'}
+                      </Avatar>
                       <Box>
                         <Group gap="xs">
-                          <Text fw={500}>{comment.author.displayName}</Text>
+                          <Text fw={500}>{comment.author?.displayName || 'Неизвестно'}</Text>
                           <Badge color={statusColors[comment.status]} size="sm">
                             {statusLabels[comment.status]}
                           </Badge>
@@ -269,8 +276,15 @@ export function AdminModeration() {
                       </Table.Td>
                       <Table.Td>
                         <Group gap="xs">
-                          <Avatar src={item.author.avatarUrl} radius="xl" size="sm" />
-                          <Text size="sm">{item.author.displayName}</Text>
+                          <Avatar 
+                            src={item.author?.avatarUrl} 
+                            radius="xl" 
+                            size="sm" 
+                            color="blue"
+                          >
+                            {item.author?.displayName?.[0] || '?'}
+                          </Avatar>
+                          <Text size="sm">{item.author?.displayName || 'Неизвестно'}</Text>
                         </Group>
                       </Table.Td>
                       <Table.Td>

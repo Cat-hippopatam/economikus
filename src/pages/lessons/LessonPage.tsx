@@ -377,7 +377,7 @@ function Sidebar({
     <Stack gap="md">
       <Group justify="space-between">
         <Text fw={500}>Содержание курса</Text>
-        <ActionIcon variant="subtle" onClick={onClose} className="md:hidden">
+        <ActionIcon variant="subtle" onClick={onClose}>
           <X size={18} />
         </ActionIcon>
       </Group>
@@ -439,7 +439,7 @@ function Sidebar({
 
   return (
     <>
-      {/* Мобильная версия */}
+      {/* Мобильная версия - Drawer на весь экран */}
       <Box
         className="md:hidden"
         style={{
@@ -451,26 +451,45 @@ function Sidebar({
           backgroundColor: 'white',
           zIndex: 1000,
           padding: 16,
-          transition: 'left 0.3s',
+          transition: 'left 0.3s ease',
+          overflow: 'auto',
         }}
       >
         {content}
       </Box>
 
-      {/* Десктопная версия */}
-      <Paper
-        className="hidden md:block"
-        p="md"
-        withBorder
-        style={{
-          position: 'sticky',
-          top: 80,
-          width: 280,
-          flexShrink: 0,
-        }}
-      >
-        {content}
-      </Paper>
+      {/* Затемнение фона для мобильного меню */}
+      {isOpen && (
+        <Box
+          className="md:hidden"
+          onClick={onClose}
+          style={{
+            position: 'fixed',
+            top: 0,
+            left: 0,
+            width: '100%',
+            height: '100vh',
+            backgroundColor: 'rgba(0, 0, 0, 0.5)',
+            zIndex: 999,
+          }}
+        />
+      )}
+
+      {/* Десктопная версия - всегда видна только на экранах md и выше */}
+      <Box className="hidden md:block">
+        <Paper
+          p="md"
+          withBorder
+          style={{
+            position: 'sticky',
+            top: 80,
+            width: 280,
+            flexShrink: 0,
+          }}
+        >
+          {content}
+        </Paper>
+      </Box>
     </>
   )
 }
@@ -669,75 +688,127 @@ export default function LessonPage() {
         </Container>
       </Box>
 
+      {/* Сайдбар - вынесен отдельно для работы на мобильных */}
+      <Sidebar
+        modules={modules}
+        currentLessonId={lesson.id}
+        courseSlug={courseSlug || ''}
+        isOpen={sidebarOpen}
+        onClose={() => setSidebarOpen(false)}
+      />
+
       {/* Основной контент */}
       <Container size="lg" py="xl">
-        <Group align="flex-start" gap="xl" wrap="nowrap">
-          {/* Сайдбар - только на десктопе */}
-          <Sidebar
-            modules={modules}
-            currentLessonId={lesson.id}
-            courseSlug={courseSlug || ''}
-            isOpen={sidebarOpen}
-            onClose={() => setSidebarOpen(false)}
-          />
+        {/* Десктопная верстка - с Group */}
+        <Box className="hidden md:block">
+          <Group align="flex-start" gap="xl" wrap="nowrap">
+            {/* Пустой блок вместо сайдбара, чтобы сохранить структуру */}
+            <Box style={{ width: 280, flexShrink: 0, visibility: 'hidden' }} />
 
-          {/* Контент урока */}
-          <Box style={{ flex: 1 }}>
-            <Stack gap="lg">
-              {/* Описание */}
-              {lesson.description && (
-                <Text c="dimmed">{lesson.description}</Text>
-              )}
+            <Box style={{ flex: 1 }}>
+              <Stack gap="lg">
+                {lesson.description && (
+                  <Text c="dimmed">{lesson.description}</Text>
+                )}
+                <LessonContent lesson={lesson} />
+                <Paper p="md" withBorder>
+                  <Group justify="space-between">
+                    {adjacent.prev ? (
+                      <Button
+                        component={Link}
+                        to={`/courses/${courseSlug}/lessons/${adjacent.prev.lesson.slug}`}
+                        variant="light"
+                        leftSection={<ChevronLeft size={16} />}
+                      >
+                        <Box>
+                          <Text size="xs" c="dimmed">Предыдущий урок</Text>
+                          <Text size="sm">{adjacent.prev.lesson.title}</Text>
+                        </Box>
+                      </Button>
+                    ) : (
+                      <Box />
+                    )}
+                    
+                    {adjacent.next ? (
+                      <Button
+                        component={Link}
+                        to={`/courses/${courseSlug}/lessons/${adjacent.next.lesson.slug}`}
+                        variant="light"
+                        rightSection={<ChevronRight size={16} />}
+                      >
+                        <Box style={{ textAlign: 'right' }}>
+                          <Text size="xs" c="dimmed">Следующий урок</Text>
+                          <Text size="sm">{adjacent.next.lesson.title}</Text>
+                        </Box>
+                      </Button>
+                    ) : (
+                      <Button
+                        component={Link}
+                        to={`/courses/${courseSlug}`}
+                        variant="filled"
+                        color="green"
+                      >
+                        Завершить курс
+                      </Button>
+                    )}
+                  </Group>
+                </Paper>
+              </Stack>
+            </Box>
+          </Group>
+        </Box>
 
-              {/* Контент */}
-              <LessonContent lesson={lesson} />
-
-              {/* Навигация между уроками */}
-              <Paper p="md" withBorder>
-                <Group justify="space-between">
-                  {adjacent.prev ? (
-                    <Button
-                      component={Link}
-                      to={`/courses/${courseSlug}/lessons/${adjacent.prev.lesson.slug}`}
-                      variant="light"
-                      leftSection={<ChevronLeft size={16} />}
-                    >
-                      <Box>
-                        <Text size="xs" c="dimmed">Предыдущий урок</Text>
-                        <Text size="sm">{adjacent.prev.lesson.title}</Text>
-                      </Box>
-                    </Button>
-                  ) : (
-                    <Box />
-                  )}
-                  
-                  {adjacent.next ? (
-                    <Button
-                      component={Link}
-                      to={`/courses/${courseSlug}/lessons/${adjacent.next.lesson.slug}`}
-                      variant="light"
-                      rightSection={<ChevronRight size={16} />}
-                    >
-                      <Box style={{ textAlign: 'right' }}>
-                        <Text size="xs" c="dimmed">Следующий урок</Text>
-                        <Text size="sm">{adjacent.next.lesson.title}</Text>
-                      </Box>
-                    </Button>
-                  ) : (
-                    <Button
-                      component={Link}
-                      to={`/courses/${courseSlug}`}
-                      variant="filled"
-                      color="green"
-                    >
-                      Завершить курс
-                    </Button>
-                  )}
-                </Group>
-              </Paper>
-            </Stack>
-          </Box>
-        </Group>
+        {/* Мобильная верстка - без Group, контент на всю ширину */}
+        <Box className="md:hidden">
+          <Stack gap="lg">
+            {lesson.description && (
+              <Text c="dimmed">{lesson.description}</Text>
+            )}
+            <LessonContent lesson={lesson} />
+            <Paper p="md" withBorder>
+              <Group justify="space-between">
+                {adjacent.prev ? (
+                  <Button
+                    component={Link}
+                    to={`/courses/${courseSlug}/lessons/${adjacent.prev.lesson.slug}`}
+                    variant="light"
+                    leftSection={<ChevronLeft size={16} />}
+                  >
+                    <Box>
+                      <Text size="xs" c="dimmed">Предыдущий урок</Text>
+                      <Text size="sm">{adjacent.prev.lesson.title}</Text>
+                    </Box>
+                  </Button>
+                ) : (
+                  <Box />
+                )}
+                
+                {adjacent.next ? (
+                  <Button
+                    component={Link}
+                    to={`/courses/${courseSlug}/lessons/${adjacent.next.lesson.slug}`}
+                    variant="light"
+                    rightSection={<ChevronRight size={16} />}
+                  >
+                    <Box style={{ textAlign: 'right' }}>
+                      <Text size="xs" c="dimmed">Следующий урок</Text>
+                      <Text size="sm">{adjacent.next.lesson.title}</Text>
+                    </Box>
+                  </Button>
+                ) : (
+                  <Button
+                    component={Link}
+                    to={`/courses/${courseSlug}`}
+                    variant="filled"
+                    color="green"
+                  >
+                    Завершить курс
+                  </Button>
+                )}
+              </Group>
+            </Paper>
+          </Stack>
+        </Box>
       </Container>
     </Box>
   )

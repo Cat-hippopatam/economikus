@@ -170,7 +170,7 @@ export function Header() {
  return (
 <Menu.Item 
  key={link.to}
- component={Link}
+ component={Link} 
  to={link.to}
  leftSection={<IconComponent size={16} />}
  >
@@ -412,6 +412,17 @@ export function Header() {
                   Панель автора
                 </Button>
               )}
+              
+              <Button
+                variant="subtle"
+                color="red"
+                onClick={() => { openDeletionModal(); close(); }}
+                leftSection={<Trash2 size={18} />}
+                fullWidth
+                justify="flex-start"
+              >
+                Отказаться от условий
+              </Button>
               
               <Button
                 variant="subtle"

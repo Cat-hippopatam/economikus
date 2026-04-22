@@ -214,11 +214,11 @@ export default function CoursePage() {
                   </Group>
                 </Group>
 
-                {course.author && (
+{course.author && (
                   <Group gap="sm" mt="md">
                     <Text style={{ opacity: 0.8 }}>Автор:</Text>
                     <Text fw={500}>
-                      {course.author.displayName || course.author.nickname}
+                      {course.author?.displayName || course.author?.nickname || 'Неизвестно'}
                     </Text>
                   </Group>
                 )}
