@@ -81,7 +81,7 @@ export default function App() {
             path="/profile" 
             element={
               <ProtectedRoute>
-                <Suspense fallback={<PageLoader />}><Navigate to="/profile/settings" replace /></Suspense>
+                <Suspense fallback={<PageLoader />}><Navigate to="/profile?tab=subscriptions" replace /></Suspense>
               </ProtectedRoute>
             } 
           />

@@ -9,9 +9,6 @@ const author = new Hono()
 // Все роуты требуют авторизации
 author.use('/*', requireAuth)
 
-// Все роуты требуют авторизации
-author.use('*', requireAuth)
-
 // === GET /author/application — получить текущую заявку ===
 author.get('/application', async (c) => {
   const profile = getCurrentProfile(c)
@@ -649,25 +646,72 @@ author.post('/lessons', async (c) => {
       }
     }
 
-    const lesson = await prisma.lesson.create({
-      data: {
+    // Валидация и подготовка тегов
+    let tagIds: string[] = []
+    if (tags && Array.isArray(tags) && tags.length > 0) {
+      // Обрабатываем как массив ID строк, так и массив объектов с id
+      tagIds = tags.map((t: any) => typeof t === 'string' ? t : t?.id).filter((id: string) => id)
+      
+      if (tagIds.length > 0) {
+        // Проверяем что теги существуют
+        const existingTags = await prisma.tag.findMany({
+          where: { id: { in: tagIds } },
+          select: { id: true }
+        })
+        const validTagIds = existingTags.map(t => t.id)
+        
+        if (validTagIds.length !== tagIds.length) {
+          const invalidIds = tagIds.filter((id: string) => !validTagIds.includes(id))
+          console.warn('Some tags not found:', invalidIds)
+        }
+        
+        if (validTagIds.length === 0) {
+          throw new AppError(400, 'Ни один из указанных тегов не найден')
+        }
+        
+        tagIds = validTagIds
+      }
+    }
+
+    console.log('Tag IDs to connect:', tagIds)
+
+    // Создаём урок через transaction чтобы добавить теги
+    const lesson = await prisma.$transaction(async (tx) => {
+      const lessonData: any = {
         title: title.trim(),
         slug: newSlug,
         description: description?.trim() || null,
         lessonType,
-        moduleId: moduleId || null,
         coverImage: coverImage || null,
         duration: duration || null,
         isPremium: isPremium || false,
         status: finalStatus,
         authorProfileId: profile.id,
-        ...(tags && tags.length > 0 && {
-          tags: {
-            connect: tags.map((id: string) => ({ id }))
-          }
-        }),
-      },
-      include: { }
+      }
+
+      // Добавляем модуль если указан
+      if (moduleId) {
+        lessonData.module = {
+          connect: { id: moduleId }
+        }
+      }
+
+      const newLesson = await tx.lesson.create({
+        data: lessonData,
+        include: { }
+      })
+
+      // Добавляем теги через lesson_tags
+      if (tagIds.length > 0) {
+        await tx.lessonTag.createMany({
+          data: tagIds.map(tagId => ({
+            lessonId: newLesson.lesson_id,
+            tagId
+          }))
+        })
+      }
+
+      return newLesson
     })
 
     console.log('Lesson created:', lesson.id)
@@ -749,26 +793,64 @@ author.patch('/lessons/:id', async (c) => {
     }
   }
 
-  const lesson = await prisma.lesson.update({
-    where: { id },
-    data: {
-      ...(title && { title: title.trim() }),
-      ...(newSlug && { slug: newSlug }),
-      ...(description !== undefined && { description: description?.trim() || null }),
-      ...(lessonType && { lessonType }),
-      ...(moduleId !== undefined && { moduleId }),
-      ...(coverImage !== undefined && { coverImage }),
-      ...(duration !== undefined && { duration }),
-      ...(isPremium !== undefined && { isPremium }),
-      status: finalStatus,
-      ...(tags && {
-        tags: {
-          set: [],
-          connect: tags.map((id: string) => ({ id }))
+  // Валидация и подготовка тегов
+  let tagIds: string[] = []
+  if (tags !== undefined) {
+    if (Array.isArray(tags) && tags.length > 0) {
+      // Обрабатываем как массив ID строк, так и массив объектов с id
+      tagIds = tags.map((t: any) => typeof t === 'string' ? t : t?.id).filter((id: string) => id)
+      
+      if (tagIds.length > 0) {
+        // Проверяем что теги существуют
+        const existingTags = await prisma.tag.findMany({
+          where: { id: { in: tagIds } },
+          select: { id: true }
+        })
+        tagIds = existingTags.map(t => t.id)
+        
+        if (tagIds.length === 0) {
+          throw new AppError(400, 'Ни один из указанных тегов не найден')
         }
-      }),
-    },
-    include: { }
+      }
+    }
+  }
+    
+  // Обновляем урок с тегами через transaction
+  const lesson = await prisma.$transaction(async (tx) => {
+    // Если теги переданы - сначала удаляем старые и добавляем новые
+    if (tags !== undefined) {
+      // Удаляем все старые lesson_tags
+      await tx.lessonTag.deleteMany({
+        where: { lessonId: id }
+      })
+      
+      // Создаём новые lesson_tags
+      if (tagIds.length > 0) {
+        await tx.lessonTag.createMany({
+          data: tagIds.map(tagId => ({
+            lessonId: id,
+            tagId
+          }))
+        })
+      }
+    }
+    
+    // Обновляем основные поля урока
+    return tx.lesson.update({
+      where: { id },
+      data: {
+        ...(title && { title: title.trim() }),
+        ...(newSlug && { slug: newSlug }),
+        ...(description !== undefined && { description: description?.trim() || null }),
+        ...(lessonType && { lessonType }),
+        ...(moduleId !== undefined && { module: moduleId ? { connect: { id: moduleId } } : { disconnect: true } }),
+        ...(coverImage !== undefined && { coverImage }),
+        ...(duration !== undefined && { duration }),
+        ...(isPremium !== undefined && { isPremium }),
+        status: finalStatus,
+      },
+      include: { }
+    })
   })
 
   return c.json({ lesson })

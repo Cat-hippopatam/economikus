@@ -589,7 +589,7 @@ export default function LessonPage() {
                 Вернуться к курсу
               </Button>
               {profile ? (
-                <Button component={Link} to="/profile?tab=subscriptions" variant="filled">
+                <Button component={Link} to={`/user/${profile.nickname}?tab=subscriptions`} variant="filled">
                   Оформить подписку
                 </Button>
               ) : (
@@ -688,23 +688,33 @@ export default function LessonPage() {
         </Container>
       </Box>
 
-      {/* Сайдбар - вынесен отдельно для работы на мобильных */}
-      <Sidebar
-        modules={modules}
-        currentLessonId={lesson.id}
-        courseSlug={courseSlug || ''}
-        isOpen={sidebarOpen}
-        onClose={() => setSidebarOpen(false)}
-      />
-
       {/* Основной контент */}
-      <Container size="lg" py="xl">
-        {/* Десктопная верстка - с Group */}
+      <Container size="lg" py="lg">
+        {/* Десктопная верстка - с сайдбаром слева и контентом справа */}
         <Box className="hidden md:block">
-          <Group align="flex-start" gap="xl" wrap="nowrap">
-            {/* Пустой блок вместо сайдбара, чтобы сохранить структуру */}
-            <Box style={{ width: 280, flexShrink: 0, visibility: 'hidden' }} />
+          <Group align="flex-start" gap="xl" wrap="nowrap" style={{ minHeight: 0 }}>
+            {/* Сайдбар на десктопе */}
+            <Box
+              style={{
+                width: 280,
+                flexShrink: 0,
+                position: 'sticky',
+                top: 140, // 60 (header) + 80 (шапка урока)
+                height: 'fit-content',
+                maxHeight: 'calc(100vh - 140px)',
+                overflowY: 'auto',
+              }}
+            >
+              <Sidebar
+                modules={modules}
+                currentLessonId={lesson.id}
+                courseSlug={courseSlug || ''}
+                isOpen={true} // Всегда открыт на десктопе
+                onClose={() => {}}
+              />
+            </Box>
 
+            {/* Контент урока */}
             <Box style={{ flex: 1 }}>
               <Stack gap="lg">
                 {lesson.description && (
@@ -728,7 +738,7 @@ export default function LessonPage() {
                     ) : (
                       <Box />
                     )}
-                    
+                
                     {adjacent.next ? (
                       <Button
                         component={Link}
@@ -758,7 +768,7 @@ export default function LessonPage() {
           </Group>
         </Box>
 
-        {/* Мобильная верстка - без Group, контент на всю ширину */}
+        {/* Мобильная верстка - без сайдбара, контент на всю ширину */}
         <Box className="md:hidden">
           <Stack gap="lg">
             {lesson.description && (
@@ -810,6 +820,17 @@ export default function LessonPage() {
           </Stack>
         </Box>
       </Container>
+
+      {/* Мобильный сайдбар - overlay */}
+      <Box className="md:hidden">
+        <Sidebar
+          modules={modules}
+          currentLessonId={lesson.id}
+          courseSlug={courseSlug || ''}
+          isOpen={sidebarOpen}
+          onClose={() => setSidebarOpen(false)}
+        />
+      </Box>
     </Box>
   )
 }

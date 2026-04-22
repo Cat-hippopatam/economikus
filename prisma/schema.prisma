@@ -7,356 +7,18 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-model Course {
-  id              String           @id @default(uuid()) @map("course_id") @db.Char(36)
-  title           String           @db.VarChar(255)
-  slug            String           @unique @db.VarChar(255)
-  description     String?          @db.Text
-  coverImage      String?          @map("cover_image") @db.Text
-  difficultyLevel DifficultyLevel? @map("difficulty_level")
-  duration        Int?
-  lessonsCount    Int              @default(0) @map("lessons_count")
-  modulesCount    Int              @default(0) @map("modules_count")
-  status          ContentStatus    @default(DRAFT)
-  isPremium       Boolean          @default(false) @map("is_premium")
-  publishedAt     DateTime?        @map("published_at")
-  authorProfileId String           @map("author_profile_id") @db.Char(36)
-  viewsCount      Int              @default(0) @map("views_count")
-  likesCount      Int              @default(0) @map("likes_count")
-  createdAt       DateTime         @default(now()) @map("created_at")
-  updatedAt       DateTime         @default(now()) @updatedAt @map("updated_at")
-  deletedAt       DateTime?        @map("deleted_at")
-  certificates    Certificate[]
-  progress        CourseProgress[]
-  tags            CourseTag[]
-  author          Profile          @relation(fields: [authorProfileId], references: [id])
-  modules         Module[]
+model Authenticator {
+  credentialID         String  @unique
+  user_id              String  @db.Char(36)
+  provider_account_id  String  @db.VarChar(255)
+  credentialPublicKey  String
+  counter              Int
+  credentialDeviceType String
+  credentialBackedUp   Boolean
+  transports           String?
+  users                users   @relation(fields: [user_id], references: [user_id], onDelete: Cascade)
 
-  @@index([slug])
-  @@index([authorProfileId])
-  @@index([status])
-  @@map("courses")
-}
-
-model Module {
-  id           String   @id @default(uuid()) @map("module_id") @db.Char(36)
-  courseId     String   @map("course_id") @db.Char(36)
-  title        String   @db.VarChar(255)
-  description  String?  @db.Text
-  sortOrder    Int      @default(0) @map("sort_order")
-  lessonsCount Int      @default(0) @map("lessons_count")
-  duration     Int?
-  isPublished  Boolean  @default(false) @map("is_published")
-  createdAt    DateTime @default(now()) @map("created_at")
-  updatedAt    DateTime @default(now()) @updatedAt @map("updated_at")
-  lessons      Lesson[]
-  course       Course   @relation(fields: [courseId], references: [id], onDelete: Cascade)
-
-  @@index([courseId])
-  @@index([sortOrder])
-  @@map("modules")
-}
-
-model Lesson {
-  id              String           @id @default(uuid()) @map("lesson_id") @db.Char(36)
-  moduleId        String?          @map("module_id") @db.Char(36)
-  title           String           @db.VarChar(255)
-  slug            String           @unique @db.VarChar(255)
-  description     String?          @db.Text
-  lessonType      LessonType       @default(ARTICLE) @map("lesson_type")
-  sortOrder       Int              @default(0) @map("sort_order")
-  duration        Int?
-  coverImage      String?          @map("cover_image") @db.Text
-  authorProfileId String           @map("author_profile_id") @db.Char(36)
-  isPremium       Boolean          @default(false) @map("is_premium")
-  status          ContentStatus    @default(DRAFT)
-  publishedAt     DateTime?        @map("published_at")
-  viewsCount      Int              @default(0) @map("views_count")
-  likesCount      Int              @default(0) @map("likes_count")
-  createdAt       DateTime         @default(now()) @map("created_at")
-  updatedAt       DateTime         @default(now()) @updatedAt @map("updated_at")
-  deletedAt       DateTime?        @map("deleted_at")
-  audioContent    AudioContent?
-  favorites       Favorite[]
-  progress        LessonProgress[]
-  tags            LessonTag[]
-  author          Profile          @relation(fields: [authorProfileId], references: [id])
-  module          Module?          @relation(fields: [moduleId], references: [id])
-  quizContent     QuizContent?
-  textContent     TextContent?
-  videoContent    VideoContent?
-
-  @@index([slug])
-  @@index([moduleId])
-  @@index([authorProfileId])
-  @@index([lessonType])
-  @@index([status])
-  @@map("lessons")
-}
-
-model TextContent {
-  id          String   @id @default(uuid()) @map("text_content_id") @db.Char(36)
-  lessonId    String   @unique @map("lesson_id") @db.Char(36)
-  body        String   @db.Text
-  wordCount   Int?     @map("word_count")
-  readingTime Int?     @map("reading_time")
-  createdAt   DateTime @default(now()) @map("created_at")
-  updatedAt   DateTime @default(now()) @updatedAt @map("updated_at")
-  lesson      Lesson   @relation(fields: [lessonId], references: [id], onDelete: Cascade)
-
-  @@map("text_contents")
-}
-
-model VideoContent {
-  id        String        @id @default(uuid()) @map("video_content_id") @db.Char(36)
-  lessonId  String        @unique @map("lesson_id") @db.Char(36)
-  videoUrl  String        @map("video_url") @db.Text
-  provider  VideoProvider @default(YOUTUBE)
-  duration  Int
-  qualities Json?         @map("qualities")
-  subtitles Json?         @map("subtitles")
-  createdAt DateTime      @default(now()) @map("created_at")
-  updatedAt DateTime      @default(now()) @updatedAt @map("updated_at")
-  lesson    Lesson        @relation(fields: [lessonId], references: [id], onDelete: Cascade)
-
-  @@map("video_contents")
-}
-
-model AudioContent {
-  id        String   @id @default(uuid()) @map("audio_content_id") @db.Char(36)
-  lessonId  String   @unique @map("lesson_id") @db.Char(36)
-  audioUrl  String   @map("audio_url") @db.Text
-  duration  Int
-  createdAt DateTime @default(now()) @map("created_at")
-  updatedAt DateTime @default(now()) @updatedAt @map("updated_at")
-  lesson    Lesson   @relation(fields: [lessonId], references: [id], onDelete: Cascade)
-
-  @@map("audio_contents")
-}
-
-model QuizContent {
-  id              String   @id @default(uuid()) @map("quiz_content_id") @db.Char(36)
-  lessonId        String   @unique @map("lesson_id") @db.Char(36)
-  questions       Json     @map("questions")
-  passingScore    Int      @default(70) @map("passing_score")
-  attemptsAllowed Int?     @map("attempts_allowed")
-  createdAt       DateTime @default(now()) @map("created_at")
-  updatedAt       DateTime @default(now()) @updatedAt @map("updated_at")
-  lesson          Lesson   @relation(fields: [lessonId], references: [id], onDelete: Cascade)
-
-  @@map("quiz_contents")
-}
-
-model Comment {
-  id              String           @id @default(uuid()) @map("comment_id") @db.Char(36)
-  commentableType CommentableType  @map("commentable_type")
-  commentableId   String           @map("commentable_id") @db.Char(36)
-  authorProfileId String           @map("author_profile_id") @db.Char(36)
-  text            String           @db.Text
-  status          ModerationStatus @default(PENDING)
-  moderatedBy     String?          @map("moderated_by") @db.Char(36)
-  moderatedAt     DateTime?        @map("moderated_at")
-  likesCount      Int              @default(0) @map("likes_count")
-  createdAt       DateTime         @default(now()) @map("created_at")
-  updatedAt       DateTime         @default(now()) @updatedAt @map("updated_at")
-  deletedAt       DateTime?        @map("deleted_at")
-  author          Profile          @relation(fields: [authorProfileId], references: [id])
-  moderator       Profile?         @relation("ModeratedBy", fields: [moderatedBy], references: [id])
-
-  @@index([commentableType, commentableId])
-  @@index([authorProfileId])
-  @@index([status])
-  @@index([createdAt])
-  @@index([moderatedBy], map: "comments_moderated_by_fkey")
-  @@map("comments")
-}
-
-model Reaction {
-  id               String           @id @default(uuid()) @map("reaction_id") @db.Char(36)
-  type             ReactionType
-  profileId        String           @map("profile_id") @db.Char(36)
-  reactionableType ReactionableType @map("reactionable_type")
-  reactionableId   String           @map("reactionable_id") @db.Char(36)
-  createdAt        DateTime         @default(now()) @map("created_at")
-  profile          Profile          @relation(fields: [profileId], references: [id], onDelete: Cascade)
-
-  @@unique([profileId, reactionableType, reactionableId])
-  @@index([reactionableType, reactionableId])
-  @@index([profileId])
-  @@map("reactions")
-}
-
-model Favorite {
-  id         String   @id @default(uuid()) @map("favorite_id") @db.Char(36)
-  profileId  String   @map("profile_id") @db.Char(36)
-  lessonId   String   @map("lesson_id") @db.Char(36)
-  note       String?  @db.Text
-  collection String?  @db.VarChar(100)
-  createdAt  DateTime @default(now()) @map("created_at")
-  lesson     Lesson   @relation(fields: [lessonId], references: [id], onDelete: Cascade)
-  profile    Profile  @relation(fields: [profileId], references: [id], onDelete: Cascade)
-
-  @@unique([profileId, lessonId])
-  @@index([profileId])
-  @@index([lessonId])
-  @@index([collection])
-  @@map("favorites")
-}
-
-model History {
-  id             String         @id @default(uuid()) @map("history_id") @db.Char(36)
-  profileId      String         @map("profile_id") @db.Char(36)
-  historableType HistorableType @map("historable_type")
-  historableId   String         @map("historable_id") @db.Char(36)
-  watchedSeconds Int?           @map("watched_seconds")
-  completed      Boolean        @default(false)
-  viewedAt       DateTime       @default(now()) @map("viewed_at")
-  profile        Profile        @relation(fields: [profileId], references: [id], onDelete: Cascade)
-
-  @@unique([profileId, historableType, historableId])
-  @@index([profileId])
-  @@index([viewedAt])
-  @@map("history")
-}
-
-model CourseProgress {
-  id               String    @id @default(uuid()) @map("course_progress_id") @db.Char(36)
-  profileId        String    @map("profile_id") @db.Char(36)
-  courseId         String    @map("course_id") @db.Char(36)
-  status           String    @default("not_started")
-  progressPercent  Int       @default(0) @map("progress_percent")
-  completedLessons Int       @default(0) @map("completed_lessons")
-  totalLessons     Int       @default(0) @map("total_lessons")
-  startedAt        DateTime? @map("started_at")
-  completedAt      DateTime? @map("completed_at")
-  lastViewedAt     DateTime  @default(now()) @map("last_viewed_at")
-  course           Course    @relation(fields: [courseId], references: [id], onDelete: Cascade)
-  profile          Profile   @relation(fields: [profileId], references: [id], onDelete: Cascade)
-
-  @@unique([profileId, courseId])
-  @@index([courseId], map: "course_progress_course_id_fkey")
-  @@map("course_progress")
-}
-
-model LessonProgress {
-  id              String    @id @default(uuid()) @map("lesson_progress_id") @db.Char(36)
-  profileId       String    @map("profile_id") @db.Char(36)
-  lessonId        String    @map("lesson_id") @db.Char(36)
-  status          String    @default("not_started")
-  progressPercent Int       @default(0) @map("progress_percent")
-  lastPosition    Int?      @map("last_position")
-  quizScore       Int?      @map("quiz_score")
-  quizCompleted   Boolean   @default(false) @map("quiz_completed")
-  startedAt       DateTime? @map("started_at")
-  completedAt     DateTime? @map("completed_at")
-  lastViewedAt    DateTime  @default(now()) @map("last_viewed_at")
-  lesson          Lesson    @relation(fields: [lessonId], references: [id], onDelete: Cascade)
-  profile         Profile   @relation(fields: [profileId], references: [id], onDelete: Cascade)
-
-  @@unique([profileId, lessonId])
-  @@index([lessonId], map: "lesson_progress_lesson_id_fkey")
-  @@map("lesson_progress")
-}
-
-model Tag {
-  id      String      @id @default(uuid()) @map("tag_id") @db.Char(36)
-  name    String      @unique @db.VarChar(50)
-  slug    String      @unique @db.VarChar(50)
-  color   String?     @db.VarChar(7)
-  courses CourseTag[]
-  lessons LessonTag[]
-
-  @@map("tags")
-}
-
-model CourseTag {
-  id       String @id @default(uuid()) @map("course_tag_id") @db.Char(36)
-  courseId String @map("course_id") @db.Char(36)
-  tagId    String @map("tag_id") @db.Char(36)
-  course   Course @relation(fields: [courseId], references: [id], onDelete: Cascade)
-  tag      Tag    @relation(fields: [tagId], references: [id], onDelete: Cascade)
-
-  @@unique([courseId, tagId])
-  @@index([tagId], map: "course_tags_tag_id_fkey")
-  @@map("course_tags")
-}
-
-model LessonTag {
-  id       String @id @default(uuid()) @map("lesson_tag_id") @db.Char(36)
-  lessonId String @map("lesson_id") @db.Char(36)
-  tagId    String @map("tag_id") @db.Char(36)
-  lesson   Lesson @relation(fields: [lessonId], references: [id], onDelete: Cascade)
-  tag      Tag    @relation(fields: [tagId], references: [id], onDelete: Cascade)
-
-  @@unique([lessonId, tagId])
-  @@index([tagId], map: "lesson_tags_tag_id_fkey")
-  @@map("lesson_tags")
-}
-
-model Certificate {
-  id                String   @id @default(uuid()) @map("certificate_id") @db.Char(36)
-  profileId         String   @map("profile_id") @db.Char(36)
-  courseId          String   @map("course_id") @db.Char(36)
-  issuedAt          DateTime @default(now()) @map("issued_at")
-  completedAt       DateTime @map("completed_at")
-  imageUrl          String?  @map("image_url") @db.Text
-  pdfUrl            String?  @map("pdf_url") @db.Text
-  certificateNumber String   @unique @map("certificate_number") @db.VarChar(50)
-  metadata          Json?    @map("metadata")
-  course            Course   @relation(fields: [courseId], references: [id], onDelete: Cascade)
-  profile           Profile  @relation(fields: [profileId], references: [id], onDelete: Cascade)
-
-  @@unique([profileId, courseId])
-  @@index([courseId], map: "certificates_course_id_fkey")
-  @@map("certificates")
-}
-
-model User {
-  id                      String                   @id @default(uuid()) @map("user_id") @db.Char(36)
-  email                   String                   @unique @db.VarChar(255)
-  firstName               String                   @map("first_name") @db.VarChar(100)
-  lastName                String                   @map("last_name") @db.VarChar(100)
-  passwordHash            String?                  @map("password_hash") @db.VarChar(255)
-  role                    Role                     @default(USER)
-  emailVerified           DateTime?                @map("email_verified")
-  isBlocked               Boolean                  @default(false) @map("is_blocked")
-  blockedReason           String?                  @map("blocked_reason") @db.Text
-  lastLoginAt             DateTime?                @map("last_login_at")
-  createdAt               DateTime                 @default(now()) @map("created_at")
-  updatedAt               DateTime                 @default(now()) @updatedAt @map("updated_at")
-  deletedAt               DateTime?                @map("deleted_at")
-  Authenticator           Authenticator[]
-  accountDeletionRequests AccountDeletionRequest[]
-  accounts                Account[]
-  profile                 Profile?
-  sessions                Session[]
-
-  @@index([email])
-  @@index([role])
-  @@index([createdAt])
-  @@map("users")
-}
-
-model Account {
-  id                String   @id @default(uuid()) @map("account_id") @db.Char(36)
-  userId            String   @map("user_id") @db.Char(36)
-  type              String   @db.VarChar(50)
-  provider          String   @db.VarChar(50)
-  providerAccountId String   @map("provider_account_id") @db.VarChar(255)
-  refresh_token     String?  @db.Text
-  access_token      String?  @db.Text
-  expires_at        Int?
-  token_type        String?  @db.VarChar(50)
-  scope             String?  @db.VarChar(255)
-  id_token          String?  @db.Text
-  session_state     String?  @db.VarChar(255)
-  createdAt         DateTime @default(now()) @map("created_at")
-  updatedAt         DateTime @default(now()) @updatedAt @map("updated_at")
-  user              User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  @@unique([provider, providerAccountId])
-  @@index([userId])
-  @@map("accounts")
+  @@id([user_id, credentialID])
 }
 
 model VerificationToken {
@@ -367,324 +29,630 @@ model VerificationToken {
   @@id([identifier, token])
 }
 
-model Authenticator {
-  credentialID         String  @unique @map("credentialID")
-  userId               String  @map("user_id") @db.Char(36)
-  providerAccountId    String  @map("provider_account_id") @db.VarChar(255)
-  credentialPublicKey  String  @map("credentialPublicKey")
-  counter              Int
-  credentialDeviceType String  @map("credentialDeviceType")
-  credentialBackedUp   Boolean @map("credentialBackedUp")
-  transports           String?
-  user                 User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+model account_deletion_requests {
+  request_id                                                String                           @id @db.Char(36)
+  user_id                                                   String                           @db.Char(36)
+  profile_id                                                String                           @db.Char(36)
+  status                                                    account_deletion_requests_status @default(PENDING)
+  reason                                                    String?                          @db.Text
+  email                                                     String                           @db.VarChar(255)
+  processed_by                                              String?                          @db.Char(36)
+  processed_at                                              DateTime?
+  rejection_reason                                          String?                          @db.Text
+  created_at                                                DateTime                         @default(now())
+  updated_at                                                DateTime                         @default(now())
+  profiles_account_deletion_requests_processed_byToprofiles profiles?                        @relation("account_deletion_requests_processed_byToprofiles", fields: [processed_by], references: [profile_id])
+  profiles_account_deletion_requests_profile_idToprofiles   profiles                         @relation("account_deletion_requests_profile_idToprofiles", fields: [profile_id], references: [profile_id], onDelete: Cascade)
+  users                                                     users                            @relation(fields: [user_id], references: [user_id], onDelete: Cascade)
 
-  @@id([userId, credentialID])
-}
-
-model Profile {
-  id                        String                   @id @default(uuid()) @map("profile_id") @db.Char(36)
-  userId                    String                   @unique @map("user_id") @db.Char(36)
-  nickname                  String                   @unique @map("nickname") @db.VarChar(50)
-  displayName               String                   @map("display_name") @db.VarChar(255)
-  avatarUrl                 String?                  @map("avatar_url") @db.Text
-  coverImage                String?                  @map("cover_image") @db.Text
-  bio                       String?                  @db.Text
-  website                   String?                  @db.VarChar(255)
-  telegram                  String?                  @db.VarChar(100)
-  youtube                   String?                  @db.VarChar(100)
-  totalViews                Int                      @default(0) @map("total_views")
-  subscribers               Int                      @default(0)
-  createdAt                 DateTime                 @default(now()) @map("created_at")
-  updatedAt                 DateTime                 @default(now()) @updatedAt @map("updated_at")
-  processedDeletionRequests AccountDeletionRequest[] @relation("ProcessedBy")
-  accountDeletionRequests   AccountDeletionRequest[]
-  authorApplications        AuthorApplication[]
-  reviewedApplications      AuthorApplication[]      @relation("ReviewedBy")
-  businessEvents            BusinessEvent[]
-  certificates              Certificate[]
-  comments                  Comment[]
-  moderatedComments         Comment[]                @relation("ModeratedBy")
-  progress                  CourseProgress[]
-  courses                   Course[]
-  favorites                 Favorite[]
-  history                   History[]
-  lessonProgress            LessonProgress[]
-  lessons                   Lesson[]
-  notifications             Notification[]
-  paymentMethods            PaymentMethod[]
-  user                      User                     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  reactions                 Reaction[]
-  subscriptions             Subscription[]
-  transactions              Transaction[]
-
-  @@index([userId])
-  @@index([nickname])
-  @@map("profiles")
-}
-
-model Session {
-  id           String   @id @default(uuid()) @map("session_id") @db.Char(36)
-  sessionToken String   @unique @map("session_token") @db.VarChar(255)
-  userId       String   @map("user_id") @db.Char(36)
-  expires      DateTime
-  createdAt    DateTime @default(now()) @map("created_at")
-  updatedAt    DateTime @default(now()) @updatedAt @map("updated_at")
-  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  @@index([sessionToken])
-  @@index([userId])
-  @@map("sessions")
-}
-
-model Subscription {
-  id                     String             @id @default(uuid()) @map("subscription_id") @db.Char(36)
-  profileId              String             @map("profile_id") @db.Char(36)
-  planType               String             @map("plan_type") @db.VarChar(50)
-  status                 SubscriptionStatus @default(ACTIVE) @map("status")
-  startDate              DateTime           @default(now()) @map("start_date")
-  endDate                DateTime?          @map("end_date")
-  trialEndsAt            DateTime?          @map("trial_ends_at")
-  autoRenew              Boolean            @default(true) @map("auto_renew")
-  cancelAtPeriodEnd      Boolean            @default(false) @map("cancel_at_period_end")
-  price                  Float              @map("price")
-  currency               String             @default("RUB") @db.VarChar(3)
-  paymentMethodId        String?            @map("payment_method_id") @db.Char(36)
-  providerSubscriptionId String?            @map("provider_subscription_id") @db.VarChar(255)
-  provider               String?            @db.VarChar(50)
-  createdAt              DateTime           @default(now()) @map("created_at")
-  updatedAt              DateTime           @default(now()) @updatedAt @map("updated_at")
-  canceledAt             DateTime?          @map("canceled_at")
-  deletedAt              DateTime?          @map("deleted_at")
-  paymentMethod          PaymentMethod?     @relation(fields: [paymentMethodId], references: [id])
-  profile                Profile            @relation(fields: [profileId], references: [id], onDelete: Cascade)
-  transactions           Transaction[]
-
-  @@index([profileId])
-  @@index([status])
-  @@index([paymentMethodId], map: "subscriptions_payment_method_id_fkey")
-  @@map("subscriptions")
-}
-
-model Transaction {
-  id                String            @id @default(uuid()) @map("transaction_id") @db.Char(36)
-  profileId         String            @map("profile_id") @db.Char(36)
-  subscriptionId    String?           @map("subscription_id") @db.Char(36)
-  type              String            @map("type") @db.VarChar(50)
-  amount            Float             @map("amount")
-  currency          String            @default("RUB") @db.VarChar(3)
-  status            TransactionStatus @default(PENDING) @map("status")
-  courseId          String?           @map("course_id") @db.Char(36)
-  paymentMethodId   String?           @map("payment_method_id") @db.Char(36)
-  provider          String            @db.VarChar(50)
-  providerPaymentId String?           @map("provider_payment_id") @db.VarChar(255)
-  providerResponse  Json?             @map("provider_response")
-  refundedAt        DateTime?         @map("refunded_at")
-  refundAmount      Float?            @map("refund_amount")
-  refundReason      String?           @map("refund_reason") @db.Text
-  createdAt         DateTime          @default(now()) @map("created_at")
-  updatedAt         DateTime          @default(now()) @updatedAt @map("updated_at")
-  completedAt       DateTime?         @map("completed_at")
-  failedAt          DateTime?         @map("failed_at")
-  paymentMethod     PaymentMethod?    @relation(fields: [paymentMethodId], references: [id])
-  profile           Profile           @relation(fields: [profileId], references: [id], onDelete: Cascade)
-  subscription      Subscription?     @relation(fields: [subscriptionId], references: [id])
-
-  @@index([profileId])
-  @@index([subscriptionId])
-  @@index([status])
-  @@index([courseId])
-  @@index([paymentMethodId], map: "transactions_payment_method_id_fkey")
-  @@map("transactions")
-}
-
-model PaymentMethod {
-  id            String         @id @default(uuid()) @map("payment_method_id") @db.Char(36)
-  profileId     String         @map("profile_id") @db.Char(36)
-  type          String         @map("type") @db.VarChar(50)
-  provider      String         @db.VarChar(50)
-  providerToken String         @map("provider_token") @db.Text
-  last4         String?        @db.VarChar(4)
-  cardType      String?        @map("card_type") @db.VarChar(50)
-  expiryMonth   Int?           @map("expiry_month")
-  expiryYear    Int?           @map("expiry_year")
-  phoneNumber   String?        @map("phone_number") @db.VarChar(20)
-  isDefault     Boolean        @default(false) @map("is_default")
-  isVerified    Boolean        @default(false) @map("is_verified")
-  isExpired     Boolean        @default(false) @map("is_expired")
-  metadata      Json?          @map("metadata")
-  createdAt     DateTime       @default(now()) @map("created_at")
-  updatedAt     DateTime       @default(now()) @updatedAt @map("updated_at")
-  deletedAt     DateTime?      @map("deleted_at")
-  profile       Profile        @relation(fields: [profileId], references: [id], onDelete: Cascade)
-  subscriptions Subscription[]
-  transactions  Transaction[]
-
-  @@index([profileId])
-  @@map("payment_methods")
-}
-
-model BusinessEvent {
-  id            String              @id @default(uuid()) @map("event_id") @db.Char(36)
-  profileId     String?             @map("profile_id") @db.Char(36)
-  eventType     String              @map("event_type") @db.VarChar(100)
-  eventCategory String              @map("event_category") @db.VarChar(50)
-  objectType    BusinessObjectType? @map("object_type")
-  objectId      String?             @map("object_id") @db.Char(36)
-  metadata      Json?               @map("metadata")
-  ipAddress     String?             @map("ip_address") @db.VarChar(45)
-  userAgent     String?             @map("user_agent") @db.Text
-  sessionId     String?             @map("session_id") @db.VarChar(255)
-  createdAt     DateTime            @default(now()) @map("created_at")
-  profile       Profile?            @relation(fields: [profileId], references: [id])
-
-  @@index([profileId])
-  @@index([eventType])
-  @@index([createdAt])
-  @@map("business_events")
-}
-
-model Notification {
-  id           String           @id @default(uuid()) @map("notification_id") @db.Char(36)
-  profileId    String           @map("profile_id") @db.Char(36)
-  type         NotificationType @map("type")
-  channel      String           @map("channel") @db.VarChar(50)
-  title        String           @db.VarChar(255)
-  body         String           @db.Text
-  data         Json?            @map("data")
-  linkUrl      String?          @map("link_url") @db.Text
-  isRead       Boolean          @default(false) @map("is_read")
-  isSent       Boolean          @default(false) @map("is_sent")
-  externalId   String?          @map("external_id") @db.VarChar(255)
-  errorMessage String?          @map("error_message") @db.Text
-  scheduledFor DateTime?        @map("scheduled_for")
-  sentAt       DateTime?        @map("sent_at")
-  readAt       DateTime?        @map("read_at")
-  createdAt    DateTime         @default(now()) @map("created_at")
-  profile      Profile          @relation(fields: [profileId], references: [id], onDelete: Cascade)
-
-  @@index([profileId])
-  @@index([isRead])
-  @@index([createdAt])
-  @@map("notifications")
-}
-
-model AuthorApplication {
-  id              String            @id @default(uuid()) @map("application_id") @db.Char(36)
-  profileId       String            @map("profile_id") @db.Char(36)
-  status          ApplicationStatus @default(PENDING)
-  motivation      String            @map("motivation") @db.Text
-  experience      String?           @map("experience") @db.Text
-  portfolioUrl    String?           @map("portfolio_url") @db.VarChar(500)
-  reviewedBy      String?           @map("reviewed_by") @db.Char(36)
-  reviewedAt      DateTime?         @map("reviewed_at")
-  rejectionReason String?           @map("rejection_reason") @db.Text
-  createdAt       DateTime          @default(now()) @map("created_at")
-  updatedAt       DateTime          @default(now()) @updatedAt @map("updated_at")
-  profile         Profile           @relation(fields: [profileId], references: [id], onDelete: Cascade)
-  reviewer        Profile?          @relation("ReviewedBy", fields: [reviewedBy], references: [id])
-
-  @@index([profileId])
-  @@index([status])
-  @@index([reviewedBy], map: "author_applications_reviewed_by_fkey")
-  @@map("author_applications")
-}
-
-model AccountDeletionRequest {
-  id              String                @id @default(uuid()) @map("request_id") @db.Char(36)
-  userId          String                @map("user_id") @db.Char(36)
-  profileId       String                @map("profile_id") @db.Char(36)
-  status          DeletionRequestStatus @default(PENDING)
-  reason          String?               @map("reason") @db.Text
-  email           String                @map("email") @db.VarChar(255)
-  processedBy     String?               @map("processed_by") @db.Char(36)
-  processedAt     DateTime?             @map("processed_at")
-  rejectionReason String?               @map("rejection_reason") @db.Text
-  createdAt       DateTime              @default(now()) @map("created_at")
-  updatedAt       DateTime              @default(now()) @updatedAt @map("updated_at")
-  processor       Profile?              @relation("ProcessedBy", fields: [processedBy], references: [id])
-  profile         Profile               @relation(fields: [profileId], references: [id], onDelete: Cascade)
-  user            User                  @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  @@index([processedBy], map: "account_deletion_requests_processed_by_fkey")
-  @@index([profileId], map: "idx_profile_id")
+  @@index([processed_by], map: "account_deletion_requests_processed_by_fkey")
+  @@index([profile_id], map: "idx_profile_id")
   @@index([status], map: "idx_status")
-  @@index([userId], map: "idx_user_id")
-  @@map("account_deletion_requests")
+  @@index([user_id], map: "idx_user_id")
 }
 
-enum Role {
-  USER
-  AUTHOR
-  MODERATOR
-  ADMIN
+model accounts {
+  account_id          String   @id @db.Char(36)
+  user_id             String   @db.Char(36)
+  type                String   @db.VarChar(50)
+  provider            String   @db.VarChar(50)
+  provider_account_id String   @db.VarChar(255)
+  refresh_token       String?  @db.Text
+  access_token        String?  @db.Text
+  expires_at          Int?
+  token_type          String?  @db.VarChar(50)
+  scope               String?  @db.VarChar(255)
+  id_token            String?  @db.Text
+  session_state       String?  @db.VarChar(255)
+  created_at          DateTime @default(now())
+  updated_at          DateTime @default(now())
+  users               users    @relation(fields: [user_id], references: [user_id], onDelete: Cascade)
+
+  @@unique([provider, provider_account_id])
+  @@index([user_id])
 }
 
-enum ContentStatus {
-  DRAFT
-  PENDING_REVIEW
-  PUBLISHED
-  ARCHIVED
-  DELETED
+model audio_contents {
+  audio_content_id String   @id @db.Char(36)
+  lesson_id        String   @unique @db.Char(36)
+  audio_url        String   @db.Text
+  duration         Int
+  created_at       DateTime @default(now())
+  updated_at       DateTime @default(now())
+  lessons          lessons  @relation(fields: [lesson_id], references: [lesson_id], onDelete: Cascade)
 }
 
-enum DifficultyLevel {
-  BEGINNER
-  INTERMEDIATE
-  ADVANCED
+model author_applications {
+  application_id                                     String                     @id @db.Char(36)
+  profile_id                                         String                     @db.Char(36)
+  status                                             author_applications_status @default(PENDING)
+  motivation                                         String                     @db.Text
+  experience                                         String?                    @db.Text
+  portfolio_url                                      String?                    @db.VarChar(500)
+  reviewed_by                                        String?                    @db.Char(36)
+  reviewed_at                                        DateTime?
+  rejection_reason                                   String?                    @db.Text
+  created_at                                         DateTime                   @default(now())
+  updated_at                                         DateTime                   @default(now())
+  profiles_author_applications_profile_idToprofiles  profiles                   @relation("author_applications_profile_idToprofiles", fields: [profile_id], references: [profile_id], onDelete: Cascade)
+  profiles_author_applications_reviewed_byToprofiles profiles?                  @relation("author_applications_reviewed_byToprofiles", fields: [reviewed_by], references: [profile_id])
+
+  @@index([profile_id])
+  @@index([reviewed_by], map: "author_applications_reviewed_by_fkey")
+  @@index([status])
 }
 
-enum VideoProvider {
-  YOUTUBE
-  RUTUBE
-  VIMEO
-  LOCAL
+model business_events {
+  event_id       String                       @id @db.Char(36)
+  profile_id     String?                      @db.Char(36)
+  event_type     String                       @db.VarChar(100)
+  event_category String                       @db.VarChar(50)
+  object_type    business_events_object_type?
+  object_id      String?                      @db.Char(36)
+  metadata       Json?
+  ip_address     String?                      @db.VarChar(45)
+  user_agent     String?                      @db.Text
+  session_id     String?                      @db.VarChar(255)
+  created_at     DateTime                     @default(now())
+  profiles       profiles?                    @relation(fields: [profile_id], references: [profile_id])
+
+  @@index([created_at])
+  @@index([event_type])
+  @@index([profile_id])
 }
 
-enum ModerationStatus {
+model certificates {
+  certificate_id     String   @id @db.Char(36)
+  profile_id         String   @db.Char(36)
+  course_id          String   @db.Char(36)
+  issued_at          DateTime @default(now())
+  completed_at       DateTime
+  image_url          String?  @db.Text
+  pdf_url            String?  @db.Text
+  certificate_number String   @unique @db.VarChar(50)
+  metadata           Json?
+  courses            courses  @relation(fields: [course_id], references: [course_id], onDelete: Cascade)
+  profiles           profiles @relation(fields: [profile_id], references: [profile_id], onDelete: Cascade)
+
+  @@unique([profile_id, course_id])
+  @@index([course_id], map: "certificates_course_id_fkey")
+}
+
+model comments {
+  comment_id                                    String                    @id @db.Char(36)
+  commentable_type                              comments_commentable_type
+  commentable_id                                String                    @db.Char(36)
+  author_profile_id                             String                    @db.Char(36)
+  text                                          String                    @db.Text
+  status                                        comments_status           @default(PENDING)
+  moderated_by                                  String?                   @db.Char(36)
+  moderated_at                                  DateTime?
+  likes_count                                   Int                       @default(0)
+  created_at                                    DateTime                  @default(now())
+  updated_at                                    DateTime                  @default(now())
+  deleted_at                                    DateTime?
+  profiles_comments_author_profile_idToprofiles profiles                  @relation("comments_author_profile_idToprofiles", fields: [author_profile_id], references: [profile_id])
+  profiles_comments_moderated_byToprofiles      profiles?                 @relation("comments_moderated_byToprofiles", fields: [moderated_by], references: [profile_id])
+
+  @@index([author_profile_id])
+  @@index([commentable_type, commentable_id])
+  @@index([created_at])
+  @@index([moderated_by], map: "comments_moderated_by_fkey")
+  @@index([status])
+}
+
+model course_progress {
+  course_progress_id String    @id @db.Char(36)
+  profile_id         String    @db.Char(36)
+  course_id          String    @db.Char(36)
+  status             String    @default("not_started")
+  progress_percent   Int       @default(0)
+  completed_lessons  Int       @default(0)
+  total_lessons      Int       @default(0)
+  started_at         DateTime?
+  completed_at       DateTime?
+  last_viewed_at     DateTime  @default(now())
+  courses            courses   @relation(fields: [course_id], references: [course_id], onDelete: Cascade)
+  profiles           profiles  @relation(fields: [profile_id], references: [profile_id], onDelete: Cascade)
+
+  @@unique([profile_id, course_id])
+  @@index([course_id], map: "course_progress_course_id_fkey")
+}
+
+model course_tags {
+  course_tag_id String  @id @db.Char(36)
+  course_id     String  @db.Char(36)
+  tag_id        String  @db.Char(36)
+  courses       courses @relation(fields: [course_id], references: [course_id], onDelete: Cascade)
+  tags          tags    @relation(fields: [tag_id], references: [tag_id], onDelete: Cascade)
+
+  @@unique([course_id, tag_id])
+  @@index([tag_id], map: "course_tags_tag_id_fkey")
+}
+
+model courses {
+  course_id         String                    @id @db.Char(36)
+  title             String                    @db.VarChar(255)
+  slug              String                    @unique @db.VarChar(255)
+  description       String?                   @db.Text
+  cover_image       String?                   @db.Text
+  difficulty_level  courses_difficulty_level?
+  duration          Int?
+  lessons_count     Int                       @default(0)
+  modules_count     Int                       @default(0)
+  status            courses_status            @default(DRAFT)
+  is_premium        Boolean                   @default(false)
+  published_at      DateTime?
+  author_profile_id String                    @db.Char(36)
+  views_count       Int                       @default(0)
+  likes_count       Int                       @default(0)
+  created_at        DateTime                  @default(now())
+  updated_at        DateTime                  @default(now())
+  deleted_at        DateTime?
+  certificates      certificates[]
+  course_progress   course_progress[]
+  course_tags       course_tags[]
+  profiles          profiles                  @relation(fields: [author_profile_id], references: [profile_id])
+  modules           modules[]
+
+  @@index([author_profile_id])
+  @@index([slug])
+  @@index([status])
+}
+
+model favorites {
+  favorite_id String   @id @db.Char(36)
+  profile_id  String   @db.Char(36)
+  lesson_id   String   @db.Char(36)
+  note        String?  @db.Text
+  collection  String?  @db.VarChar(100)
+  created_at  DateTime @default(now())
+  lessons     lessons  @relation(fields: [lesson_id], references: [lesson_id], onDelete: Cascade)
+  profiles    profiles @relation(fields: [profile_id], references: [profile_id], onDelete: Cascade)
+
+  @@unique([profile_id, lesson_id])
+  @@index([collection])
+  @@index([lesson_id])
+  @@index([profile_id])
+}
+
+model history {
+  history_id      String                  @id @db.Char(36)
+  profile_id      String                  @db.Char(36)
+  historable_type history_historable_type
+  historable_id   String                  @db.Char(36)
+  watched_seconds Int?
+  completed       Boolean                 @default(false)
+  viewed_at       DateTime                @default(now())
+  profiles        profiles                @relation(fields: [profile_id], references: [profile_id], onDelete: Cascade)
+
+  @@unique([profile_id, historable_type, historable_id])
+  @@index([profile_id])
+  @@index([viewed_at])
+}
+
+model lesson_progress {
+  lesson_progress_id String    @id @db.Char(36)
+  profile_id         String    @db.Char(36)
+  lesson_id          String    @db.Char(36)
+  status             String    @default("not_started")
+  progress_percent   Int       @default(0)
+  last_position      Int?
+  quiz_score         Int?
+  quiz_completed     Boolean   @default(false)
+  started_at         DateTime?
+  completed_at       DateTime?
+  last_viewed_at     DateTime  @default(now())
+  lessons            lessons   @relation(fields: [lesson_id], references: [lesson_id], onDelete: Cascade)
+  profiles           profiles  @relation(fields: [profile_id], references: [profile_id], onDelete: Cascade)
+
+  @@unique([profile_id, lesson_id])
+  @@index([lesson_id], map: "lesson_progress_lesson_id_fkey")
+}
+
+model lesson_tags {
+  lesson_tag_id String  @id @db.Char(36)
+  lesson_id     String  @db.Char(36)
+  tag_id        String  @db.Char(36)
+  lessons       lessons @relation(fields: [lesson_id], references: [lesson_id], onDelete: Cascade)
+  tags          tags    @relation(fields: [tag_id], references: [tag_id], onDelete: Cascade)
+
+  @@unique([lesson_id, tag_id])
+  @@index([tag_id], map: "lesson_tags_tag_id_fkey")
+}
+
+model lessons {
+  lesson_id         String              @id @db.Char(36)
+  module_id         String?             @db.Char(36)
+  title             String              @db.VarChar(255)
+  slug              String              @unique @db.VarChar(255)
+  description       String?             @db.Text
+  lesson_type       lessons_lesson_type @default(ARTICLE)
+  sort_order        Int                 @default(0)
+  duration          Int?
+  cover_image       String?             @db.Text
+  author_profile_id String              @db.Char(36)
+  is_premium        Boolean             @default(false)
+  status            lessons_status      @default(DRAFT)
+  published_at      DateTime?
+  views_count       Int                 @default(0)
+  likes_count       Int                 @default(0)
+  created_at        DateTime            @default(now())
+  updated_at        DateTime            @default(now())
+  deleted_at        DateTime?
+  audio_contents    audio_contents?
+  favorites         favorites[]
+  lesson_progress   lesson_progress[]
+  lesson_tags       lesson_tags[]
+  profiles          profiles            @relation(fields: [author_profile_id], references: [profile_id])
+  modules           modules?            @relation(fields: [module_id], references: [module_id])
+  quiz_contents     quiz_contents?
+  text_contents     text_contents?
+  video_contents    video_contents?
+
+  @@index([author_profile_id])
+  @@index([lesson_type])
+  @@index([module_id])
+  @@index([slug])
+  @@index([status])
+}
+
+model modules {
+  module_id     String    @id @db.Char(36)
+  course_id     String    @db.Char(36)
+  title         String    @db.VarChar(255)
+  description   String?   @db.Text
+  sort_order    Int       @default(0)
+  lessons_count Int       @default(0)
+  duration      Int?
+  is_published  Boolean   @default(false)
+  created_at    DateTime  @default(now())
+  updated_at    DateTime  @default(now())
+  lessons       lessons[]
+  courses       courses   @relation(fields: [course_id], references: [course_id], onDelete: Cascade)
+
+  @@index([course_id])
+  @@index([sort_order])
+}
+
+model notifications {
+  notification_id String             @id @db.Char(36)
+  profile_id      String             @db.Char(36)
+  type            notifications_type
+  channel         String             @db.VarChar(50)
+  title           String             @db.VarChar(255)
+  body            String             @db.Text
+  data            Json?
+  link_url        String?            @db.Text
+  is_read         Boolean            @default(false)
+  is_sent         Boolean            @default(false)
+  external_id     String?            @db.VarChar(255)
+  error_message   String?            @db.Text
+  scheduled_for   DateTime?
+  sent_at         DateTime?
+  read_at         DateTime?
+  created_at      DateTime           @default(now())
+  profiles        profiles           @relation(fields: [profile_id], references: [profile_id], onDelete: Cascade)
+
+  @@index([created_at])
+  @@index([is_read])
+  @@index([profile_id])
+}
+
+model payment_methods {
+  payment_method_id String          @id @db.Char(36)
+  profile_id        String          @db.Char(36)
+  type              String          @db.VarChar(50)
+  provider          String          @db.VarChar(50)
+  provider_token    String          @db.Text
+  last4             String?         @db.VarChar(4)
+  card_type         String?         @db.VarChar(50)
+  expiry_month      Int?
+  expiry_year       Int?
+  phone_number      String?         @db.VarChar(20)
+  is_default        Boolean         @default(false)
+  is_verified       Boolean         @default(false)
+  is_expired        Boolean         @default(false)
+  metadata          Json?
+  created_at        DateTime        @default(now())
+  updated_at        DateTime        @default(now())
+  deleted_at        DateTime?
+  profiles          profiles        @relation(fields: [profile_id], references: [profile_id], onDelete: Cascade)
+  subscriptions     subscriptions[]
+  transactions      transactions[]
+
+  @@index([profile_id])
+}
+
+model profiles {
+  profile_id                                                                 String                      @id @db.Char(36)
+  user_id                                                                    String                      @unique @db.Char(36)
+  nickname                                                                   String                      @unique @db.VarChar(50)
+  display_name                                                               String                      @db.VarChar(255)
+  avatar_url                                                                 String?                     @db.Text
+  cover_image                                                                String?                     @db.Text
+  bio                                                                        String?                     @db.Text
+  website                                                                    String?                     @db.VarChar(255)
+  telegram                                                                   String?                     @db.VarChar(100)
+  youtube                                                                    String?                     @db.VarChar(100)
+  total_views                                                                Int                         @default(0)
+  subscribers                                                                Int                         @default(0)
+  created_at                                                                 DateTime                    @default(now())
+  updated_at                                                                 DateTime                    @default(now())
+  account_deletion_requests_account_deletion_requests_processed_byToprofiles account_deletion_requests[] @relation("account_deletion_requests_processed_byToprofiles")
+  account_deletion_requests_account_deletion_requests_profile_idToprofiles   account_deletion_requests[] @relation("account_deletion_requests_profile_idToprofiles")
+  author_applications_author_applications_profile_idToprofiles               author_applications[]       @relation("author_applications_profile_idToprofiles")
+  author_applications_author_applications_reviewed_byToprofiles              author_applications[]       @relation("author_applications_reviewed_byToprofiles")
+  business_events                                                            business_events[]
+  certificates                                                               certificates[]
+  comments_comments_author_profile_idToprofiles                              comments[]                  @relation("comments_author_profile_idToprofiles")
+  comments_comments_moderated_byToprofiles                                   comments[]                  @relation("comments_moderated_byToprofiles")
+  course_progress                                                            course_progress[]
+  courses                                                                    courses[]
+  favorites                                                                  favorites[]
+  history                                                                    history[]
+  lesson_progress                                                            lesson_progress[]
+  lessons                                                                    lessons[]
+  notifications                                                              notifications[]
+  payment_methods                                                            payment_methods[]
+  users                                                                      users                       @relation(fields: [user_id], references: [user_id], onDelete: Cascade)
+  reactions                                                                  reactions[]
+  subscriptions                                                              subscriptions[]
+  transactions                                                               transactions[]
+
+  @@index([nickname])
+  @@index([user_id])
+}
+
+model quiz_contents {
+  quiz_content_id  String   @id @db.Char(36)
+  lesson_id        String   @unique @db.Char(36)
+  questions        Json
+  passing_score    Int      @default(70)
+  attempts_allowed Int?
+  created_at       DateTime @default(now())
+  updated_at       DateTime @default(now())
+  lessons          lessons  @relation(fields: [lesson_id], references: [lesson_id], onDelete: Cascade)
+}
+
+model reactions {
+  reaction_id       String                      @id @db.Char(36)
+  type              reactions_type
+  profile_id        String                      @db.Char(36)
+  reactionable_type reactions_reactionable_type
+  reactionable_id   String                      @db.Char(36)
+  created_at        DateTime                    @default(now())
+  profiles          profiles                    @relation(fields: [profile_id], references: [profile_id], onDelete: Cascade)
+
+  @@unique([profile_id, reactionable_type, reactionable_id])
+  @@index([profile_id])
+  @@index([reactionable_type, reactionable_id])
+}
+
+model sessions {
+  session_id    String   @id @db.Char(36)
+  session_token String   @unique @db.VarChar(255)
+  user_id       String   @db.Char(36)
+  expires       DateTime
+  created_at    DateTime @default(now())
+  updated_at    DateTime @default(now())
+  users         users    @relation(fields: [user_id], references: [user_id], onDelete: Cascade)
+
+  @@index([session_token])
+  @@index([user_id])
+}
+
+model subscriptions {
+  subscription_id          String               @id @db.Char(36)
+  profile_id               String               @db.Char(36)
+  plan_type                String               @db.VarChar(50)
+  status                   subscriptions_status @default(ACTIVE)
+  start_date               DateTime             @default(now())
+  end_date                 DateTime?
+  trial_ends_at            DateTime?
+  auto_renew               Boolean              @default(true)
+  cancel_at_period_end     Boolean              @default(false)
+  price                    Float
+  currency                 String               @default("RUB") @db.VarChar(3)
+  payment_method_id        String?              @db.Char(36)
+  provider_subscription_id String?              @db.VarChar(255)
+  provider                 String?              @db.VarChar(50)
+  created_at               DateTime             @default(now())
+  updated_at               DateTime             @default(now())
+  canceled_at              DateTime?
+  deleted_at               DateTime?
+  payment_methods          payment_methods?     @relation(fields: [payment_method_id], references: [payment_method_id])
+  profiles                 profiles             @relation(fields: [profile_id], references: [profile_id], onDelete: Cascade)
+  transactions             transactions[]
+
+  @@index([payment_method_id], map: "subscriptions_payment_method_id_fkey")
+  @@index([profile_id])
+  @@index([status])
+}
+
+model tags {
+  tag_id      String        @id @db.Char(36)
+  name        String        @unique @db.VarChar(50)
+  slug        String        @unique @db.VarChar(50)
+  color       String?       @db.VarChar(7)
+  course_tags course_tags[]
+  lesson_tags lesson_tags[]
+}
+
+model text_contents {
+  text_content_id String   @id @db.Char(36)
+  lesson_id       String   @unique @db.Char(36)
+  body            String   @db.Text
+  word_count      Int?
+  reading_time    Int?
+  created_at      DateTime @default(now())
+  updated_at      DateTime @default(now())
+  lessons         lessons  @relation(fields: [lesson_id], references: [lesson_id], onDelete: Cascade)
+}
+
+model transactions {
+  transaction_id      String              @id @db.Char(36)
+  profile_id          String              @db.Char(36)
+  subscription_id     String?             @db.Char(36)
+  type                String              @db.VarChar(50)
+  amount              Float
+  currency            String              @default("RUB") @db.VarChar(3)
+  status              transactions_status @default(PENDING)
+  course_id           String?             @db.Char(36)
+  payment_method_id   String?             @db.Char(36)
+  provider            String              @db.VarChar(50)
+  provider_payment_id String?             @db.VarChar(255)
+  provider_response   Json?
+  refunded_at         DateTime?
+  refund_amount       Float?
+  refund_reason       String?             @db.Text
+  created_at          DateTime            @default(now())
+  updated_at          DateTime            @default(now())
+  completed_at        DateTime?
+  failed_at           DateTime?
+  payment_methods     payment_methods?    @relation(fields: [payment_method_id], references: [payment_method_id])
+  profiles            profiles            @relation(fields: [profile_id], references: [profile_id], onDelete: Cascade)
+  subscriptions       subscriptions?      @relation(fields: [subscription_id], references: [subscription_id])
+
+  @@index([course_id])
+  @@index([payment_method_id], map: "transactions_payment_method_id_fkey")
+  @@index([profile_id])
+  @@index([status])
+  @@index([subscription_id])
+}
+
+model users {
+  user_id                   String                      @id @db.Char(36)
+  email                     String                      @unique @db.VarChar(255)
+  first_name                String                      @db.VarChar(100)
+  last_name                 String                      @db.VarChar(100)
+  password_hash             String?                     @db.VarChar(255)
+  role                      users_role                  @default(USER)
+  email_verified            DateTime?
+  is_blocked                Boolean                     @default(false)
+  blocked_reason            String?                     @db.Text
+  last_login_at             DateTime?
+  created_at                DateTime                    @default(now())
+  updated_at                DateTime                    @default(now())
+  deleted_at                DateTime?
+  Authenticator             Authenticator[]
+  account_deletion_requests account_deletion_requests[]
+  accounts                  accounts[]
+  profiles                  profiles?
+  sessions                  sessions[]
+
+  @@index([created_at])
+  @@index([email])
+  @@index([role])
+}
+
+model video_contents {
+  video_content_id String                  @id @db.Char(36)
+  lesson_id        String                  @unique @db.Char(36)
+  video_url        String                  @db.Text
+  provider         video_contents_provider @default(YOUTUBE)
+  duration         Int
+  qualities        Json?
+  subtitles        Json?
+  created_at       DateTime                @default(now())
+  updated_at       DateTime                @default(now())
+  lessons          lessons                 @relation(fields: [lesson_id], references: [lesson_id], onDelete: Cascade)
+}
+
+enum comments_commentable_type {
+  COURSE
+  LESSON
+}
+
+enum reactions_type {
+  LIKE
+  DISLIKE
+}
+
+enum author_applications_status {
   PENDING
   APPROVED
   REJECTED
 }
 
-enum ApplicationStatus {
-  PENDING
-  APPROVED
-  REJECTED
+enum history_historable_type {
+  LESSON
+  STANDALONE_ARTICLE
 }
 
-enum SubscriptionStatus {
+enum notifications_type {
+  EMAIL
+  IN_APP
+  TELEGRAM
+}
+
+enum account_deletion_requests_status {
+  PENDING
+  COMPLETED
+  REJECTED
+  CANCELLED
+}
+
+enum reactions_reactionable_type {
+  COURSE
+  LESSON
+  COMMENT
+}
+
+enum subscriptions_status {
   ACTIVE
   PAST_DUE
   CANCELED
   EXPIRED
 }
 
-enum TransactionStatus {
-  PENDING
-  COMPLETED
-  FAILED
-  REFUNDED
+enum video_contents_provider {
+  YOUTUBE
+  RUTUBE
+  VIMEO
+  LOCAL
 }
 
-enum NotificationType {
-  EMAIL
-  IN_APP
-  TELEGRAM
-}
-
-enum BusinessObjectType {
+enum business_events_object_type {
   COURSE
   LESSON
   COMMENT
   SUBSCRIPTION
 }
 
-enum HistorableType {
-  LESSON
-  STANDALONE_ARTICLE
+enum comments_status {
+  PENDING
+  APPROVED
+  REJECTED
 }
 
-enum LessonType {
+enum courses_difficulty_level {
+  BEGINNER
+  INTERMEDIATE
+  ADVANCED
+}
+
+enum lessons_lesson_type {
   ARTICLE
   VIDEO
   AUDIO
@@ -692,25 +660,32 @@ enum LessonType {
   CALCULATOR
 }
 
-enum CommentableType {
-  COURSE
-  LESSON
+enum users_role {
+  USER
+  AUTHOR
+  MODERATOR
+  ADMIN
 }
 
-enum ReactionType {
-  LIKE
-  DISLIKE
-}
-
-enum ReactionableType {
-  COURSE
-  LESSON
-  COMMENT
-}
-
-enum DeletionRequestStatus {
+enum transactions_status {
   PENDING
   COMPLETED
-  REJECTED
-  CANCELLED
+  FAILED
+  REFUNDED
+}
+
+enum courses_status {
+  DRAFT
+  PENDING_REVIEW
+  PUBLISHED
+  ARCHIVED
+  DELETED
+}
+
+enum lessons_status {
+  DRAFT
+  PENDING_REVIEW
+  PUBLISHED
+  ARCHIVED
+  DELETED
 }

@@ -1,6 +1,6 @@
 // src/pages/profile/ProfilePage.tsx
 import { useState, useEffect } from 'react'
-import { useParams, Link, useNavigate } from 'react-router-dom'
+import { useParams, Link, useSearchParams } from 'react-router-dom'
 import {
   Container,
   Paper,
@@ -71,28 +71,50 @@ interface Course {
 export function ProfilePage() {
   const { nickname } = useParams<{ nickname: string }>()
   const { profile: currentUserProfile } = useAuth()
-  const navigate = useNavigate()
+  const [searchParams, setSearchParams] = useSearchParams()
   const [profile, setProfile] = useState<Profile | null>(null)
   const [courses, setCourses] = useState<Course[]>([])
   const [counts, setCounts] = useState<ProfileCounts>({ courses: 0, lessons: 0, certificates: 0 })
   const [loading, setLoading] = useState(true)
-  const [activeTab, setActiveTab] = useState('about')
-
-  // Получаем параметр tab из URL при загрузке
-  useEffect(() => {
-    const params = new URLSearchParams(window.location.search)
-    const tabParam = params.get('tab')
-    if (tabParam) {
-      setActiveTab(tabParam)
-    }
-  }, [nickname])
-
-  const isOwnProfile = currentUserProfile?.nickname === nickname
   const [coverImageError, setCoverImageError] = useState(false)
+
+  // Определяем доступность вкладок
+  const isOwnProfile = currentUserProfile?.nickname === nickname
+  const isAuthor = profile?.user.role === 'AUTHOR'
+  
+  // Получаем requestedTab из searchParams и проверяем доступность
+  const requestedTab = searchParams.get('tab') || 'about'
+  const availableTabs = [
+    'about',
+    'certificates',
+    'info',
+    ...(isOwnProfile ? ['progress', 'history', 'favorites', 'subscriptions', 'postulates'] : []),
+    ...(isAuthor ? ['courses'] : [])
+  ]
+  const initialTab = availableTabs.includes(requestedTab) ? requestedTab : 'about'
+  const [activeTab, setActiveTab] = useState(initialTab)
 
   useEffect(() => {
     if (nickname) fetchProfile()
   }, [nickname])
+
+  // Синхронизируем activeTab после загрузки профиля
+  useEffect(() => {
+    if (profile) {
+      const isAuthorProfile = profile.user.role === 'AUTHOR'
+      const availableTabsForProfile = [
+        'about',
+        'certificates',
+        'info',
+        ...(isOwnProfile ? ['progress', 'history', 'favorites', 'subscriptions', 'postulates'] : []),
+        ...(isAuthorProfile ? ['courses'] : [])
+      ]
+      const newTab = availableTabsForProfile.includes(requestedTab) ? requestedTab : 'about'
+      if (newTab !== activeTab) {
+        setActiveTab(newTab)
+      }
+    }
+  }, [profile, isOwnProfile, requestedTab])
 
   const fetchProfile = async () => {
     try {
@@ -202,14 +224,12 @@ export function ProfilePage() {
       <Paper mt="xl" radius="md" shadow="sm">
         <Tabs value={activeTab} onChange={(v) => {
           setActiveTab(v || 'about')
-          // Обновляем URL без перезагрузки
-          const url = new URL(window.location.href)
+          // Обновляем URL через setSearchParams
           if (v && v !== 'about') {
-            url.searchParams.set('tab', v)
+            setSearchParams({ tab: v })
           } else {
-            url.searchParams.delete('tab')
+            setSearchParams({})
           }
-          navigate(url.pathname + url.search, { replace: true })
         }}>
           <Tabs.List>
             <Tabs.Tab value="about" leftSection={<User size={16} />}>О себе</Tabs.Tab>
