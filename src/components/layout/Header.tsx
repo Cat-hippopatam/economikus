@@ -6,7 +6,6 @@ import {
  Container, 
  Menu, 
  Text, 
- Avatar, 
  Burger, 
  Drawer, 
  Stack, 
@@ -26,6 +25,7 @@ import {
  Trash2
 } from 'lucide-react'
 import { useState, useEffect } from 'react'
+import { MediaImage } from '../common/MediaImage'
 import { NAV_LINKS, APP_CONFIG, COLORS } from '@/constants'
 
 interface UserData {
@@ -189,17 +189,21 @@ export function Header() {
 <Menu.Target>
 <Button 
  variant="subtle" 
- style={{ padding: '4px8px' }}
+ style={{ padding: '4px 8px' }}
  >
 <Group gap="xs">
-<Avatar 
+<MediaImage 
  src={user.profile?.avatarUrl} 
- size="sm"
- radius="xl"
+ mediaType="avatar"
+ style={{ 
+ width: 32, 
+ height: 32, 
+ borderRadius: '50%',
+ overflow: 'hidden',
+ }}
+ placeholderSize={20}
  alt={user.profile?.displayName || user.firstName}
- >
- {user.firstName[0]}
-</Avatar>
+/>
 <Text size="sm" style={{ color: COLORS.secondary }}>
  {user.profile?.displayName || `${user.firstName} ${user.lastName}`}
 </Text>
@@ -347,13 +351,18 @@ export function Header() {
           {user ? (
             <>
               <Group>
-                <Avatar 
+                <MediaImage 
                   src={user.profile?.avatarUrl} 
-                  size="md" 
-                  radius="xl"
-                >
-                  {user.firstName[0]}
-                </Avatar>
+                  mediaType="avatar"
+                  style={{ 
+                    width: 40, 
+                    height: 40, 
+                    borderRadius: '50%',
+                    overflow: 'hidden',
+                  }}
+                  placeholderSize={24}
+                  alt={user.profile?.displayName || user.firstName}
+                />
                 <div>
                   <Text fw={500}>
                     {user.profile?.displayName || `${user.firstName} ${user.lastName}`}

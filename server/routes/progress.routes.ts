@@ -259,3 +259,5 @@ async function updateCourseProgress(profileId: string, courseId: string) {
 }
 
 export default progress
+
+

@@ -1,11 +1,13 @@
-﻿// server/routes/admin.routes.ts
+// server/routes/admin.routes.ts
 import { Hono } from 'hono'
 import { prisma } from '../db'
 import { requireAdmin, getCurrentProfile } from '../middleware/auth'
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+type ModuleWhereInput = any
 
 const admin = new Hono()
 
-// Все роуты требуют права ADMIN
+// ��� ����� ������� ����� ADMIN
 admin.use('*', requireAdmin)
 
 // === DASHBOARD ===
@@ -59,7 +61,7 @@ admin.patch('/users/:id', async (c) => {
   const id = c.req.param('id')
   const { role, displayName, bio } = await c.req.json()
   const profile = await prisma.profile.findUnique({ where: { id } })
-  if (!profile) return c.json({ error: 'Профиль не найден' }, 404)
+  if (!profile) return c.json({ error: '������� �� ������' }, 404)
   if (role) await prisma.user.update({ where: { id: profile.userId }, data: { role } })
   const user = await prisma.profile.update({ where: { id }, data: { displayName, bio }, include: { user: { select: { id: true, email: true, role: true } } } })
   return c.json(user)
@@ -67,7 +69,7 @@ admin.patch('/users/:id', async (c) => {
 
 admin.delete('/users/:id', async (c) => {
   await prisma.profile.delete({ where: { id: c.req.param('id') } })
-  return c.json({ message: 'Пользователь удалён' })
+  return c.json({ message: '������������ �����' })
 })
 
 // === COURSES ===
@@ -94,7 +96,7 @@ admin.post('/courses', async (c) => {
   const profile = getCurrentProfile(c)
   const { title, slug, description, coverImage, difficultyLevel, duration, isPremium, status, tagIds } = await c.req.json()
   
-  if (await prisma.course.findUnique({ where: { slug } })) return c.json({ error: 'Курс с таким slug уже существует' }, 400)
+  if (await prisma.course.findUnique({ where: { slug } })) return c.json({ error: '���� � ����� slug ��� ����������' }, 400)
 
   const course = await prisma.course.create({
     data: { title, slug, description, coverImage, difficultyLevel: difficultyLevel || 'BEGINNER', duration: duration || 0, lessonsCount: 0, modulesCount: 0, isPremium: isPremium || false, status: status || 'DRAFT', authorProfileId: profile!.id, tags: tagIds ? { create: tagIds.map((tagId: string) => ({ tagId })) } : undefined },
@@ -107,7 +109,7 @@ admin.patch('/courses/:id', async (c) => {
   const id = c.req.param('id')
   const { title, slug, description, coverImage, difficultyLevel, duration, isPremium, status, tagIds } = await c.req.json()
 
-  if (slug && await prisma.course.findFirst({ where: { slug, NOT: { id } } })) return c.json({ error: 'Курс с таким slug уже существует' }, 400)
+  if (slug && await prisma.course.findFirst({ where: { slug, NOT: { id } } })) return c.json({ error: '���� � ����� slug ��� ����������' }, 400)
 
   if (tagIds !== undefined) {
     await prisma.courseTag.deleteMany({ where: { courseId: id } })
@@ -120,13 +122,13 @@ admin.patch('/courses/:id', async (c) => {
 
 admin.delete('/courses/:id', async (c) => {
   await prisma.course.update({ where: { id: c.req.param('id') }, data: { deletedAt: new Date() } })
-  return c.json({ message: 'Курс удалён' })
+  return c.json({ message: '���� �����' })
 })
 
 // === MODULES ===
 admin.get('/modules', async (c) => {
   const courseId = c.req.query('courseId')
-  if (!courseId) return c.json({ error: 'courseId обязателен' }, 400)
+  if (!courseId) return c.json({ error: 'courseId ����������' }, 400)
   
   const modules = await prisma.module.findMany({ 
     where: { courseId }, 
@@ -148,7 +150,7 @@ admin.get('/modules', async (c) => {
 
 admin.post('/modules', async (c) => {
   const { courseId, title, description, sortOrder } = await c.req.json()
-  const maxOrder = await prisma.module.findFirst({ where: { courseId }, orderBy: { sortOrder: 'desc' }, select: { sortOrder: true } })
+  const maxOrder = await prisma.module.findFirst({ where: { courseId, deletedAt: null }, orderBy: { sortOrder: 'desc' }, select: { sortOrder: true } })
   const module = await prisma.module.create({ data: { courseId, title, description, sortOrder: sortOrder ?? (maxOrder?.sortOrder ?? 0) + 1, lessonsCount: 0, duration: 0 } })
   await prisma.course.update({ where: { id: courseId }, data: { modulesCount: { increment: 1 } } })
   return c.json(module, 201)
@@ -163,10 +165,10 @@ admin.patch('/modules/:id', async (c) => {
 admin.delete('/modules/:id', async (c) => {
   const id = c.req.param('id')
   const module = await prisma.module.findUnique({ where: { id } })
-  if (!module) return c.json({ error: 'Модуль не найден' }, 404)
-  await prisma.module.delete({ where: { id } })
+  if (!module) return c.json({ error: '������ �� ������' }, 404)
+  await prisma.module.update({ where: { id }, data: { deletedAt: new Date() } })
   await prisma.course.update({ where: { id: module.courseId }, data: { modulesCount: { decrement: 1 } } })
-  return c.json({ message: 'Модуль удалён' })
+  return c.json({ message: '������ �����' })
 })
 
 // === LESSONS ===
@@ -195,7 +197,7 @@ admin.post('/lessons', async (c) => {
   const profile = getCurrentProfile(c)
   const { moduleId, title, slug, description, lessonType, duration, isPremium, status, sortOrder, tagIds } = await c.req.json()
   
-  if (await prisma.lesson.findUnique({ where: { slug } })) return c.json({ error: 'Урок с таким slug уже существует' }, 400)
+  if (await prisma.lesson.findUnique({ where: { slug } })) return c.json({ error: '���� � ����� slug ��� ����������' }, 400)
 
   const maxOrder = await prisma.lesson.findFirst({ where: { moduleId, deletedAt: null }, orderBy: { sortOrder: 'desc' }, select: { sortOrder: true } })
   const lesson = await prisma.lesson.create({
@@ -210,7 +212,7 @@ admin.patch('/lessons/:id', async (c) => {
   const id = c.req.param('id')
   const { title, slug, description, lessonType, duration, isPremium, status, sortOrder, moduleId, tagIds } = await c.req.json()
 
-  if (slug && await prisma.lesson.findFirst({ where: { slug, NOT: { id } } })) return c.json({ error: 'Урок с таким slug уже существует' }, 400)
+  if (slug && await prisma.lesson.findFirst({ where: { slug, NOT: { id } } })) return c.json({ error: '���� � ����� slug ��� ����������' }, 400)
 
   if (tagIds !== undefined) {
     await prisma.lessonTag.deleteMany({ where: { lessonId: id } })
@@ -224,10 +226,10 @@ admin.patch('/lessons/:id', async (c) => {
 admin.delete('/lessons/:id', async (c) => {
   const id = c.req.param('id')
   const lesson = await prisma.lesson.findUnique({ where: { id } })
-  if (!lesson) return c.json({ error: 'Урок не найден' }, 404)
+  if (!lesson) return c.json({ error: '���� �� ������' }, 404)
   await prisma.lesson.update({ where: { id }, data: { deletedAt: new Date() } })
   await prisma.module.update({ where: { id: lesson.moduleId }, data: { lessonsCount: { decrement: 1 } } })
-  return c.json({ message: 'Урок удалён' })
+  return c.json({ message: '���� �����' })
 })
 
 // === TAGS ===
@@ -238,7 +240,7 @@ admin.get('/tags', async (c) => {
 
 admin.post('/tags', async (c) => {
   const { name, slug, color } = await c.req.json()
-  if (await prisma.tag.findUnique({ where: { slug } })) return c.json({ error: 'Тег с таким slug уже существует' }, 400)
+  if (await prisma.tag.findUnique({ where: { slug } })) return c.json({ error: '��� � ����� slug ��� ����������' }, 400)
   const tag = await prisma.tag.create({ data: { name, slug, color: color || '#3B82F6' } })
   return c.json(tag, 201)
 })
@@ -246,14 +248,14 @@ admin.post('/tags', async (c) => {
 admin.patch('/tags/:id', async (c) => {
   const id = c.req.param('id')
   const { name, slug, color } = await c.req.json()
-  if (slug && await prisma.tag.findFirst({ where: { slug, NOT: { id } } })) return c.json({ error: 'Тег с таким slug уже существует' }, 400)
+  if (slug && await prisma.tag.findFirst({ where: { slug, NOT: { id } } })) return c.json({ error: '��� � ����� slug ��� ����������' }, 400)
   const tag = await prisma.tag.update({ where: { id }, data: { name, slug, color } })
   return c.json(tag)
 })
 
 admin.delete('/tags/:id', async (c) => {
   await prisma.tag.delete({ where: { id: c.req.param('id') } })
-  return c.json({ message: 'Тег удалён' })
+  return c.json({ message: '��� �����' })
 })
 
 // === AUTHOR APPLICATIONS ===
@@ -299,25 +301,25 @@ admin.get('/applications', async (c) => {
 
 admin.patch('/applications/:id', async (c) => {
  const profile = getCurrentProfile(c)
- if (!profile) return c.json({ error: 'Профиль не найден' },404)
+ if (!profile) return c.json({ error: '������� �� ������' },404)
 
  const id = c.req.param('id')
  const { action, rejectionReason } = await c.req.json() // action: 'approve' | 'reject'
 
  const application = await prisma.authorApplication.findUnique({ where: { id } })
- if (!application) return c.json({ error: 'Заявка не найдена' },404)
+ if (!application) return c.json({ error: '������ �� �������' },404)
 
  if (application.status !== 'PENDING') {
- return c.json({ error: 'Заявка уже рассмотрена' },400)
+ return c.json({ error: '������ ��� �����������' },400)
  }
 
  if (action === 'approve') {
- // Меняем статус заявки
+ // ������ ������ ������
  await prisma.authorApplication.update({
  where: { id },
  data: { status: 'APPROVED', reviewedBy: profile.id, reviewedAt: new Date() }
  })
- // Меняем роль пользователя на AUTHOR
+ // ������ ���� ������������ �� AUTHOR
  const userProfile = await prisma.profile.findUnique({ where: { id: application.profileId } })
  if (userProfile) {
  await prisma.user.update({
@@ -325,7 +327,7 @@ admin.patch('/applications/:id', async (c) => {
  data: { role: 'AUTHOR' }
  })
  }
- return c.json({ message: 'Заявка одобрена, пользователь теперь автор' })
+ return c.json({ message: '������ ��������, ������������ ������ �����' })
  } else if (action === 'reject') {
  await prisma.authorApplication.update({
  where: { id },
@@ -333,13 +335,13 @@ admin.patch('/applications/:id', async (c) => {
  status: 'REJECTED',
  reviewedBy: profile.id,
  reviewedAt: new Date(),
- rejectionReason: rejectionReason || 'Причина не указана'
+ rejectionReason: rejectionReason || '������� �� �������'
  }
  })
- return c.json({ message: 'Заявка отклонена' })
+ return c.json({ message: '������ ���������' })
  }
 
- return c.json({ error: 'Неверное действие' },400)
+ return c.json({ error: '�������� ��������' },400)
 })
 
 // === ACCOUNT DELETION REQUESTS ===
@@ -384,18 +386,18 @@ admin.get('/account-deletion-requests', async (c) => {
 
 admin.post('/account-deletion-requests/:id/complete', async (c) => {
  const profile = getCurrentProfile(c)
- if (!profile) return c.json({ error: 'Профиль не найден' },404)
+ if (!profile) return c.json({ error: '������� �� ������' },404)
 
  const id = c.req.param('id')
 
  const request = await prisma.accountDeletionRequest.findUnique({ where: { id } })
- if (!request) return c.json({ error: 'Заявка не найдена' },404)
+ if (!request) return c.json({ error: '������ �� �������' },404)
 
  if (request.status !== 'PENDING') {
- return c.json({ error: 'Заявка уже рассмотрена' },400)
+ return c.json({ error: '������ ��� �����������' },400)
  }
 
- // Сначала обновляем статус заявки (до удаления данных!)
+ // ������� ��������� ������ ������ (�� �������� ������!)
  await prisma.accountDeletionRequest.update({
  where: { id },
  data: {
@@ -405,33 +407,33 @@ admin.post('/account-deletion-requests/:id/complete', async (c) => {
  }
  })
 
- // Удаляем все сессии пользователя
+ // ������� ��� ������ ������������
  await prisma.session.deleteMany({ where: { userId: request.userId } })
 
- // Удаляем аккаунты (OAuth)
+ // ������� �������� (OAuth)
  await prisma.account.deleteMany({ where: { userId: request.userId } })
 
- // Удаляем профиль (каскадно удалятся все связанные данные)
+ // ������� ������� (�������� �������� ��� ��������� ������)
  await prisma.profile.delete({ where: { id: request.profileId } })
 
- // Удаляем пользователя
+ // ������� ������������
  await prisma.user.delete({ where: { id: request.userId } })
 
- return c.json({ message: 'Аккаунт удалён, заявка выполнена' })
+ return c.json({ message: '������� �����, ������ ���������' })
 })
 
 admin.post('/account-deletion-requests/:id/reject', async (c) => {
  const profile = getCurrentProfile(c)
- if (!profile) return c.json({ error: 'Профиль не найден' },404)
+ if (!profile) return c.json({ error: '������� �� ������' },404)
 
  const id = c.req.param('id')
  const { rejectionReason } = await c.req.json()
 
  const request = await prisma.accountDeletionRequest.findUnique({ where: { id } })
- if (!request) return c.json({ error: 'Заявка не найдена' },404)
+ if (!request) return c.json({ error: '������ �� �������' },404)
 
  if (request.status !== 'PENDING') {
- return c.json({ error: 'Заявка уже рассмотрена' },400)
+ return c.json({ error: '������ ��� �����������' },400)
  }
 
  await prisma.accountDeletionRequest.update({
@@ -440,11 +442,11 @@ admin.post('/account-deletion-requests/:id/reject', async (c) => {
  status: 'REJECTED',
  processedBy: profile.id,
  processedAt: new Date(),
- rejectionReason: rejectionReason || 'Причина не указана'
+ rejectionReason: rejectionReason || '������� �� �������'
  }
  })
 
- return c.json({ message: 'Заявка отклонена' })
+ return c.json({ message: '������ ���������' })
 })
 
 // === LESSON CONTENT (Moderation) ===
@@ -471,10 +473,10 @@ admin.get('/lessons/:id/content', async (c) => {
  })
 
  if (!lesson) {
- return c.json({ error: 'Урок не найден' },404)
+ return c.json({ error: '���� �� ������' },404)
  }
 
- // Получаем контент в зависимости от типа урока
+ // �������� ������� � ����������� �� ���� �����
  let content = null
 
  if (lesson.lessonType === 'ARTICLE') {
@@ -486,7 +488,7 @@ admin.get('/lessons/:id/content', async (c) => {
  const videoContent = await prisma.videoContent.findUnique({
  where: { lessonId: id }
  })
- content = videoContent ? { type: 'video', videoUrl: videoContent.videoUrl, provider: videoContent.provider } : null
+ content = videoContent ? { type: 'video', videoUrl: videoContent.videoUrl, platform: videoContent.platform } : null
  } else if (lesson.lessonType === 'AUDIO') {
  const audioContent = await prisma.audioContent.findUnique({
  where: { lessonId: id }
@@ -506,3 +508,5 @@ admin.get('/lessons/:id/content', async (c) => {
 })
 
 export default admin
+
+

@@ -34,6 +34,7 @@ import {
 } from 'lucide-react'
 import { useAuth } from '../../hooks/useAuth'
 import { ProgressTab, HistoryTab, FavoritesTab, CertificatesTab, SubscriptionPaymentTab, DevelopingTab } from '../../components/profile'
+import { MediaImage } from '../../components/common/MediaImage'
 import { APP_CONFIG, COLORS } from '../../constants'
 
 interface Profile {
@@ -76,7 +77,6 @@ export function ProfilePage() {
   const [courses, setCourses] = useState<Course[]>([])
   const [counts, setCounts] = useState<ProfileCounts>({ courses: 0, lessons: 0, certificates: 0 })
   const [loading, setLoading] = useState(true)
-  const [coverImageError, setCoverImageError] = useState(false)
 
   // Определяем доступность вкладок
   const isOwnProfile = currentUserProfile?.nickname === nickname
@@ -164,31 +164,28 @@ export function ProfilePage() {
     )
   }
 
-  // Обработчик ошибки загрузки обложки
-  const handleCoverError = () => {
-    setCoverImageError(true)
-  }
-
-  // Определяем background для обложки
-  const coverBackground = coverImageError || !profile.coverImage
-    ? `linear-gradient(135deg, ${COLORS.primary} 0%, ${COLORS.secondary} 100%)`
-    : `url(${profile.coverImage})`
-
   return (
     <Container size="lg" py="xl">
+      {/* Обложка профиля */}
       <Paper 
         shadow="sm" 
         radius="md" 
         style={{ 
-          height: 200, 
-          backgroundImage: coverBackground, 
-          backgroundSize: 'cover', 
-          backgroundPosition: 'center', 
           position: 'relative', 
-          marginBottom: 0 
+          marginBottom: 0,
+          overflow: 'hidden',
         }}
-        onError={handleCoverError}
       >
+        <MediaImage
+          src={profile.coverImage}
+          mediaType="cover"
+          alt="Обложка профиля"
+          style={{
+            width: '100%',
+            height: 200,
+            objectFit: 'cover',
+          }}
+        />
         {isOwnProfile && (
           <Tooltip label="Редактировать профиль">
             <ActionIcon component={Link} to="/profile/settings" variant="white" size="lg" style={{ position: 'absolute', top: 16, right: 16 }}><Edit size={18} /></ActionIcon>

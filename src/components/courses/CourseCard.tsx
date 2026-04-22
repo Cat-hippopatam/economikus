@@ -8,6 +8,7 @@ import { Clock, BookOpen, Crown } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
 import type { Course } from '@/types'
 import { DIFFICULTY_CONFIG } from '@/constants'
+import { MediaImage } from '../common/MediaImage'
 
 interface CourseCardProps {
   course: Course
@@ -59,51 +60,16 @@ export function CourseCard({ course }: CourseCardProps) {
           position: 'relative',
         }}
       >
-        {course.coverImage ? (
-          <img
-            src={course.coverImage}
-            alt={course.title}
-            onError={(e) => {
-              // Fallback если изображение не загрузилось
-              e.currentTarget.style.display = 'none'
-              const parent = e.currentTarget.parentElement
-              if (parent) {
-                parent.innerHTML = `
-                  <div style="
-                    width: 100%;
-                    height: 100%;
-                    background: linear-gradient(135deg, #264653 0%, #2A9D8F 100%);
-                    display: flex;
-                    align-items: center;
-                    justify-content: center;
-                  ">
-                    <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="opacity: 0.5">
-                      <path d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H20v20H6.5a2.5 2.5 0 0 1 0-5H20"></path>
-                    </svg>
-                  </div>
-                `
-              }
-            }}
-            style={{
-              width: '100%',
-              height: '100%',
-              objectFit: 'cover',
-            }}
-          />
-        ) : (
-          <Box
-            style={{
-              width: '100%',
-              height: '100%',
-              background: 'linear-gradient(135deg, #264653 0%, #2A9D8F 100%)',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-            }}
-          >
-            <BookOpen size={48} color="#fff" opacity={0.5} />
-          </Box>
-        )}
+        <MediaImage
+          src={course.coverImage}
+          mediaType="course"
+          alt={course.title}
+          style={{
+            width: '100%',
+            height: '100%',
+            objectFit: 'cover',
+          }}
+        />
 
         {/* Премиум бейдж */}
         {course.isPremium && (

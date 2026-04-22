@@ -3,7 +3,10 @@ import { Hono } from 'hono'
 import { prisma } from '../db'
 import { AppError } from '../lib/errors'
 import { requireAuth, getCurrentUser, getCurrentProfile } from '../middleware/auth'
-import type { SubscriptionStatus, TransactionStatus } from '@prisma/client'
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+type SubscriptionWhereInput = any
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+type TransactionWhereInput = any
 
 const subscriptions = new Hono()
 
@@ -365,12 +368,12 @@ subscriptions.get('/transactions', async (c) => {
   const status = c.req.query('status')
   const skip = (page - 1) * limit
 
-  const whereClause: { profileId?: string; status?: TransactionStatus } = {
+  const whereClause: { profileId?: string; status?: string } = {
     profileId: profile.id
   }
 
   if (status) {
-    whereClause.status = status as TransactionStatus
+    whereClause.status = status as string
   }
 
   const [items, total] = await Promise.all([
@@ -421,10 +424,10 @@ subscriptions.get('/admin/subscriptions', async (c) => {
   const profileId = c.req.query('profileId')
   const skip = (page - 1) * limit
 
-  const whereClause: { status?: SubscriptionStatus; profileId?: string } = {}
+  const whereClause: { status?: string; profileId?: string } = {}
 
   if (status) {
-    whereClause.status = status as SubscriptionStatus
+    whereClause.status = status as string
   }
 
   if (profileId) {
@@ -522,10 +525,10 @@ subscriptions.get('/admin/transactions', async (c) => {
   const status = c.req.query('status')
   const skip = (page - 1) * limit
 
-  const whereClause: { status?: TransactionStatus } = {}
+  const whereClause: { status?: string } = {}
 
   if (status) {
-    whereClause.status = status as TransactionStatus
+    whereClause.status = status as string
   }
 
   const [items, total] = await Promise.all([
@@ -566,3 +569,4 @@ subscriptions.get('/admin/transactions', async (c) => {
 })
 
 export default subscriptions
+

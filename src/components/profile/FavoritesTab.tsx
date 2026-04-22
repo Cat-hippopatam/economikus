@@ -1,19 +1,11 @@
 // src/components/profile/FavoritesTab.tsx
 import { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
-import { Stack, Card, Group, Text, Badge, ActionIcon, Button, Image, Modal, ThemeIcon } from '@mantine/core'
-import { Heart, Trash2, BookOpen, Video, Headphones, FileText, Calculator, Lock } from 'lucide-react'
-import { LoadingState, EmptyState, ErrorState } from '../common'
+import { Stack, Card, Group, Text, Badge, ActionIcon, Button, Modal, ThemeIcon } from '@mantine/core'
+import { Heart, Trash2, Lock } from 'lucide-react'
+import { LoadingState, EmptyState, ErrorState, MediaImage } from '../common'
 import { useUserFavorites, useAuth } from '../../hooks'
-import { APP_CONFIG, COLORS } from '../../constants'
-
-const LESSON_TYPE_ICONS: Record<string, typeof BookOpen> = {
-  ARTICLE: FileText,
-  VIDEO: Video,
-  AUDIO: Headphones,
-  QUIZ: FileText,
-  CALCULATOR: Calculator,
-}
+import { APP_CONFIG } from '../../constants'
 
 const LESSON_TYPE_LABELS: Record<string, string> = {
   ARTICLE: 'Статья',
@@ -101,34 +93,24 @@ export function FavoritesTab() {
     <>
       <Stack gap="md">
         {items.map((favorite) => {
-          const Icon = LESSON_TYPE_ICONS[favorite.lesson.lessonType] || BookOpen
           const courseSlug = favorite.lesson.module?.course?.slug || ''
           
           return (
             <Card key={favorite.id} withBorder padding="md" radius="md">
               <Group justify="space-between" wrap="nowrap">
                 <Group gap="md" wrap="nowrap" style={{ flex: 1 }}>
-                  {favorite.lesson.coverImage ? (
-                    <Image
-                      src={favorite.lesson.coverImage}
-                      w={80}
-                      h={60}
-                      radius="md"
-                      fit="cover"
-                    />
-                  ) : (
-                    <Group
-                      justify="center"
-                      style={{
-                        width: 80,
-                        height: 60,
-                        background: `linear-gradient(135deg, ${COLORS.primary} 0%, ${COLORS.secondary} 100%)`,
-                        borderRadius: 8
-                      }}
-                    >
-                      <Icon size={24} color="white" />
-                    </Group>
-                  )}
+                  <MediaImage
+                    src={favorite.lesson.coverImage}
+                    mediaType="lesson"
+                    alt={favorite.lesson.title}
+                    style={{
+                      width: 80,
+                      height: 60,
+                      borderRadius: 8,
+                      objectFit: 'cover',
+                    }}
+                    placeholderSize={24}
+                  />
                   
                   <Stack gap={4} style={{ flex: 1 }}>
                     <Group gap="xs">

@@ -6,11 +6,7 @@ import { requireAuth, optionalAuth, getCurrentProfile } from '../middleware/auth
 
 const comments = new Hono()
 
-// GET публичный, POST/PATCH/DELETE требуют авторизации
-comments.use('/', requireAuth)
-comments.use('/:id', requireAuth)
-
-// === GET /comments — список комментариев (публичный) ===
+// GET публичный, POST/PATCH/DELETE требуют авторизации - используем отдельные маршруты
 comments.get('/', optionalAuth, async (c) => {
   const type = c.req.query('type') as 'COURSE' | 'LESSON' | null
   const id = c.req.query('id')
@@ -39,7 +35,7 @@ comments.get('/', optionalAuth, async (c) => {
 })
 
 // === POST /comments — добавить комментарий ===
-comments.post('/', async (c) => {
+comments.post('/', requireAuth, async (c) => {
   const profile = getCurrentProfile(c)
   if (!profile) throw new AppError(401, 'Не авторизован')
 
@@ -61,7 +57,7 @@ comments.post('/', async (c) => {
 })
 
 // === PATCH /comments/:id — редактировать комментарий ===
-comments.patch('/:id', async (c) => {
+comments.patch('/:id', requireAuth, async (c) => {
   const profile = getCurrentProfile(c)
   if (!profile) throw new AppError(401, 'Не авторизован')
 
@@ -85,7 +81,7 @@ comments.patch('/:id', async (c) => {
 })
 
 // === DELETE /comments/:id — удалить комментарий ===
-comments.delete('/:id', async (c) => {
+comments.delete('/:id', requireAuth, async (c) => {
   const profile = getCurrentProfile(c)
   if (!profile) throw new AppError(401, 'Не авторизован')
 
@@ -100,3 +96,5 @@ comments.delete('/:id', async (c) => {
 })
 
 export default comments
+
+

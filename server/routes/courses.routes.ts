@@ -2,7 +2,9 @@
 import { Hono } from 'hono'
 import { prisma } from '../db'
 import { AppError } from '../lib/errors'
-import type { CourseWhereInput } from '../types'
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+type CourseWhereInput = any
+
 
 const courses = new Hono()
 
@@ -260,13 +262,15 @@ courses.get('/:slug/lessons/:lessonSlug', async (c) => {
         content = lesson.videoContent ? {
           type: 'video',
           videoUrl: lesson.videoContent.videoUrl,
-          provider: lesson.videoContent.provider,
+          platform: lesson.videoContent.platform,
+          body: lesson.videoContent.description,
         } : null
         break
       case 'AUDIO':
         content = lesson.audioContent ? {
           type: 'audio',
           audioUrl: lesson.audioContent.audioUrl,
+          body: lesson.audioContent.description,
         } : null
         break
       case 'QUIZ':
@@ -412,3 +416,5 @@ courses.get('/:slug/modules/:moduleId', async (c) => {
 })
 
 export default courses
+
+

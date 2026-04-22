@@ -5,6 +5,7 @@ import { prisma } from '../db'
 import { AppError } from '../lib/errors'
 import { RegisterSchema, LoginSchema } from '../../src/shared/types'
 import { limitUserSessions, cleanupExpiredSessions } from '../jobs/session-cleanup'
+import type { PrismaClient } from '@prisma/client'
 import crypto from 'crypto'
 
 const auth = new Hono()
@@ -18,7 +19,7 @@ auth.post('/register', async (c) => {
     if (!result.success) {
       return c.json({ 
         error: 'Validation failed', 
-        details: (result.error as any).errors.map(e => ({ field: e.path.join('.'), message: e.message })) 
+        details: result.error.issues.map(e => ({ field: e.path.join('.'), message: e.message })) 
       }, 400)
     }
     
@@ -37,7 +38,7 @@ auth.post('/register', async (c) => {
     const passwordHash = await hash(password, 12)
 
     // Транзакция: User + Profile
-    const newUser = await prisma.$transaction(async (tx) => {
+    const newUser = await prisma.$transaction(async (tx: PrismaClient) => {
       const user = await tx.user.create({
         data: { email, firstName, lastName, passwordHash, role: 'USER', emailVerified: new Date() }
       })
@@ -87,7 +88,7 @@ auth.post('/login', async (c) => {
     if (!result.success) {
       return c.json({ 
         error: 'Validation failed', 
-        details: (result.error as any).errors.map(e => ({ field: e.path.join('.'), message: e.message })) 
+        details: result.error.issues.map(e => ({ field: e.path.join('.'), message: e.message })) 
       }, 400)
     }
     
@@ -242,3 +243,4 @@ auth.get('/me', async (c) => {
 })
 
 export default auth
+

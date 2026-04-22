@@ -1,5 +1,21 @@
 // server/types.ts
-import { ContentStatus, DifficultyLevel, LessonType, ReactionableType, ReactionType, CommentableType } from '@prisma/client'
+// Локальные определения типов для Prisma enum (т.к. могут не экспортироваться из клиента)
+
+// Content Status
+export type ContentStatus = 'DRAFT' | 'PENDING_REVIEW' | 'PUBLISHED' | 'ARCHIVED' | 'DELETED'
+
+// Difficulty Level
+export type DifficultyLevel = 'BEGINNER' | 'INTERMEDIATE' | 'ADVANCED'
+
+// Lesson Type
+export type LessonType = 'ARTICLE' | 'VIDEO' | 'AUDIO' | 'QUIZ' | 'CALCULATOR'
+
+// Reaction
+export type ReactionableType = 'COURSE' | 'LESSON' | 'COMMENT'
+export type ReactionType = 'LIKE' | 'DISLIKE'
+
+// Comment
+export type CommentableType = 'COURSE' | 'LESSON'
 
 export interface CourseWhereInput {
   deletedAt: null

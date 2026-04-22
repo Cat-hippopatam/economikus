@@ -3,11 +3,18 @@ import { Hono } from 'hono'
 import { prisma } from '../db'
 import { AppError } from '../lib/errors'
 import { requireAuth, getCurrentUser, getCurrentProfile } from '../middleware/auth'
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+type CourseWhereInput = any
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+type LessonWhereInput = any
 
 const author = new Hono()
 
 // Все роуты требуют авторизации
 author.use('/*', requireAuth)
+
+// Все роуты требуют авторизации
+author.use('*', requireAuth)
 
 // === GET /author/application — получить текущую заявку ===
 author.get('/application', async (c) => {
@@ -313,7 +320,7 @@ author.get('/courses', async (c) => {
         { description: { contains: search } },
       ]
     }),
-    ...(status && { status: status as any }),
+    ...(status && { status }),
   }
 
   const [items, total] = await Promise.all([
@@ -322,12 +329,16 @@ author.get('/courses', async (c) => {
       orderBy: { createdAt: 'desc' },
       skip: (page - 1) * limit,
       take: limit,
+      include: {
+        _count: { select: { modules: true, progress: true } },
+        tags: true,
+      }
     }),
     prisma.course.count({ where }),
   ])
 
   return c.json({
-    items: items.map((course: any) => ({
+    items: items.map(course => ({
       id: course.id,
       title: course.title,
       slug: course.slug,
@@ -336,12 +347,12 @@ author.get('/courses', async (c) => {
       status: course.status,
       difficultyLevel: course.difficultyLevel,
       isPremium: course.isPremium,
-      lessonsCount: 0,
-      modulesCount: 0,
+      lessonsCount: course._count.modules,
+      modulesCount: course._count.modules,
       viewsCount: course.viewsCount,
       createdAt: course.createdAt,
       publishedAt: course.publishedAt,
-      tags: [],
+      tags: course.tags,
     })),
     pagination: {
       page,
@@ -400,7 +411,7 @@ author.post('/courses', async (c) => {
 
     const course = await prisma.course.create({
       data: courseData,
-      include: { }
+      include: { tags: true }
     })
 
     console.log('Course created:', course.id)
@@ -428,7 +439,11 @@ author.get('/courses/:id', async (c) => {
     include: {
       modules: {
         orderBy: { sortOrder: 'asc' },
+        include: {
+          _count: { select: { lessons: true } }
+        }
       },
+      tags: true,
     }
   })
 
@@ -478,7 +493,7 @@ author.patch('/courses/:id', async (c) => {
       throw new AppError(400, 'Курс с таким URL уже существует')
     }
   }
-
+// _____5
   const course = await prisma.course.update({
     where: { id },
     data: {
@@ -491,12 +506,12 @@ author.patch('/courses/:id', async (c) => {
       status: finalStatus,
       ...(tags && {
         tags: {
-          set: [],
-          connect: tags.map((id: string) => ({ id }))
+          // set: [],
+          set: tags.map((id: string) => ({ id }))
         }
       }),
     },
-    include: { }
+    include: { tags: true }
   })
 
   return c.json({ course })
@@ -546,7 +561,7 @@ author.get('/lessons', async (c) => {
   const status = c.req.query('status') || ''
   const lessonType = c.req.query('lessonType') || ''
 
-  const where: any = {
+  const where = {
     authorProfileId: profile.id,
     deletedAt: null,
     ...(search && {
@@ -555,8 +570,8 @@ author.get('/lessons', async (c) => {
         { description: { contains: search } },
       ]
     }),
-    ...(status && { status: status as any }),
-    ...(lessonType && { lessonType: lessonType as any }),
+    ...(status && { status }),
+    ...(lessonType && { lessonType }),
   }
 
   const [items, total] = await Promise.all([
@@ -565,12 +580,20 @@ author.get('/lessons', async (c) => {
       orderBy: { createdAt: 'desc' },
       skip: (page - 1) * limit,
       take: limit,
+      include: {
+        module: {
+          include: {
+            course: { select: { id: true, title: true } }
+          }
+        },
+        tags: true,
+      }
     }),
     prisma.lesson.count({ where }),
   ])
 
   return c.json({
-    items: items.map((lesson: any) => ({
+    items: items.map(lesson => ({
       id: lesson.id,
       title: lesson.title,
       slug: lesson.slug,
@@ -582,8 +605,12 @@ author.get('/lessons', async (c) => {
       viewsCount: lesson.viewsCount,
       createdAt: lesson.createdAt,
       publishedAt: lesson.publishedAt,
-      moduleId: lesson.moduleId,
-      tags: [],
+      module: lesson.module ? {
+        id: lesson.module.id,
+        title: lesson.module.title,
+        course: lesson.module.course,
+      } : null,
+      tags: lesson.tags,
     })),
     pagination: {
       page,
@@ -645,73 +672,26 @@ author.post('/lessons', async (c) => {
         throw new AppError(400, 'Модуль не найден или не принадлежит вам')
       }
     }
-
-    // Валидация и подготовка тегов
-    let tagIds: string[] = []
-    if (tags && Array.isArray(tags) && tags.length > 0) {
-      // Обрабатываем как массив ID строк, так и массив объектов с id
-      tagIds = tags.map((t: any) => typeof t === 'string' ? t : t?.id).filter((id: string) => id)
-      
-      if (tagIds.length > 0) {
-        // Проверяем что теги существуют
-        const existingTags = await prisma.tag.findMany({
-          where: { id: { in: tagIds } },
-          select: { id: true }
-        })
-        const validTagIds = existingTags.map(t => t.id)
-        
-        if (validTagIds.length !== tagIds.length) {
-          const invalidIds = tagIds.filter((id: string) => !validTagIds.includes(id))
-          console.warn('Some tags not found:', invalidIds)
-        }
-        
-        if (validTagIds.length === 0) {
-          throw new AppError(400, 'Ни один из указанных тегов не найден')
-        }
-        
-        tagIds = validTagIds
-      }
-    }
-
-    console.log('Tag IDs to connect:', tagIds)
-
-    // Создаём урок через transaction чтобы добавить теги
-    const lesson = await prisma.$transaction(async (tx) => {
-      const lessonData: any = {
+// _____5
+    const lesson = await prisma.lesson.create({
+      data: {
         title: title.trim(),
         slug: newSlug,
         description: description?.trim() || null,
         lessonType,
+        moduleId: moduleId || null,
         coverImage: coverImage || null,
         duration: duration || null,
         isPremium: isPremium || false,
         status: finalStatus,
         authorProfileId: profile.id,
-      }
-
-      // Добавляем модуль если указан
-      if (moduleId) {
-        lessonData.module = {
-          connect: { id: moduleId }
-        }
-      }
-
-      const newLesson = await tx.lesson.create({
-        data: lessonData,
-        include: { }
-      })
-
-      // Добавляем теги через lesson_tags
-      if (tagIds.length > 0) {
-        await tx.lessonTag.createMany({
-          data: tagIds.map(tagId => ({
-            lessonId: newLesson.lesson_id,
-            tagId
-          }))
-        })
-      }
-
-      return newLesson
+        ...(tags && tags.length > 0 && {
+          tags: {
+            set: tags.map((id: string) => ({ id }))
+          }
+        }),
+      },
+      include: { tags: true }
     })
 
     console.log('Lesson created:', lesson.id)
@@ -792,65 +772,27 @@ author.patch('/lessons/:id', async (c) => {
       throw new AppError(400, 'Урок с таким URL уже существует')
     }
   }
-
-  // Валидация и подготовка тегов
-  let tagIds: string[] = []
-  if (tags !== undefined) {
-    if (Array.isArray(tags) && tags.length > 0) {
-      // Обрабатываем как массив ID строк, так и массив объектов с id
-      tagIds = tags.map((t: any) => typeof t === 'string' ? t : t?.id).filter((id: string) => id)
-      
-      if (tagIds.length > 0) {
-        // Проверяем что теги существуют
-        const existingTags = await prisma.tag.findMany({
-          where: { id: { in: tagIds } },
-          select: { id: true }
-        })
-        tagIds = existingTags.map(t => t.id)
-        
-        if (tagIds.length === 0) {
-          throw new AppError(400, 'Ни один из указанных тегов не найден')
+// _____5
+  const lesson = await prisma.lesson.update({
+    where: { id },
+    data: {
+      ...(title && { title: title.trim() }),
+      ...(newSlug && { slug: newSlug }),
+      ...(description !== undefined && { description: description?.trim() || null }),
+      ...(lessonType && { lessonType }),
+      ...(moduleId !== undefined && { moduleId }),
+      ...(coverImage !== undefined && { coverImage }),
+      ...(duration !== undefined && { duration }),
+      ...(isPremium !== undefined && { isPremium }),
+      status: finalStatus,
+      ...(tags && {
+        tags: {
+          // set: [],
+          set: tags.map((id: string) => ({ id }))
         }
-      }
-    }
-  }
-    
-  // Обновляем урок с тегами через transaction
-  const lesson = await prisma.$transaction(async (tx) => {
-    // Если теги переданы - сначала удаляем старые и добавляем новые
-    if (tags !== undefined) {
-      // Удаляем все старые lesson_tags
-      await tx.lessonTag.deleteMany({
-        where: { lessonId: id }
-      })
-      
-      // Создаём новые lesson_tags
-      if (tagIds.length > 0) {
-        await tx.lessonTag.createMany({
-          data: tagIds.map(tagId => ({
-            lessonId: id,
-            tagId
-          }))
-        })
-      }
-    }
-    
-    // Обновляем основные поля урока
-    return tx.lesson.update({
-      where: { id },
-      data: {
-        ...(title && { title: title.trim() }),
-        ...(newSlug && { slug: newSlug }),
-        ...(description !== undefined && { description: description?.trim() || null }),
-        ...(lessonType && { lessonType }),
-        ...(moduleId !== undefined && { module: moduleId ? { connect: { id: moduleId } } : { disconnect: true } }),
-        ...(coverImage !== undefined && { coverImage }),
-        ...(duration !== undefined && { duration }),
-        ...(isPremium !== undefined && { isPremium }),
-        status: finalStatus,
-      },
-      include: { }
-    })
+      }),
+    },
+    include: { tags: true }
   })
 
   return c.json({ lesson })
@@ -895,7 +837,7 @@ author.get('/modules', async (c) => {
   }
 
   const courses = await prisma.course.findMany({
-    where: { authorProfileId: profile.id, deletedAt: null, status: { not: 'DELETED' as any } },
+    where: { authorProfileId: profile.id, deletedAt: null, status: { not: 'DELETED' } },
     orderBy: { createdAt: 'desc' },
     select: {
       id: true,
@@ -905,6 +847,7 @@ author.get('/modules', async (c) => {
         select: {
           id: true,
           title: true,
+          _count: { select: { lessons: true } }
         }
       }
     }
@@ -917,7 +860,7 @@ author.get('/modules', async (c) => {
     modules: course.modules.map(m => ({
       id: m.id,
       title: m.title,
-      lessonsCount: 0,
+      lessonsCount: m._count.lessons,
     }))
   }))
 
@@ -947,6 +890,9 @@ author.get('/courses/:id/modules', async (c) => {
   const modules = await prisma.module.findMany({
     where: { courseId },
     orderBy: { sortOrder: 'asc' },
+    include: {
+      _count: { select: { lessons: true } }
+    }
   })
 
   return c.json({ 
@@ -955,7 +901,7 @@ author.get('/courses/:id/modules', async (c) => {
       title: m.title,
       description: m.description,
       sortOrder: m.sortOrder,
-      lessonsCount: 0,
+      lessonsCount: m._count.lessons,
     }))
   })
 })
@@ -1063,11 +1009,16 @@ author.delete('/modules/:id', async (c) => {
     where: { 
       id, 
       course: { authorProfileId: profile.id, deletedAt: null }
-    }
+    },
+    include: { _count: { select: { lessons: true } } }
   })
 
   if (!existing) {
     throw new AppError(404, 'Модуль не найден')
+  }
+
+  if (existing._count.lessons > 0) {
+    throw new AppError(400, 'Нельзя удалить модуль с уроками. Сначала удалите уроки.')
   }
 
   const courseId = existing.courseId
@@ -1362,3 +1313,5 @@ author.post('/modules/reorder', async (c) => {
 })
 
 export default author
+
+

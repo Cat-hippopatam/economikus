@@ -115,9 +115,9 @@ export function useAuthorLesson(): UseAuthorLessonReturn {
   }, [showError, showSuccess])
 
   const uploadCover = useCallback(async (file: File): Promise<string | null> => {
-    // Проверка размера (макс 2MB)
-    if (file.size > 2 * 1024 * 1024) {
-      showError('Размер файла не должен превышать 2MB')
+    // Проверка размера (макс 5MB для обложек)
+    if (file.size > 5 * 1024 * 1024) {
+      showError('Размер файла не должен превышать 5MB')
       return null
     }
 
@@ -128,21 +128,20 @@ export function useAuthorLesson(): UseAuthorLessonReturn {
     }
 
     try {
-      const reader = new FileReader()
-      
-      return new Promise((resolve) => {
-        reader.onload = async (e) => {
-          const dataUrl = e.target?.result as string
-          resolve(dataUrl)
-        }
-        reader.onerror = () => {
-          showError('Ошибка чтения файла')
-          resolve(null)
-        }
-        reader.readAsDataURL(file)
+      // Создаём FormData для загрузки файла
+      const formData = new FormData()
+      formData.append('cover', file)
+
+      const response = await api.post<{ coverUrl: string }>('/author/lessons/upload-cover', formData, {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+        },
       })
-    } catch (err) {
-      showError('Ошибка загрузки изображения')
+
+      return response.coverUrl
+    } catch (err: any) {
+      console.error('Cover upload error:', err)
+      showError(err?.message || 'Ошибка загрузки изображения')
       return null
     }
   }, [showError])

@@ -79,24 +79,30 @@ class ApiService {
     return this.request<T>(endpoint, { method: 'GET', params })
   }
 
-  post<T>(endpoint: string, data?: unknown): Promise<T> {
+  post<T>(endpoint: string, data?: unknown, config?: { headers?: Record<string, string> }): Promise<T> {
+    const isFormData = data instanceof FormData
     return this.request<T>(endpoint, {
       method: 'POST',
-      body: data ? JSON.stringify(data) : undefined,
+      body: isFormData ? data : JSON.stringify(data),
+      headers: isFormData ? config?.headers : { 'Content-Type': 'application/json', ...config?.headers },
     })
   }
 
-  patch<T>(endpoint: string, data?: unknown): Promise<T> {
+  patch<T>(endpoint: string, data?: unknown, config?: { headers?: Record<string, string> }): Promise<T> {
+    const isFormData = data instanceof FormData
     return this.request<T>(endpoint, {
       method: 'PATCH',
-      body: data ? JSON.stringify(data) : undefined,
+      body: isFormData ? data : JSON.stringify(data),
+      headers: isFormData ? config?.headers : { 'Content-Type': 'application/json', ...config?.headers },
     })
   }
 
-  put<T>(endpoint: string, data?: unknown): Promise<T> {
+  put<T>(endpoint: string, data?: unknown, config?: { headers?: Record<string, string> }): Promise<T> {
+    const isFormData = data instanceof FormData
     return this.request<T>(endpoint, {
       method: 'PUT',
-      body: data ? JSON.stringify(data) : undefined,
+      body: isFormData ? data : JSON.stringify(data),
+      headers: isFormData ? config?.headers : { 'Content-Type': 'application/json', ...config?.headers },
     })
   }
 

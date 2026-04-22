@@ -2,6 +2,10 @@
 
 > Общее описание образовательной платформы для изучения финансов и инвестиций
 
+**Последнее обновление:** Март 2026  
+**Статус проекта:** В активной разработке (~75% готовности)  
+**Версия:** 6.0
+
 ---
 
 ## Содержание
@@ -100,21 +104,30 @@
 
 ### Frontend
 - **React 19** — UI фреймворк
-- **Vite** — сборщик
-- **TypeScript** — типизация
-- **Mantine v7** — UI компоненты
-- **React Router v6** — маршрутизация
-- **TanStack Query** — управление данными
+- **Vite 6** — сборщик
+- **TypeScript 5.8** — типизация
+- **Mantine v8** — UI компоненты
+- **Tailwind CSS v4** — утилитарные стили
+- **React Router v7** — маршрутизация
+- **TanStack Query 5** — управление данными
+- **Zustand 5** — state management
 - **Lucide React** — иконки
+- **React Hook Form + Zod** — формы и валидация
+- **React Markdown** — рендеринг Markdown
+- **Recharts** — графики и диаграммы
 
 ### Backend
-- **Hono** — HTTP фреймворк (Edge-ready)
-- **Prisma** — ORM
-- **MySQL** — база данных
+- **Hono 4** — HTTP фреймворк (Edge-ready)
+- **Prisma 5** — ORM
+- **MySQL 8** — база данных
+- **Auth.js** — аутентификация
+- **bcryptjs** — хеширование паролей
+- **Sharp** — обработка изображений
 
 ### Инструменты
-- **ESLint** — линтинг
+- **ESLint 9** — линтинг
 - **Prettier** — форматирование
+- **Swagger UI** — API документация
 
 ---
 
@@ -213,40 +226,94 @@
 ### Установка
 
 ```bash
-# Frontend
-cd src
+# Клонирование репозитория
+git clone <repository-url>
+cd economikus
+
+# Установка зависимостей
 npm install
+
+# Генерация ключа сессии
+auth secret
+
+# Настройка .env
+cp .env.example .env
+# Отредактируйте .env с вашими настройками
+
+# База данных
+npx prisma migrate dev
+npx prisma db seed
+
+# Запуск frontend (порт 5173)
 npm run dev
 
-# Backend
-cd server
-npm install
-npm run dev
+# Запуск backend (порт 3000)
+cd server && npx tsx index.ts
 ```
 
 ### Структура проекта
 
 ```
-src/
-├── components/       # UI компоненты
-├── pages/           # Страницы
-├── hooks/           # React хуки
-├── services/        # API сервисы
-├── constants/       # Константы
-└── layouts/         # Макеты страниц
-
-server/
-├── routes/          # API роуты
-├── middleware/      # Промежуточное ПО
-└── index.ts         # Точка входа
+economikus/
+├── src/                    # Frontend
+│   ├── components/         # UI компоненты
+│   ├── pages/              # Страницы
+│   ├── hooks/              # React хуки
+│   ├── services/           # API сервисы
+│   ├── types/              # TypeScript типы
+│   ├── constants/          # Константы
+│   ├── layouts/            # Макеты
+│   ├── lib/                # Утилиты
+│   └── store/              # Zustand store
+│
+├── server/                 # Backend
+│   ├── routes/             # API роуты
+│   ├── middleware/         # Промежуточное ПО
+│   ├── lib/                # Утилиты
+│   ├── jobs/               # Фоновые задачи
+│   └── index.ts            # Точка входа
+│
+├── prisma/                 # Prisma схема
+│   ├── schema.prisma
+│   └── seed.ts
+│
+├── public/                 # Статические файлы
+│   ├── media/              # Медиа-хранилище
+│   └── favicon.ico
+│
+├── docs/                   # Документация
+│   ├── README.md
+│   ├── TECHNICAL_DOCUMENTATION.md
+│   ├── PROJECT_DOCUMENTATION.md
+│   ├── PROJECT_STRUCTURE.md
+│   ├── MEDIA_UPLOAD_GUIDE.md
+│   ├── MEDIA_UPLOAD_TEST_PLAN.md
+│   └── ...
+│
+└── package.json
 ```
 
 ### Соглашения
 
-- Компоненты: PascalCase
-- Хуки: camelCase, префикс `use`
-- Константы: UPPER_SNAKE_CASE
-- CSS классы: kebab-case
+- **Компоненты:** PascalCase (`CourseCard.tsx`)
+- **Хуки:** camelCase, префикс `use` (`useAuth.ts`)
+- **Константы:** UPPER_SNAKE_CASE (`DIFFICULTY_CONFIG`)
+- **CSS классы:** kebab-case (`course-card`)
+- **API endpoints:** kebab-case (`/api/courses`)
+
+### Тестирование
+
+```bash
+# Тесты медиа-загрузки
+npm run test:media
+
+# Линтинг
+npm run lint
+
+# Сборка
+npm run build
+npm run build:server
+```
 
 ---
 
@@ -257,4 +324,17 @@ server/
 
 ---
 
-*Документация обновлена: {date}*
+## История изменений
+
+| Версия | Дата | Изменения |
+|--------|------|-----------|
+| 6.0 | Март 2026 | Актуализация состояния проекта, план тестирования медиа |
+| 5.0 | Март 2026 | Обновление структуры и технологического стека |
+| 4.0 | Февраль 2026 | Добавлена панель автора |
+| 3.0 | Февраль 2026 | Добавлена админ-панель |
+| 2.0 | Январь 2026 | Добавлены курсы и уроки |
+| 1.0 | Январь 2026 | Начальная версия |
+
+---
+
+*Документация обновлена: Март 2026*

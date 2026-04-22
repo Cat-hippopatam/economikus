@@ -18,13 +18,12 @@ import {
   Pagination,
   ActionIcon,
   Menu,
-  Image,
   Badge,
   Stack,
 } from '@mantine/core'
 import { Plus, Search, MoreVertical, Pencil, Trash2, Eye, Layers } from 'lucide-react'
 import { useAuthorCourses, type AuthorCourse } from '@/hooks/useAuthorCourses'
-import { StatusBadge, LoadingState, EmptyState, ConfirmDialog } from '@/components/common'
+import { StatusBadge, LoadingState, EmptyState, ConfirmDialog, MediaImage } from '@/components/common'
 import { AUTHOR_COURSE_STATUSES, AUTHOR_EMPTY_STATES } from '@/constants/author'
 import { DIFFICULTY_LABELS } from '@/constants/difficulty'
 
@@ -44,28 +43,16 @@ function CourseCard({
     <Card withBorder shadow="sm" radius="md" padding={0}>
       {/* Обложка */}
       <Card.Section>
-        {course.coverImage ? (
-          <Image 
-            src={course.coverImage} 
-            height={140} 
-            alt={course.title}
-            fallbackSrc="https://placehold.co/400x140?text=No+Image"
-          />
-        ) : (
-          <div 
-            style={{ 
-              height: 140, 
-              background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-            }}
-          >
-            <Text c="white" fw={700} size="lg">
-              {course.title.charAt(0).toUpperCase()}
-            </Text>
-          </div>
-        )}
+        <MediaImage
+          src={course.coverImage}
+          mediaType="course"
+          alt={course.title}
+          style={{
+            width: '100%',
+            height: 140,
+            objectFit: 'cover',
+          }}
+        />
       </Card.Section>
 
       <Stack gap="xs" p="md">

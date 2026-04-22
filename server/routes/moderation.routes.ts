@@ -2,6 +2,10 @@
 import { Hono } from 'hono'
 import { prisma } from '../db'
 import { requireAdmin } from '../middleware/auth'
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+type CourseWhereInput = any
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+type LessonWhereInput = any
 
 const moderation = new Hono()
 
@@ -89,12 +93,13 @@ moderation.get('/content', async (c) => {
     type: 'COURSE' | 'LESSON'
     status: string
     createdAt: Date
+    author: { id: string; nickname: string; displayName: string; avatarUrl: string | null }
   }> = []
 
   let total = 0
 
   if (!type || type === 'COURSE') {
-    const where: any = { deletedAt: null, status }
+    const where = { deletedAt: null, status }
     const [courses, count] = await Promise.all([
       prisma.course.findMany({
         where,
@@ -106,6 +111,7 @@ moderation.get('/content', async (c) => {
           title: true,
           status: true,
           createdAt: true,
+          author: { select: { id: true, nickname: true, displayName: true, avatarUrl: true } }
         }
       }),
       prisma.course.count({ where })
@@ -115,7 +121,7 @@ moderation.get('/content', async (c) => {
   }
 
   if (!type || type === 'LESSON') {
-    const where: any = { deletedAt: null, status }
+    const where = { deletedAt: null, status }
     const [lessons, count] = await Promise.all([
       prisma.lesson.findMany({
         where,
@@ -127,6 +133,7 @@ moderation.get('/content', async (c) => {
           title: true,
           status: true,
           createdAt: true,
+          author: { select: { id: true, nickname: true, displayName: true, avatarUrl: true } }
         }
       }),
       prisma.lesson.count({ where })
@@ -161,3 +168,5 @@ moderation.get('/stats', async (c) => {
 })
 
 export default moderation
+
+

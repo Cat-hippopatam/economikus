@@ -1,4 +1,4 @@
-﻿// server/routes/user.routes.ts
+// server/routes/user.routes.ts
 import { Hono } from 'hono'
 import { prisma } from '../db'
 import { AppError } from '../lib/errors'
@@ -8,7 +8,7 @@ import type { FavoriteWhereInput } from '../types'
 
 const user = new Hono()
 
-// Защищённые роуты
+// ���������� �����
 user.use('/me', requireAuth)
 user.use('/profile', requireAuth)
 user.use('/password', requireAuth)
@@ -19,7 +19,7 @@ user.use('/progress', requireAuth)
 user.use('/certificates', requireAuth)
 user.use('/account-deletion', requireAuth)
 
-// === GET /user/me — текущий пользователь ===
+// === GET /user/me � ������� ������������ ===
 user.get('/me', async (c) => {
   const user = getCurrentUser(c)
   const profile = getCurrentProfile(c)
@@ -42,137 +42,146 @@ user.get('/me', async (c) => {
   })
 })
 
-// === PATCH /user/profile — обновление профиля ===
+// === PATCH /user/profile � ���������� ������� ===
 user.patch('/profile', async (c) => {
   const profile = getCurrentProfile(c)
-  if (!profile) throw new AppError(400, 'Профиль не найден')
+  if (!profile) throw new AppError(400, '������� �� ������')
 
   const body = await c.req.json()
-  const { displayName, bio } = body
+  const { displayName, bio, website, telegram, youtube } = body
+
+  // Type assertion для расширенных полей профиля
+  const profileData = profile as typeof profile & { website?: string | null; telegram?: string | null; youtube?: string | null }
 
   const updated = await prisma.profile.update({
     where: { id: profile.id },
     data: {
       displayName: displayName || profile.displayName,
       bio: bio ?? profile.bio,
+      website: website ?? profileData.website,
+      telegram: telegram ?? profileData.telegram,
+      youtube: youtube ?? profileData.youtube
     }
   })
 
   return c.json({
-    message: 'Профиль обновлён',
+    message: '������� �������',
     profile: {
       id: updated.id,
       nickname: updated.nickname,
       displayName: updated.displayName,
       avatarUrl: updated.avatarUrl,
       bio: updated.bio,
+      website: updated.website,
+      telegram: updated.telegram,
+      youtube: updated.youtube
     }
   })
 })
 
-// === PATCH /user/password — смена пароля ===
+// === PATCH /user/password � ����� ������ ===
 user.patch('/password', async (c) => {
   const user = getCurrentUser(c)
   const body = await c.req.json()
   const { currentPassword, newPassword } = body
 
   if (!currentPassword || !newPassword) {
-    throw new AppError(400, 'Укажите текущий и новый пароль')
+    throw new AppError(400, '������� ������� � ����� ������')
   }
 
   if (newPassword.length < 6) {
-    throw new AppError(400, 'Пароль должен быть минимум 6 символов')
+    throw new AppError(400, '������ ������ ���� ������� 6 ��������')
   }
 
-  // Проверяем текущий пароль
+  // ��������� ������� ������
   const isValid = await compare(currentPassword, user.passwordHash)
   if (!isValid) {
-    throw new AppError(400, 'Неверный текущий пароль')
+    throw new AppError(400, '�������� ������� ������')
   }
 
-  // Хешируем новый пароль
+  // �������� ����� ������
   const newPasswordHash = await hash(newPassword, 10)
 
-  // Обновляем пароль
+  // ��������� ������
   await prisma.user.update({
     where: { id: user.id },
     data: { passwordHash: newPasswordHash }
   })
 
-  return c.json({ message: 'Пароль успешно изменён' })
+  return c.json({ message: '������ ������� �������' })
 })
 
-// === POST /user/avatar — загрузка аватара ===
+// === POST /user/avatar � �������� ������� ===
 user.post('/avatar', async (c) => {
   try {
     const profile = getCurrentProfile(c)
-    if (!profile) throw new AppError(400, 'Профиль не найден')
+    if (!profile) throw new AppError(400, '������� �� ������')
 
-    // Проверяем наличие файла
+    // ��������� ������� �����
     const contentType = c.req.header('content-type') || ''
     if (!contentType.includes('multipart/form-data')) {
-      throw new AppError(400, 'Ожидается FormData')
+      throw new AppError(400, '��������� FormData')
     }
 
-    // Получаем данные из FormData
+    // �������� ������ �� FormData
     const formData = await c.req.parseBody()
     const file = formData.avatar as File | null
 
     if (!file || !(file instanceof File)) {
-      throw new AppError(400, 'Файл не загружен')
+      throw new AppError(400, '���� �� ��������')
     }
 
-    // Проверяем тип файла
+    // ��������� ��� �����
     if (!file.type.startsWith('image/')) {
-      throw new AppError(400, 'Разрешены только изображения')
+      throw new AppError(400, '��������� ������ �����������')
     }
 
-    // Проверяем размер (макс 2MB для base64)
+    // ��������� ������ (���� 2MB ��� base64)
     if (file.size > 2 * 1024 * 1024) {
-      throw new AppError(400, 'Максимальный размер: 2MB')
+      throw new AppError(400, '������������ ������: 2MB')
     }
 
-    // Конвертируем в base64
+    // ������������ � base64
     const arrayBuffer = await file.arrayBuffer()
     const base64 = Buffer.from(arrayBuffer).toString('base64')
     const dataUrl = `data:${file.type};base64,${base64}`
 
-    // Проверяем размер dataUrl (MySQL TEXT = 65535 байт)
+    // ��������� ������ dataUrl (MySQL TEXT = 65535 ����)
     if (dataUrl.length > 65535) {
-      throw new AppError(400, 'Изображение слишком большое. Загрузите файл меньше 1MB')
+      throw new AppError(400, '����������� ������� �������. ��������� ���� ������ 1MB')
     }
 
-    // Обновляем профиль
+    // ��������� �������
     const updated = await prisma.profile.update({
       where: { id: profile.id },
       data: { avatarUrl: dataUrl }
     })
 
     return c.json({ 
-      message: 'Аватар загружен',
+      message: '������ ��������',
       avatarUrl: updated.avatarUrl 
     })
   } catch (error) {
     console.error('Error uploading avatar:', error)
     if (error instanceof AppError) throw error
-    throw new AppError(500, 'Ошибка загрузки аватара')
+    throw new AppError(500, '������ �������� �������')
   }
 })
 
-// === DELETE /user/avatar — удаление аватара ===
+// === DELETE /user/avatar � �������� ������� ===
 user.delete('/avatar', async (c) => {
   const profile = getCurrentProfile(c)
-  if (!profile) throw new AppError(400, 'Профиль не найден')
+  if (!profile) throw new AppError(400, '������� �� ������')
 
   await prisma.profile.update({
     where: { id: profile.id },
     data: { avatarUrl: null }
   })
 
-  return c.json({ message: 'Аватар удалён' })
+  return c.json({ message: '������ �����' })
 })
 
-// === GET /user/history — история просмотров ===
+// === GET /user/history � ������� ���������� ===
 user.get('/history', async (c) => {
   const profile = getCurrentProfile(c)
   if (!profile) return c.json({ items: [] })
@@ -199,7 +208,7 @@ user.get('/history', async (c) => {
     prisma.history.count({ where: { profileId: profile.id } })
   ])
 
-  // Получаем данные уроков отдельно
+  // �������� ������ ������ ��������
   const lessonIds = items.filter(i => i.historableType === 'LESSON').map(i => i.historableId)
   const lessonsMap = new Map()
   
@@ -229,7 +238,7 @@ user.get('/history', async (c) => {
     })
   }
 
-  // Добавляем данные уроков к результатам
+  // ��������� ������ ������ � �����������
   const itemsWithLessons = items.map(item => ({
     ...item,
     lesson: item.historableType === 'LESSON' ? lessonsMap.get(item.historableId) : null
@@ -238,18 +247,18 @@ user.get('/history', async (c) => {
   return c.json({ items: itemsWithLessons, pagination: { page, limit, total, totalPages: Math.ceil(total / limit) } })
 })
 
-// === POST /user/history — добавить в историю ===
+// === POST /user/history � �������� � ������� ===
 user.post('/history', async (c) => {
   const profile = getCurrentProfile(c)
-  if (!profile) throw new AppError(401, 'Необходима авторизация')
+  if (!profile) throw new AppError(401, '���������� �����������')
 
   const { lessonId, watchedSeconds = 0, completed = false } = await c.req.json()
 
   if (!lessonId) {
-    throw new AppError(400, 'Необходимо указать lessonId')
+    throw new AppError(400, '���������� ������� lessonId')
   }
 
-  // Проверяем существование урока и получаем courseId
+  // ��������� ������������� ����� � �������� courseId
   const lesson = await prisma.lesson.findUnique({
     where: { id: lessonId },
     include: { 
@@ -268,12 +277,12 @@ user.post('/history', async (c) => {
   })
 
   if (!lesson) {
-    throw new AppError(404, 'Урок не найден')
+    throw new AppError(404, '���� �� ������')
   }
 
   const courseId = lesson.module?.courseId
 
-  // Создаём или обновляем запись в истории
+  // ������ ��� ��������� ������ � �������
   const historyItem = await prisma.history.upsert({
     where: {
       profileId_historableType_historableId: {
@@ -296,7 +305,7 @@ user.post('/history', async (c) => {
     }
   })
 
-  // Создаём или обновляем прогресс урока
+  // ������ ��� ��������� �������� �����
   try {
     await prisma.lessonProgress.upsert({
       where: { 
@@ -309,7 +318,7 @@ user.post('/history', async (c) => {
         profileId: profile.id,
         lessonId,
         status: completed ? 'COMPLETED' : 'IN_PROGRESS',
-        progressPercent: completed ? 100 : Math.min(50, Math.round((watchedSeconds / 300) * 100)), // Если 5 мин - 50%
+        progressPercent: completed ? 100 : Math.min(50, Math.round((watchedSeconds / 300) * 100)), // ���� 5 ��� - 50%
         startedAt: new Date(),
         completedAt: completed ? new Date() : null
       },
@@ -324,10 +333,10 @@ user.post('/history', async (c) => {
     console.error('Error updating lesson progress:', err)
   }
 
-  // Обновляем прогресс курса
+  // ��������� �������� �����
   if (courseId) {
     try {
-      // Получаем все уроки курса
+      // �������� ��� ����� �����
       const modules = await prisma.module.findMany({
         where: { courseId, isPublished: true },
         include: {
@@ -383,10 +392,10 @@ user.post('/history', async (c) => {
     }
   }
 
-  return c.json({ message: 'История обновлена', history: historyItem })
+  return c.json({ message: '������� ���������', history: historyItem })
 })
 
-// === GET /user/favorites — избранное ===
+// === GET /user/favorites � ��������� ===
 user.get('/favorites', async (c) => {
   const profile = getCurrentProfile(c)
   if (!profile) return c.json({ items: [] })
@@ -437,10 +446,10 @@ user.get('/favorites', async (c) => {
   return c.json({ items, pagination: { page, limit, total, totalPages: Math.ceil(total / limit) } })
 })
 
-// === POST /user/favorites — добавить в избранное ===
+// === POST /user/favorites � �������� � ��������� ===
 user.post('/favorites', async (c) => {
   const profile = getCurrentProfile(c)
-  if (!profile) throw new AppError(400, 'Профиль не найден')
+  if (!profile) throw new AppError(400, '������� �� ������')
 
   const { lessonId, note, collection } = await c.req.json()
 
@@ -448,19 +457,19 @@ user.post('/favorites', async (c) => {
     where: { profileId_lessonId: { profileId: profile.id, lessonId } }
   })
 
-  if (existing) throw new AppError(400, 'Уже в избранном')
+  if (existing) throw new AppError(400, '��� � ���������')
 
   const favorite = await prisma.favorite.create({
     data: { profileId: profile.id, lessonId, note, collection }
   })
 
-  return c.json({ message: 'Добавлено в избранное', favorite }, 201)
+  return c.json({ message: '��������� � ���������', favorite }, 201)
 })
 
-// === DELETE /user/favorites/:id — удалить из избранного ===
+// === DELETE /user/favorites/:id � ������� �� ���������� ===
 user.delete('/favorites/:id', async (c) => {
   const profile = getCurrentProfile(c)
-  if (!profile) throw new AppError(400, 'Профиль не найден')
+  if (!profile) throw new AppError(400, '������� �� ������')
 
   const id = c.req.param('id')
 
@@ -468,14 +477,14 @@ user.delete('/favorites/:id', async (c) => {
     where: { id, profileId: profile.id }
   })
 
-  if (!favorite) throw new AppError(404, 'Не найдено')
+  if (!favorite) throw new AppError(404, '�� �������')
 
   await prisma.favorite.delete({ where: { id } })
 
-  return c.json({ message: 'Удалено из избранного' })
+  return c.json({ message: '������� �� ����������' })
 })
 
-// === GET /user/progress/courses — прогресс по курсам ===
+// === GET /user/progress/courses � �������� �� ������ ===
 user.get('/progress/courses', async (c) => {
   const profile = getCurrentProfile(c)
   if (!profile) return c.json({ items: [] })
@@ -515,7 +524,7 @@ user.get('/progress/courses', async (c) => {
   return c.json({ items, pagination: { page, limit, total, totalPages: Math.ceil(total / limit) } })
 })
 
-// === GET /user/certificates — сертификаты ===
+// === GET /user/certificates � ����������� ===
 user.get('/certificates', async (c) => {
   const profile = getCurrentProfile(c)
   if (!profile) return c.json({ items: [] })
@@ -534,7 +543,7 @@ user.get('/certificates', async (c) => {
   return c.json({ items: certificates })
 })
 
-// === PUBLIC: GET /user/profile/:nickname — публичный профиль ===
+// === PUBLIC: GET /user/profile/:nickname � ��������� ������� ===
 user.get('/profile/:nickname', async (c) => {
   const nickname = c.req.param('nickname')
 
@@ -547,6 +556,9 @@ user.get('/profile/:nickname', async (c) => {
       avatarUrl: true,
       coverImage: true,
       bio: true,
+      website: true,
+      telegram: true,
+      youtube: true,
       totalViews: true,
       subscribers: true,
       createdAt: true,
@@ -554,15 +566,15 @@ user.get('/profile/:nickname', async (c) => {
     }
   })
 
-  if (!profile) return c.json({ error: 'Профиль не найден' }, 404)
+  if (!profile) return c.json({ error: '������� �� ������' }, 404)
 
-  // Получаем курсы автора, если это автор
+  // �������� ����� ������, ���� ��� �����
   let courses: Record<string, unknown>[] = []
   let coursesCount = 0
   let lessonsCount = 0
   
   if (profile.user.role === 'AUTHOR') {
-    // Только опубликованные курсы
+    // ������ �������������� �����
     courses = await prisma.course.findMany({
       where: { authorProfileId: profile.id, deletedAt: null, status: 'PUBLISHED' },
       take: 6,
@@ -570,12 +582,12 @@ user.get('/profile/:nickname', async (c) => {
       select: { id: true, title: true, slug: true, coverImage: true, difficultyLevel: true, viewsCount: true, lessonsCount: true }
     })
     
-    // Подсчёт только опубликованных курсов
+    // ������� ������ �������������� ������
     coursesCount = await prisma.course.count({
       where: { authorProfileId: profile.id, deletedAt: null, status: 'PUBLISHED' }
     })
     
-    // Подсчёт только опубликованных уроков
+    // ������� ������ �������������� ������
     lessonsCount = await prisma.lesson.count({
       where: { 
         authorProfileId: profile.id, 
@@ -585,7 +597,7 @@ user.get('/profile/:nickname', async (c) => {
     })
   }
 
-  // Подсчёт сертификатов
+  // ������� ������������
   const certificatesCount = await prisma.certificate.count({
     where: { profileId: profile.id }
   })
@@ -601,16 +613,16 @@ user.get('/profile/:nickname', async (c) => {
  })
 })
 
-// === POST /user/account-deletion — подать заявку на удаление аккаунта ===
+// === POST /user/account-deletion � ������ ������ �� �������� �������� ===
 user.post('/account-deletion', async (c) => {
  const user = getCurrentUser(c)
  const profile = getCurrentProfile(c)
   
- if (!profile) throw new AppError(400, 'Профиль не найден')
+ if (!profile) throw new AppError(400, '������� �� ������')
   
  const { reason } = await c.req.json().catch(() => ({}))
 
- // Проверяем, нет ли уже активной заявки
+ // ���������, ��� �� ��� �������� ������
  const existingRequest = await prisma.accountDeletionRequest.findFirst({
  where: { 
  userId: user.id,
@@ -619,10 +631,10 @@ user.post('/account-deletion', async (c) => {
  })
 
  if (existingRequest) {
- throw new AppError(400, 'У вас уже есть активная заявка на удаление аккаунта')
+ throw new AppError(400, '� ��� ��� ���� �������� ������ �� �������� ��������')
  }
 
- // Создаём заявку
+ // ������ ������
  const deletionRequest = await prisma.accountDeletionRequest.create({
  data: {
  userId: user.id,
@@ -634,13 +646,13 @@ user.post('/account-deletion', async (c) => {
  })
 
  return c.json({ 
- message: 'Заявка на удаление аккаунта подана. Мы свяжемся с вами по email для подтверждения.',
+ message: '������ �� �������� �������� ������. �� �������� � ���� �� email ��� �������������.',
  requestId: deletionRequest.id,
  status: deletionRequest.status
  },201)
 })
 
-// === GET /user/account-deletion/status — проверить статус заявки ===
+// === GET /user/account-deletion/status � ��������� ������ ������ ===
 user.get('/account-deletion/status', async (c) => {
  const user = getCurrentUser(c)
   
@@ -664,7 +676,7 @@ user.get('/account-deletion/status', async (c) => {
  })
 })
 
-// === DELETE /user/account-deletion — отозвать заявку ===
+// === DELETE /user/account-deletion � �������� ������ ===
 user.delete('/account-deletion', async (c) => {
  const user = getCurrentUser(c)
   
@@ -676,7 +688,7 @@ user.delete('/account-deletion', async (c) => {
  })
 
  if (!request) {
- throw new AppError(404, 'Активная заявка не найдена')
+ throw new AppError(404, '�������� ������ �� �������')
  }
 
  await prisma.accountDeletionRequest.update({
@@ -684,7 +696,9 @@ user.delete('/account-deletion', async (c) => {
  data: { status: 'CANCELLED' }
  })
 
- return c.json({ message: 'Заявка отозвана' })
+ return c.json({ message: '������ ��������' })
 })
 
 export default user
+
+

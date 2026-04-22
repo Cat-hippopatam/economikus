@@ -24,6 +24,8 @@ export function useAvatarUpload(): UseAvatarUploadReturn {
 
   // Загрузить аватар
   const uploadAvatar = useCallback(async (file: File): Promise<string | null> => {
+    console.log('[useAvatarUpload] Starting upload:', file.name, file.size, file.type)
+    
     // Валидация типа файла
     if (!ALLOWED_TYPES.includes(file.type)) {
       showError('Разрешены только JPG, PNG, GIF, WebP')
@@ -40,6 +42,7 @@ export function useAvatarUpload(): UseAvatarUploadReturn {
     try {
       const formData = new FormData()
       formData.append('avatar', file)
+      console.log('[useAvatarUpload] FormData created, sending request...')
 
       const response = await fetch('/api/user/avatar', {
         method: 'POST',
@@ -47,7 +50,10 @@ export function useAvatarUpload(): UseAvatarUploadReturn {
         body: formData,
       })
 
+      console.log('[useAvatarUpload] Response status:', response.status)
+
       const data = await response.json()
+      console.log('[useAvatarUpload] Response data:', data)
       
       if (!response.ok) {
         throw new Error(data.error || 'Ошибка загрузки')
@@ -55,10 +61,12 @@ export function useAvatarUpload(): UseAvatarUploadReturn {
       
       // Обновляем профиль
       await refreshProfile?.()
+      console.log('[useAvatarUpload] Profile refreshed')
       
       showSuccess('Аватар обновлён')
       return data.avatarUrl
     } catch (error) {
+      console.error('[useAvatarUpload] Error:', error)
       const message = error instanceof Error ? error.message : 'Ошибка загрузки'
       showError(message)
       return null
