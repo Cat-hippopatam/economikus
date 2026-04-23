@@ -47,14 +47,24 @@ class ApiService {
       }
     }
 
+    // Подготавливаем заголовки
+    const headers: Record<string, string> = {}
+    
+    // Добавляем Content-Type только если это не FormData
+    // Для FormData браузер сам установит boundary
+    const isFormData = init.body instanceof FormData
+    if (!isFormData) {
+      headers['Content-Type'] = 'application/json'
+    }
+    
+    // Объединяем с кастомными заголовками (они имеют приоритет)
+    Object.assign(headers, init.headers)
+
     // Выполняем запрос
     const response = await fetch(url, {
       ...init,
       credentials: 'include',
-      headers: {
-        'Content-Type': 'application/json',
-        ...init.headers,
-      },
+      headers,
     })
 
     // Обрабатываем ответ

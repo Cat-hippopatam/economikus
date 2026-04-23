@@ -132,11 +132,7 @@ export function useAuthorLesson(): UseAuthorLessonReturn {
       const formData = new FormData()
       formData.append('cover', file)
 
-      const response = await api.post<{ coverUrl: string }>('/author/lessons/upload-cover', formData, {
-        headers: {
-          'Content-Type': 'multipart/form-data',
-        },
-      })
+      const response = await api.post<{ coverUrl: string }>('/author/lessons/upload-cover', formData)
 
       return response.coverUrl
     } catch (err: any) {

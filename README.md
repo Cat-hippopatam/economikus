@@ -22,11 +22,10 @@
 | **[docs/LESSON_CONTENT_PLAN.md](docs/LESSON_CONTENT_PLAN.md)** | План контента уроков | ✅ Актуален |
 | **[docs/MEDIA_STORAGE_CONFIG.md](docs/MEDIA_STORAGE_CONFIG.md)** | Конфигурация медиа-хранилища | ✅ Актуален |
 | **[docs/MEDIA_UPLOAD_GUIDE.md](docs/MEDIA_UPLOAD_GUIDE.md)** | Руководство по загрузке медиа | ✅ Актуален |
-| **[docs/MEDIA_UPLOAD_TEST_PLAN.md](docs/MEDIA_UPLOAD_TEST_PLAN.md)** | План тестирования загрузки медиа | 📝 Новое |
+| **[docs/MEDIA_QUICK_TEST.md](docs/MEDIA_QUICK_TEST.md)** | Быстрый тест загрузки медиа | ✅ Актуален |
 | **[docs/SUBSCRIPTIONS_PLAN.md](docs/SUBSCRIPTIONS_PLAN.md)** | Стратегия подписок | ✅ Актуален |
 | **[docs/SUBSCRIPTIONS_API.md](docs/SUBSCRIPTIONS_API.md)** | API подписок | ✅ Актуален |
 | **[docs/SEO_PLAN.md](docs/SEO_PLAN.md)** | План SEO оптимизации | ✅ Актуален |
-| **[docs/FIXES_TAGS_AND_COVERS.md](docs/FIXES_TAGS_AND_COVERS.md)** | Исправления тегов и обложек | ✅ Актуален |
 | **[docs/MVP_TASKS.md](docs/MVP_TASKS.md)** | Задачи для MVP | ✅ Актуален |
 
 ---
@@ -171,13 +170,51 @@ MEDIA_CONVERT_TO_WEBP=true
 
 ## 🧪 Тестирование
 
-### Запуск тестов медиа-загрузки
+### Тестирование загрузки обложек
 
+**Быстрый тест через скрипт:**
 ```bash
-npm run test:media
+# Запустите сервер (порт 3000)
+npm run dev
+
+# В другом терминале запустите тест
+npx tsx test-cover-upload.ts
 ```
 
-См. подробный план тестирования в [docs/MEDIA_UPLOAD_TEST_PLAN.md](docs/MEDIA_UPLOAD_TEST_PLAN.md)
+**Результат:**
+- Файлы обложек создаются в `public/media/covers/{uuid}.webp`
+- Проверяется загрузка обложек курсов и уроков
+
+**Создайте тестовое изображение:**
+```bash
+# Можно использовать любое изображение ~500KB
+# Или создайте через ImageMagick:
+convert -size 1200x630 xc:green test-data/cover.jpg
+```
+
+**Тестирование через браузер:**
+1. Откройте панель автора: `/author/courses` или `/author/lessons`
+2. Создайте/отредактируйте курс или урок
+3. Нажмите "Загрузить обложку"
+4. Выберите изображение (JPEG, PNG, WebP, макс. 5MB)
+5. Проверьте что файл загрузился и отображается
+6. Проверьте консоль сервера на логи загрузки
+
+**Проверка файлов:**
+```bash
+# Проверьте что файлы созданы
+ls public/media/covers/
+```
+
+### Команды тестирования
+
+```bash
+# Тест загрузки обложек
+npx tsx test-cover-upload.ts
+
+# Тест с кастомным файлом
+TEST_COVER_PATH=./my-image.jpg npx tsx test-cover-upload.ts
+```
 
 ---
 

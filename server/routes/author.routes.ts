@@ -423,6 +423,34 @@ author.post('/courses', async (c) => {
   }
 })
 
+// === POST /author/courses/upload-cover — загрузить обложку курса ===
+author.post('/courses/upload-cover', async (c) => {
+  try {
+    const formData = await c.req.parseBody()
+    const cover = formData['cover'] as File | undefined
+
+    if (!cover || !(cover instanceof File)) {
+      return c.json({ error: 'Файл обложки не найден' }, 400)
+    }
+
+    console.log('[Course Cover Upload] Received file:', cover.name, 'size:', cover.size, 'type:', cover.type)
+
+    // Используем mediaStorage для загрузки
+    const { mediaStorage } = await import('../lib/mediaStorage')
+    
+    const coverUrl = await mediaStorage.upload(cover, 'covers')
+    console.log('[Course Cover Upload] File uploaded to:', coverUrl)
+
+    return c.json({ coverUrl })
+  } catch (error) {
+    console.error('[Course Cover Upload] Error:', error)
+    if (error instanceof Error) {
+      return c.json({ error: error.message }, 400)
+    }
+    return c.json({ error: 'Ошибка загрузки обложки' }, 500)
+  }
+})
+
 // === GET /author/courses/:id — детали курса ===
 author.get('/courses/:id', async (c) => {
   const profile = getCurrentProfile(c)
