@@ -416,6 +416,9 @@ model Profile {
   reactions                 Reaction[]
   subscriptions             Subscription[]
   transactions              Transaction[]
+  kakeboEntries             KakeboEntry[]
+  kakeboSettings            KakeboSettings?
+  kakeboReflections         KakeboReflection[]
 
   @@index([userId])
   @@index([nickname])
@@ -610,6 +613,71 @@ model AccountDeletionRequest {
   @@index([status], map: "idx_status")
   @@index([userId], map: "idx_user_id")
   @@map("account_deletion_requests")
+}
+
+// Японская система ведения бюджета КаКеБо
+model KakeboEntry {
+  id          String   @id @default(cuid())
+  profileId   String
+  profile     Profile  @relation(fields: [profileId], references: [id], onDelete: Cascade)
+
+  date        DateTime @map("date") @db.Date
+  year        Int
+  month       Int
+
+  category    KakeboCategory @default(LIFE)
+  description String         @db.Text
+  amount      Float
+  isNecessary Boolean        @default(false)
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@index([profileId, year, month])
+  @@index([profileId, date])
+  @@map("kakebo_entries")
+}
+
+enum KakeboCategory {
+  LIFE
+  CULTURE
+  EXTRA
+  UNEXPECTED
+}
+
+model KakeboSettings {
+  profileId  String @id
+  profile    Profile @relation(fields: [profileId], references: [id], onDelete: Cascade)
+
+  monthLimit Float? @map("month_limit")
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@map("kakebo_settings")
+}
+
+model KakeboReflection {
+  id             String @id @default(cuid())
+  profileId      String
+  profile        Profile @relation(fields: [profileId], references: [id], onDelete: Cascade)
+
+  year           Int
+  month          Int
+
+  unnecessarySpent Float? @map("unnecessary_spent")
+
+  moneyAtStart   Float? @map("money_at_start")
+  plannedToSave  Float? @map("planned_to_save")
+  actuallySaved  Float? @map("actually_saved")
+  improvements   String? @db.Text
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@unique([profileId, year, month])
+  @@index([profileId, year, month])
+  @@map("kakebo_reflections")
 }
 
 enum Role {
