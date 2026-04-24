@@ -36,3 +36,14 @@ export { useUserTransactions, type Transaction } from './useUserTransactions'
 export type { AuthorApplication, ApplicationStatus } from './useAuthorApplication'
 export type { AuthorCourse } from './useAuthorCourses'
 export type { AuthorLesson } from './useAuthorLessons'
+
+// Kakebo хуки
+export {
+  useKakeboMonth,
+  useKakeboSettings,
+  useAddKakeboEntry,
+  useUpdateKakeboEntry,
+  useDeleteKakeboEntry,
+  useKakeboReflection,
+  useSaveKakeboReflection
+} from './useKakebo'
