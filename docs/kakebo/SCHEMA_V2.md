@@ -272,7 +272,17 @@ category   KakeboCategory @relation(fields: [categoryId], references: [id])
 categoryOld KakeboCategory? @map("category")
 ```
 
-### Шаг 3: Создать системные категории
+### Шаг 3: Применить изменения БЕЗ потери данных
+```bash
+# ❌ НЕ ИСПОЛЬЗОВАТЬ: npx prisma db push --force-reset
+#    (это УДАЛИТ ВСЕ данные в kakebo таблицах!)
+
+# ✅ ИСПОЛЬЗОВАТЬ: npx prisma db push
+#    (это применит изменения БЕЗ удаления данных)
+npx prisma db push
+```
+
+### Шаг 4: Создать системные категории
 ```sql
 INSERT INTO kakebo_category (id, name, type, is_essential, order, created_at, updated_at)
 VALUES
@@ -282,7 +292,7 @@ VALUES
   ('sys-unexpected', 'UNEXPECTED', 'SYSTEM', false, 4, NOW(), NOW());
 ```
 
-### Шаг 4: Перенести записи
+### Шаг 5: Перенести записи
 ```sql
 UPDATE kakebo_entries 
 SET category_id = 'sys-life' 
@@ -291,7 +301,7 @@ WHERE category_old = 'LIFE';
 -- Повторить для всех категорий
 ```
 
-### Шаг 5: Удалить старое поле
+### Шаг 6: Удалить старое поле
 ```prisma
 // После проверки данных:
 // ← УДАЛИТЬ: categoryOld KakeboCategory? @map("category")
