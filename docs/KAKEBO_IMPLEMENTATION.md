@@ -1,109 +1,56 @@
-# План реализации инструмента «Kakebo»
+# Kakebo — Документация реализации
 
-> Документ описывает стратегию реализации инструмента учёта условных единиц для анализа привычек и прогресса обучения
+> Документ описывает стратегию реализации, текущий статус и зафиксированные недочёты инструмента учёта условных единиц для анализа привычек и прогресса обучения
 
 **Дата создания:** Март 2026  
-**Статус:** Планирование  
+**Дата реализации:** Апрель 2026  
+**Статус:** ✅ Базовый уровень реализован  
 **Приоритет:** Средний
 
 ---
 
 ## Содержание
 
-1. [Анализ текущего состояния](#1-анализ-текущего-состояния)
-2. [Требования к реализации](#2-требования-к-реализации)
-3. [Модель данных](#3-модель-данных)
-4. [Безопасность и проверки](#4-безопасность-и-проверки)
-5. [API Endpoints](#5-api-endpoints)
-6. [Frontend компоненты](#6-frontend-компоненты)
-7. [Рефлексия](#7-рефлексия)
-8. [План реализации](#8-план-реализации)
-9. [Тестирование](#9-тестирование)
+1. [Статус реализации](#1-статус-реализации)
+2. [Паспорт Kakebo](#2-паспорт-kakebo)
+3. [Архитектура](#3-архитектура)
+4. [API Endpoints](#4-api-endpoints)
+5. [Frontend компоненты](#5-frontend-компоненты)
+6. [Известные недочёты и исправления](#6-известные-недочёты-и-исправления)
+7. [История изменений](#7-история-изменений)
 
 ---
 
-## 1. Анализ текущего состояния
+## 1. Статус реализации
 
-### 1.1 Что уже есть в проекте
+### ✅ Реализовано (Базовый уровень)
 
-#### Backend:
-- ✅ Express/Hono сервер с TypeScript
-- ✅ Prisma ORM с MySQL
-- ✅ Аутентификация через HttpOnly Cookie сессии
-- ✅ Middleware `requireAuth`, `requireAdmin`, `requireRole`
-- ✅ Паттерн маршрутизации (`server/routes/*.routes.ts`)
-- ✅ Валидация через Zod (в существующих роутах)
-- ✅ Middleware для проверки блокировки пользователей
-- ✅ Middleware для работы с бизнес-событиями (`BusinessEvent`)
+| Компонент | Статус | Примечание |
+|-----------|--------|------------|
+| База данных | ✅ Готово | 3 модели + индексы |
+| Backend API | ✅ Готово | Все CRUD эндпоинты |
+| Frontend типы | ✅ Готово | TypeScript типы |
+| Сервис API | ✅ Готово | kakeboService |
+| React Query хуки | ✅ Готово | 7 хуков |
+| KakeboPage | ✅ Готово | Основная страница |
+| KakeboStats | ✅ Готово | Статистика с прогресс-баром |
+| KakeboForm | ✅ Готово | Форма добавления (адаптивная) |
+| KakeboList | ✅ Готово | Таблица/карточки (адаптивная) |
+| KakeboReflection | ✅ Готово | Рефлексия месяца |
+| Адаптивность | ✅ Готово | Mobile-first дизайн |
+| Лимиты | ✅ Готово | Визуализация с прогресс-баром |
 
-#### Frontend:
-- ✅ React 19 с TypeScript
-- ✅ Mantine UI v8.3.16
-- ✅ React Router v7
-- ✅ Zustand для глобального стейта
-- ✅ Кастомные хуки (`useAuth`, `useNotification`, etc.)
-- ✅ Компоненты: `ConfirmDialog`, `LoadingState`, `EmptyState`
-- ✅ Сервисы API (`src/services/*.service.ts`)
-- ✅ Типы в `src/types/`
-- ✅ Константы в `src/constants/`
+### ⏳ В планах
 
-#### База данных:
-- ✅ Модель `Profile` с связями
-- ✅ Модель `BusinessEvent` для отслеживания событий
-- ✅ Модель `Notification` для уведомлений
-- ✅ Паттерны CASCADE удаления
-- ✅ Индексы для оптимизации запросов
-
-### 1.2 Существующие паттерны для повторения
-
-#### Паттерн хука для CRUD списков:
-```typescript
-// hooks/useEntityList.ts
-export function useEntityList() {
-  const [entities, setEntities] = useState([])
-  const [loading, setLoading] = useState(true)
-  // ...
-  return { entities, loading, openCreate, openEdit, handleDelete, ... }
-}
-```
-
-#### Паттерн сервиса API:
-```typescript
-// services/entity.service.ts
-export const EntityService = {
-  getAll: (params) => api.get('/entities', params),
-  create: (data) => api.post('/entities', data),
-  update: (id, data) => api.patch(`/entities/${id}`, data),
-  delete: (id) => api.delete(`/entities/${id}`),
-}
-```
-
-#### Паттерн компонента модального окна:
-```tsx
-// components/modals/EntityModal.tsx
-export function EntityModal({ opened, onClose, entity, onSave, loading }) {
-  // useForm с zodResolver
-  // useEffect для сброса формы
-  // JSX с Form
-}
-```
-
-#### Паттерн ConfirmDialog:
-```tsx
-<ConfirmDialog
-  opened={deleteConfirm.opened}
-  onClose={() => setDeleteConfirm({ opened: false })}
-  onConfirm={executeDelete}
-  title="Удалить?"
-  message="..."
-  confirmLabel="Удалить"
-  color="red"
-/>
-```
+- [ ] Графики по категориям
+- [ ] Экспорт данных (CSV/Excel)
+- [ ] Уведомления о приближении к лимиту
+- [ ] Годовая статистика
+- [ ] Сравнение с предыдущими месяцами
 
 ---
 
-## 2. Требования к реализации
+## 2. Паспорт Kakebo
 
 ### 2.1 Философия инструмента
 
@@ -115,53 +62,44 @@ export function EntityModal({ opened, onClose, entity, onSave, loading }) {
 3. Визуализировать прогресс обучения через рефлексию
 4. Интегрироваться с учебным планом
 
-### 2.2 Функциональные требования
+### 2.2 Ключевые метрики
 
-| Функция | Описание | Приоритет |
-|---------|----------|-----------|
-| CRUD записей | Создание, просмотр, редактирование, удаление записей о тратах | Критический |
-| Категории трат | LIFE, CULTURE, EXTRA, UNEXPECTED | Критический |
-| Статистика за месяц | Общая сумма, по категориям, дни с записями | Критический |
-| Плановый лимит | Настройка месячного лимита | Высокий |
-| Рефлексия | Анализ трат в конце месяца | Высокий |
-| Визуализация | График по категориям | Средний |
+- **Траты за месяц** - общая сумма в у.е.
+- **Дней с записями** - активность ведения учёта
+- **Распределение по категориям** - LIFE, CULTURE, EXTRA, UNEXPECTED
+- **Остаток до лимита** - контроль бюджета
+- **Рефлексия** - качественные улучшения
 
-### 2.3 Нефункциональные требования
+### 2.3 Категории трат
 
-- Адаптивный UI (Mobile-first)
-- Защита от XSS и CSRF
-- Валидация данных на клиенте и сервере
-- Производительность: <500ms на API запрос
-- TypeScript строгая типизация
+| Категория | Описание | Примеры |
+|-----------|----------|---------|
+| **LIFE** | Необходимые траты | Еда, транспорт, жильё, коммунальные |
+| **CULTURE** | Образование и развитие | Книги, курсы, мероприятия |
+| **EXTRA** | Дополнительные покупки | Одежда, электроника, хобби |
+| **UNEXPECTED** | Непредвиденное | Подарки, ремонты, штрафы |
 
 ---
 
-## 3. Модель данных
+## 3. Архитектура
 
-### 3.1 Анализ существующей модели
-
-**Что уже есть в `schema.prisma`:**
-- ✅ `Profile` — основной профиль пользователя
-- ✅ `BusinessEvent` — для трекинга событий (можно использовать для аналитики)
-- ✅ `Notification` — для уведомлений о достижениях
-
-**Что нужно добавить:**
+### 3.1 Модель данных
 
 ```prisma
-// Японская система ведения бюджета КаКеБо
+// Кэкебо записи
 model KakeboEntry {
   id          String   @id @default(cuid())
   profileId   String
-  profile     Profile  @relation(fields: [profileId], references: [id], onDelete: CASCADE)
+  profile     Profile  @relation(fields: [profileId], references: [id], onDelete: Cascade)
   
-  date        DateTime @map("date") @db.Date // Конкретный день траты
-  year        Int      // Год (для быстрой агрегации)
-  month       Int      // Месяц (1-12)
+  date        DateTime @map("date") @db.Date
+  year        Int
+  month       Int
   
   category    KakeboCategory @default(LIFE)
-  description String   @db.Text // Что купили?
-  amount      Float    // Сумма траты в условных единицах
-  isNecessary Boolean  // Было ли это необходимо?
+  description String   @db.Text
+  amount      Float
+  isNecessary Boolean  @default(false)
   
   createdAt   DateTime @default(now()) @map("created_at")
   updatedAt   DateTime @updatedAt @map("updated_at")
@@ -178,36 +116,33 @@ enum KakeboCategory {
   UNEXPECTED
 }
 
-// Настройки пользователя Kakebo
+// Настройки пользователя
 model KakeboSettings {
-  profileId   String   @id
-  profile     Profile  @relation(fields: [profileId], references: [id], onDelete: CASCADE)
+  profileId  String @id
+  profile    Profile @relation(fields: [profileId], references: [id], onDelete: Cascade)
   
-  monthLimit  Float?   // Плановая трата в месяц
+  monthLimit Float? @map("month_limit")
   
-  createdAt   DateTime @default(now()) @map("created_at")
-  updatedAt   DateTime @updatedAt @map("updated_at")
+  createdAt  DateTime @default(now()) @map("created_at")
+  updatedAt  DateTime @updatedAt @map("updated_at")
   
   @@map("kakebo_settings")
 }
 
-// Рефлексия пользователя
+// Рефлексия
 model KakeboReflection {
-  id          String   @id @default(cuid())
-  profileId   String
-  profile     Profile  @relation(fields: [profileId], references: [id], onDelete: CASCADE)
+  id             String @id @default(cuid())
+  profileId      String
+  profile        Profile @relation(fields: [profileId], references: [id], onDelete: Cascade)
   
-  year        Int
-  month       Int
+  year           Int
+  month          Int
   
-  // Анализ трат
-  unnecessarySpent Float? @map("unnecessary_spent") // Сумма необязательных трат
-  
-  // Ответы на вопросы
-  moneyAtStart      Float? @map("money_at_start")     // Сколько было в начале
-  plannedToSave     Float? @map("planned_to_save")    // Сколько планировали отложить
-  actuallySaved     Float? @map("actually_saved")     // Сколько отложили
-  improvements      String? @db.Text // Что улучшим в следующем месяце
+  unnecessarySpent Float? @map("unnecessary_spent")
+  moneyAtStart   Float? @map("money_at_start")
+  plannedToSave  Float? @map("planned_to_save")
+  actuallySaved  Float? @map("actually_saved")
+  improvements   String? @db.Text
   
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
@@ -218,97 +153,358 @@ model KakeboReflection {
 }
 ```
 
-### 3.2 Миграция базы данных
+### 3.2 Структура файлов
 
-**Шаги:**
-1. Добавить модели в `prisma/schema.prisma`
-2. Создать миграцию: `npx prisma migrate dev --name add_kakebo_models`
-3. Применить миграцию: `npx prisma migrate deploy`
-4. Обновить Prisma Client: `npx prisma generate`
+```
+server/
+└── routes/
+    └── kakebo.routes.ts          # Backend API
 
-**Что проверить после миграции:**
-- [ ] Все таблицы созданы в MySQL
-- [ ] Индексы созданы правильно
-- [ ] Foreign keys с CASCADE работают
-- [ ] ENUM `KakeboCategory` создан
+src/
+├── types/
+│   └── kakebo.ts                 # TypeScript типы
+├── services/
+│   └── kakebo.service.ts         # API вызовы
+├── hooks/
+│   └── useKakebo.ts              # React Query хуки
+├── components/kakebo/
+│   ├── KakeboStats.tsx           # Карточка статистики
+│   ├── KakeboForm.tsx            # Форма добавления
+│   ├── KakeboList.tsx            # Список трат
+│   ├── KakeboReflection.tsx      # Блок рефлексии
+│   └── index.ts                  # Экспорт компонентов
+└── pages/tools/
+    └── KakeboPage.tsx            # Основная страница
+```
 
 ---
 
-## 4. Безопасность и проверки
+## 4. API Endpoints
 
-### 4.1 Middleware
+### 4.1 Список эндпоинтов
 
-Все эндпоинты `/api/kakebo/*` должны использовать:
+| Метод | Endpoint | Описание |
+|-------|----------|----------|
+| GET | `/api/kakebo?year=&month=` | Получить данные за месяц |
+| POST | `/api/kakebo` | Создать запись |
+| PUT | `/api/kakebo/:id` | Обновить запись |
+| DELETE | `/api/kakebo/:id` | Удалить запись |
+| PUT | `/api/kakebo/settings` | Обновить настройки |
+| GET | `/api/kakebo/reflection?year=&month=` | Получить рефлексию |
+| POST | `/api/kakebo/reflection` | Сохранить рефлексию |
 
-```typescript
-import { requireAuth } from '../middleware/auth'
+### 4.2 Примеры запросов
 
-// В routes/kakebo.routes.ts
-app.use('/kakebo', requireAuth)
+**Получить данные за месяц:**
+```bash
+GET /api/kakebo?year=2026&month=4
 ```
 
-### 4.2 Проверка прав доступа
-
-При каждом запросе данных проверять, что `profileId` в запросе совпадает с `profileId` из сессии:
-
-```typescript
-// Пример проверки в роуте
-const profile = c.get('profile')
-if (!profile) throw new AppError(401, 'Требуется авторизация')
-
-const entries = await prisma.kakeboEntry.findMany({
-  where: { profileId: profile.id } // ✅ Только свои данные
-})
+**Создать запись:**
+```bash
+POST /api/kakebo
+{
+  "date": "2026-04-24",
+  "category": "LIFE",
+  "description": "Обед",
+  "amount": 50,
+  "isNecessary": true
+}
 ```
 
-### 4.3 Валидация данных
-
-Использовать Zod для валидации входных данных:
-
-```typescript
-import { z } from 'zod'
-
-const KakeboEntrySchema = z.object({
-  date: z.string().refine(val => !isNaN(Date.parse(val)), 'Неверная дата'),
-  category: z.enum(['LIFE', 'CULTURE', 'EXTRA', 'UNEXPECTED']),
-  description: z.string().min(1, 'Описание обязательно').max(500, 'Слишком длинно'),
-  amount: z.number().positive('Сумма должна быть больше 0'),
-  isNecessary: z.boolean(),
-})
-
-const KakeboSettingsSchema = z.object({
-  monthLimit: z.number().positive().optional().nullable(),
-})
-
-const KakeboReflectionSchema = z.object({
-  year: z.number(),
-  month: z.number().min(1).max(12),
-  unnecessarySpent: z.number().optional(),
-  moneyAtStart: z.number().optional(),
-  plannedToSave: z.number().optional(),
-  actuallySaved: z.number().optional(),
-  improvements: z.string().max(1000).optional(),
-})
+**Обновить настройки:**
+```bash
+PUT /api/kakebo/settings
+{
+  "monthLimit": 10000
+}
 ```
-
-### 4.4 Что нужно проверить перед реализацией
-
-1. **Существующие middleware:**
-   - [ ] `requireAuth` работает корректно
-   - [ ] `getCurrentUser` и `getCurrentProfile` возвращают данные
-   - [ ] Сессии истекают правильно
-
-2. **Безопасность данных:**
-   - [ ] Все запросы фильтруются по `profileId` из сессии
-   - [ ] Нет возможности получить чужие данные через IDOR
-
-3. **Валидация:**
-   - [ ] Zod схемы настроены
-   - [ ] Ошибки валидации возвращаются корректно
 
 ---
 
-## 5. API Endpoints
+## 5. Frontend компоненты
+
+### 5.1 Типы
+
+```typescript
+export type KakeboCategory = 'LIFE' | 'CULTURE' | 'EXTRA' | 'UNEXPECTED'
+
+export interface KakeboEntry {
+  id: string
+  date: string
+  category: KakeboCategory
+  description: string
+  amount: number
+  isNecessary: boolean
+}
+
+export interface KakeboSettings {
+  monthLimit: number | null
+}
+
+export interface KakeboSummary {
+  totalSpent: number
+  daysInMonth: number
+  daysWithEntries: number
+  byCategory: Record<KakeboCategory, number>
+}
+
+export interface KakeboMonthData {
+  settings: KakeboSettings
+  entries: KakeboEntry[]
+  summary: KakeboSummary
+}
+
+export interface KakeboReflection {
+  id?: string
+  year: number
+  month: number
+  unnecessarySpent?: number
+  moneyAtStart?: number
+  plannedToSave?: number
+  actuallySaved?: number
+  improvements?: string
+}
+```
+
+### 5.2 Хуки
+
+- `useKakeboMonth(year, month)` - получить данные за месяц
+- `useKakeboSettings()` - обновить настройки
+- `useAddKakeboEntry()` - создать запись
+- `useUpdateKakeboEntry()` - обновить запись
+- `useDeleteKakeboEntry()` - удалить запись
+- `useKakeboReflection(year, month)` - получить рефлексию
+- `useSaveKakeboReflection()` - сохранить рефлексию
+
+---
+
+## 6. Известные недочёты и исправления
+
+### 6.1 Проблемы с Prisma и базой данных
+
+**Проблема 1: Ошибка уникального ключа в KakeboReflection**
+
+*Описание:* При запросе `findUnique` с полями `profileId`, `year`, `month` возникала ошибка, так как Prisma требует использовать композитный уникальный ключ.
+
+*Исходный код (неверно):*
+```typescript
+const reflection = await prisma.kakeboReflection.findUnique({
+  where: { profileId: profile.id, year, month }
+})
+```
+
+*Исправление:*
+```typescript
+const reflection = await prisma.kakeboReflection.findUnique({
+  where: { profileId_year_month: { profileId: profile.id, year, month } }
+})
+```
+
+*Коммит:* `5367a92 fix: исправить ошибки в Kakebo и авторизации`
+
+---
+
+**Проблема 2: Автоматическое создание профиля при сессии**
+
+*Описание:* При загрузке сессии у старых пользователей мог отсутствовать профиль (опциональное отношение), что приводило к ошибке авторизации.
+
+*Исходный код:*
+```typescript
+// getSessionData не обрабатывал null профиль
+profile: session.user.profile // Может быть null
+```
+
+*Исправление:*
+```typescript
+// Если профиля нет - создаём автоматически
+if (!session.user.profile) {
+  await prisma.profile.create({
+    data: {
+      userId: session.user.id,
+      nickname: `${firstName}${lastName}`,
+      displayName: `${firstName} ${lastName}`,
+    }
+  })
+  // Перезапрашиваем профиль
+}
+```
+
+*Коммит:* `5367a92 fix: исправить ошибки в Kakebo и авторизации`
+
+---
+
+### 6.2 Проблемы маршрутизации
+
+**Проблема 3: Конфликт маршрутов `/:id` и `/settings`**
+
+*Описание:* Маршрут `PUT /:id` перехватывал запрос `PUT /settings`, так как Hono обрабатывает динамические параметры как «любая строка».
+
+*Неправильный порядок:*
+```typescript
+kakebo.put('/:id', ...)      // ✅ Перехватывает всё
+kakebo.put('/settings', ...) // ❌ Никогда не срабатывает
+```
+
+*Исправление:* Конкретные маршруты должны идти перед динамическими
+```typescript
+kakebo.put('/settings', ...) // ✅ Сначала конкретные
+kakebo.put('/:id', ...)      // ✅ Потом динамические
+```
+
+*Коммит:* `cbf78c7 fix: исправить порядок маршрутов Kakebo`
+
+---
+
+### 6.3 Проблемы компиляции TypeScript
+
+**Проблема 4: Неправильный импорт `@mantine/form`**
+
+*Описание:* В проекте используется `react-hook-form`, а не `@mantine/form`.
+
+*Исходный код:*
+```typescript
+import { useForm } from '@mantine/form' // ❌ Нет в проекте
+```
+
+*Исправление:* Упрощение формы на useState
+```typescript
+import { useState } from 'react' // ✅ Простое состояние
+```
+
+*Коммит:* `ac06cf4 fix: финальные исправления Kakebo для успешного build`
+
+---
+
+**Проблема 5: Ошибки типов в NumberInput**
+
+*Описание:* Свойство `precision` не существует в Mantine v8.
+
+*Исходный код:*
+```typescript
+<NumberInput precision={2} /> // ❌ Не существует
+```
+
+*Исправление:*
+```typescript
+<NumberInput /> // ✅ Убрать unsupported props
+```
+
+*Коммит:* `ac06cf4 fix: финальные исправления Kakebo для успешного build`
+
+---
+
+### 6.4 Проблемы логики лимитов
+
+**Проблема 6: Неверная логика `isOverLimit` при null**
+
+*Описание:* При отсутствии лимита (`monthLimit = null`) сравнение работало некорректно.
+
+*Исходный код:*
+```typescript
+const isOverLimit = data?.settings.monthLimit && 
+  data.summary.totalSpent > data.settings.monthLimit
+```
+
+*Исправление:*
+```typescript
+const isOverLimit = data?.settings.monthLimit && 
+  data.summary.totalSpent > (data.settings.monthLimit || 0)
+```
+
+*Дополнительно:*
+- Добавлен расчёт `remainingLimit`
+- Добавлен `limitPercent` для прогресс-бара
+- Цветовая индикация: зелёный (<80%), оранжевый (80-100%), красный (>100%)
+
+*Коммит:* `5d885cc feat: улучшить отображение лимита в Kakebo`
+
+---
+
+### 6.5 Проблемы адаптивности
+
+**Проблема 7: Поля формы в строку на мобильных**
+
+*Описание:* На мобильных устройствах все поля формы располагались в одну строку, что делало их непригодными для использования.
+
+*Исходный код:*
+```tsx
+<Group gap="sm" grow> // ❌ Всё в одной строке
+  <TextInput />
+  <Select />
+  <TextInput />
+  <NumberInput />
+  <Button />
+</Group>
+```
+
+*Исправление:*
+```tsx
+<Stack gap="sm"> // ✅ Вертикальный стек
+  <Group gap="sm" wrap="wrap">
+    <TextInput style={{ flex: 1, minWidth: 150 }} />
+    <Select style={{ flex: 1, minWidth: 180 }} />
+  </Group>
+  <TextInput />
+  <Group gap="sm" align="flex-end">
+    <NumberInput style={{ flex: 1 }} />
+    <Switch style={{ flex: 1 }} />
+    <Button style={{ flex: 1 }} />
+  </Group>
+</Stack>
+```
+
+*Коммит:* `8aee019 feat: улучшить адаптивность Kakebo`
+
+---
+
+**Проблема 8: Таблица на мобильных**
+
+*Описание:* Таблица с записями на мобильных устройствах была нечитаемой.
+
+*Исправление:*
+- Использовать `visibleFrom="lg"` для таблицы
+- Использовать `hiddenFrom="lg"` для карточек
+- Добавить `SimpleGrid` с карточками для мобильных
+
+*Коммит:* `8aee019 feat: улучшить адаптивность Kakebo`
+
+---
+
+## 7. История изменений
+
+| Версия | Дата | Описание |
+|--------|------|----------|
+| 1.0.0 | Апрель 2026 | Базовая реализация Kakebo |
+
+### Детали коммитов
+
+```
+5d885cc fix: улучшить отображение лимита в Kakebo
+cbf78c7 fix: исправить порядок маршрутов Kakebo
+8aee019 feat: улучшить адаптивность Kakebo
+5fd5155 fix: исправить ошибки компиляции Kakebo
+1fe7e7e feat: завершить реализацию Kakebo
+70dfd85 feat: реализовать компоненты UI для Kakebo
+3a5761a feat: добавить frontend типы, сервис и хуки для Kakebo
+948eebb feat: реализовать backend API для Kakebo
+4aef25e feat: добавить модели Kakebo в Prisma schema
+```
+
+---
+
+## 8. Рекомендации для будущих версий
+
+1. **Миграции вместо db push:** Использовать `prisma migrate dev` для разработки и `prisma migrate deploy` для продакшена
+2. **Уведомления:** Интегрировать с существующей системой уведомлений вместо console.log
+3. **Тестирование:** Добавить unit-тесты для API и компонентов
+4. **Доступность:** Добавить ARIA-атрибуты для скринридеров
+5. **Производительность:** Добавить виртуализацию для больших списков записей
+
+---
+
+**Документ обновлён:** Апрель 2026  
+**Статус:** Актуален для версии 1.0.0
 
 ### 5.1 Структура маршрутов
 
