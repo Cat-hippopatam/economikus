@@ -44,9 +44,22 @@ async function getSessionData(sessionToken: string) {
     where: { sessionToken },
     include: {
       user: {
-        include: {
+        select: {
+          id: true,
+          email: true,
+          firstName: true,
+          lastName: true,
+          role: true,
+          isBlocked: true,
+          passwordHash: true,
           profile: {
-            select: { id: true, nickname: true, displayName: true, avatarUrl: true, bio: true }
+            select: {
+              id: true,
+              nickname: true,
+              displayName: true,
+              avatarUrl: true,
+              bio: true
+            }
           }
         }
       }
@@ -59,6 +72,24 @@ async function getSessionData(sessionToken: string) {
     return null
   }
   if (session.user.isBlocked) return null
+
+  // Если профиля нет - создаём
+  if (!session.user.profile) {
+    await prisma.profile.create({
+      data: {
+        userId: session.user.id,
+        nickname: `${session.user.firstName}${session.user.lastName}`,
+        displayName: `${session.user.firstName} ${session.user.lastName}`,
+      }
+    })
+    // Перезапрашиваем профиль
+    const updatedUser = await prisma.user.findUnique({
+      where: { id: session.user.id },
+      include: { profile: true }
+    })
+    if (!updatedUser?.profile) return null
+    session.user.profile = updatedUser.profile
+  }
 
   return {
     user: {

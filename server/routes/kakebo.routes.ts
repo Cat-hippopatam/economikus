@@ -192,7 +192,7 @@ kakebo.get('/reflection', async (c) => {
   const month = parseInt(c.req.query('month') || (new Date().getMonth() + 1).toString())
 
   const reflection = await prisma.kakeboReflection.findUnique({
-    where: { profileId: profile.id, year, month }
+    where: { profileId_year_month: { profileId: profile.id, year, month } }
   })
 
   return c.json({ reflection })
@@ -210,7 +210,7 @@ kakebo.post('/reflection', async (c) => {
   if (!parsed.success) throw new AppError(400, 'Ошибка валидации')
 
   const reflection = await prisma.kakeboReflection.upsert({
-    where: { profileId: profile.id, year: parsed.data.year, month: parsed.data.month },
+    where: { profileId_year_month: { profileId: profile.id, year: parsed.data.year, month: parsed.data.month } },
     create: { profileId: profile.id, ...parsed.data },
     update: parsed.data
   })

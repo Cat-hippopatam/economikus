@@ -8,6 +8,8 @@ pnpm-debug.log*
 lerna-debug.log*
 
 node_modules
+dist*
+dist-server
 dist
 dist-ssr
 *.local
@@ -28,3 +30,5 @@ sure
 *.sw?
 
 /src/generated/prisma
+dist-server/
+dist-server/
