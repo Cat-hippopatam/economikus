@@ -117,6 +117,26 @@ kakebo.post('/', async (c) => {
   return c.json({ message: 'Запись создана', entry }, 201)
 })
 
+// ==================== PUT /api/kakebo/settings ====================
+// Обновить настройки
+kakebo.put('/settings', async (c) => {
+  const profile = getCurrentProfile(c)
+  if (!profile) throw new AppError(401, 'Требуется авторизация')
+
+  const body = await c.req.json()
+  const parsed = KakeboSettingsSchema.safeParse(body)
+
+  if (!parsed.success) throw new AppError(400, 'Ошибка валидации')
+
+  const settings = await prisma.kakeboSettings.upsert({
+    where: { profileId: profile.id },
+    create: { profileId: profile.id, ...parsed.data },
+    update: parsed.data
+  })
+
+  return c.json({ message: 'Настройки обновлены', settings })
+})
+
 // ==================== PUT /api/kakebo/:id ====================
 // Обновить запись
 kakebo.put('/:id', async (c) => {
@@ -160,26 +180,6 @@ kakebo.delete('/:id', async (c) => {
   await prisma.kakeboEntry.delete({ where: { id } })
 
   return c.json({ message: 'Запись удалена' })
-})
-
-// ==================== PUT /api/kakebo/settings ====================
-// Обновить настройки
-kakebo.put('/settings', async (c) => {
-  const profile = getCurrentProfile(c)
-  if (!profile) throw new AppError(401, 'Требуется авторизация')
-
-  const body = await c.req.json()
-  const parsed = KakeboSettingsSchema.safeParse(body)
-
-  if (!parsed.success) throw new AppError(400, 'Ошибка валидации')
-
-  const settings = await prisma.kakeboSettings.upsert({
-    where: { profileId: profile.id },
-    create: { profileId: profile.id, ...parsed.data },
-    update: parsed.data
-  })
-
-  return c.json({ message: 'Настройки обновлены', settings })
 })
 
 // ==================== GET /api/kakebo/reflection ====================
