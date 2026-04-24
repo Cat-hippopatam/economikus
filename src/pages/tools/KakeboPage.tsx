@@ -88,7 +88,6 @@ export function KakeboPage() {
       {reflectionQuery.data && (
         <KakeboReflection
           reflection={reflectionQuery.data}
-          onRefresh={reflectionQuery.refetch}
         />
       )}
 

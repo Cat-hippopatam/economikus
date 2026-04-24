@@ -1,7 +1,5 @@
 import { useState } from 'react'
 import { Box, Table, Text, Paper, Group, Badge, TextInput, ActionIcon, Button, Modal, NumberInput, Select, Switch } from '@mantine/core'
-import { useState } from 'react'
-import { Box, Table, Text, Paper, Group, Badge, TextInput, ActionIcon, Button, Modal, NumberInput, Select, Switch } from '@mantine/core'
 import { Search, Pencil, Trash2, Calendar } from 'lucide-react'
 import { useDeleteKakeboEntry, useUpdateKakeboEntry } from '@/hooks/useKakebo'
 import type { KakeboEntry, KakeboCategory } from '@/types/kakebo'

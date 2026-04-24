@@ -1,6 +1,5 @@
-import { useForm } from '@mantine/form'
-import { Group, TextInput, Select, NumberInput, Switch } from '@mantine/core'
-import { Button, Text } from '@mantine/core'
+import { useState } from 'react'
+import { Group, TextInput, Select, NumberInput, Switch, Text, Button } from '@mantine/core'
 import { Calendar } from 'lucide-react'
 import { useAddKakeboEntry } from '@/hooks/useKakebo'
 import type { KakeboCategory } from '@/types/kakebo'
@@ -18,84 +17,99 @@ interface KakeboFormProps {
 
 export function KakeboForm({ onSuccess }: KakeboFormProps) {
   const addMutation = useAddKakeboEntry()
-  const form = useForm({
-    initialValues: {
-      date: new Date().toISOString().split('T')[0],
-      category: 'LIFE' as KakeboCategory,
-      description: '',
-      amount: 0,
-      isNecessary: false,
-    },
-    validate: {
-      description: (value: string) => (value.trim().length < 1 ? 'Введите описание' : null),
-      amount: (value: number) => (value <= 0 ? 'Сумма должна быть больше 0' : null),
-    },
+  const [formData, setFormData] = useState({
+    date: new Date().toISOString().split('T')[0],
+    category: 'LIFE' as KakeboCategory,
+    description: '',
+    amount: 0,
+    isNecessary: false,
   })
+  const [error, setError] = useState<string | null>(null)
 
-  const handleSubmit = form.onSubmit((values: typeof form.values) => {
+  const handleSubmit = () => {
+    setError(null)
+    
+    if (!formData.description.trim()) {
+      setError('Введите описание')
+      return
+    }
+    
+    if (formData.amount <= 0) {
+      setError('Сумма должна быть больше 0')
+      return
+    }
+
     addMutation.mutate(
       {
-        ...values,
-        amount: parseFloat(values.amount.toString()),
+        ...formData,
+        amount: parseFloat(formData.amount.toString()),
       },
       {
         onSuccess: () => {
-          form.reset()
-          form.setFieldValue('date', new Date().toISOString().split('T')[0])
+          setFormData({
+            date: new Date().toISOString().split('T')[0],
+            category: 'LIFE',
+            description: '',
+            amount: 0,
+            isNecessary: false,
+          })
           onSuccess?.()
         },
+        onError: (err: any) => {
+          setError(err.message || 'Ошибка добавления')
+        }
       }
     )
-  })
+  }
 
   return (
-    <form onSubmit={handleSubmit}>
+    <form onSubmit={(e) => { e.preventDefault(); handleSubmit(); }}>
       <Group gap="sm" grow>
         <TextInput
           label="Дата"
           type="date"
-          {...form.getInputProps('date')}
+          value={formData.date}
+          onChange={(e) => setFormData({ ...formData, date: e.currentTarget.value })}
           leftSection={<Calendar size={16} />}
         />
         <Select
           label="Категория"
           data={CATEGORIES}
-          {...form.getInputProps('category')}
+          value={formData.category}
+          onChange={(v) => setFormData({ ...formData, category: v as KakeboCategory })}
           searchable
         />
         <TextInput
           label="Описание"
           placeholder="Что купили?"
-          {...form.getInputProps('description')}
+          value={formData.description}
+          onChange={(e) => setFormData({ ...formData, description: e.currentTarget.value })}
         />
         <NumberInput
           label="Сумма (у.е.)"
           placeholder="0"
-          precision={2}
           min={0}
           step={10}
-          {...form.getInputProps('amount')}
+          value={formData.amount}
+          onChange={(v) => setFormData({ ...formData, amount: v as number })}
         />
         <Switch
           label="Необязательно"
-          checked={form.values.isNecessary}
-          onChange={(e) => form.setFieldValue('isNecessary', e.currentTarget.checked)}
+          checked={formData.isNecessary}
+          onChange={(e) => setFormData({ ...formData, isNecessary: e.currentTarget.checked })}
           mt={30}
         />
         <Button
           type="submit"
           w={120}
           loading={addMutation.isPending}
-          disabled={!form.isValid()}
         >
           Добавить
         </Button>
       </Group>
-      {(form.errors.description || form.errors.amount) && (
+      {error && (
         <Group mt="xs">
-          <Text c="red" size="sm">
-            {form.errors.description || form.errors.amount}
-          </Text>
+          <Text c="red" size="sm">{error}</Text>
         </Group>
       )}
     </form>

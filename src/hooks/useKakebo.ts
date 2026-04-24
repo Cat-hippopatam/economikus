@@ -1,6 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { kakeboService } from '@/services/kakebo.service'
-import type { KakeboEntry, KakeboReflection as ReflectionType } from '@/types/kakebo'
+import type { KakeboEntry } from '@/types/kakebo'
 
 // Простая система уведомлений через console
 const notify = (title: string, message: string, color: 'green' | 'red' = 'green') => {

@@ -9,7 +9,7 @@ interface KakeboReflectionProps {
   reflection: ReflectionType | null
 }
 
-export function KakeboReflection({ reflection, onRefresh }: KakeboReflectionProps) {
+export function KakeboReflection({ reflection }: KakeboReflectionProps) {
   const [modalOpened, setModalOpened] = useState(false)
   const [formData, setFormData] = useState<Partial<ReflectionType>>({
     year: new Date().getFullYear(),
