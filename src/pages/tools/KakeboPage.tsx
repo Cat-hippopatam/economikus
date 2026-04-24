@@ -1,13 +1,11 @@
 import { useState } from 'react'
-import { Box, Title, Grid, Paper, Text, Group, Select, Flex, Button, Modal } from '@mantine/core'
-import { DatePickerInput } from '@mantine/dates'
+import { Box, Title, Grid, Paper, Text, Group, Select, Flex, Button, Modal, Input } from '@mantine/core'
 import { Plus, Settings } from 'lucide-react'
 import { KakeboStats } from '@/components/kakebo/KakeboStats'
 import { KakeboForm } from '@/components/kakebo/KakeboForm'
 import { KakeboList } from '@/components/kakebo/KakeboList'
 import { KakeboReflection } from '@/components/kakebo/KakeboReflection'
 import { useKakeboMonth, useKakeboSettings, useKakeboReflection } from '@/hooks/useKakebo'
-import { modals } from '@mantine/modals'
 
 export function KakeboPage() {
   const [currentDate, setCurrentDate] = useState(new Date())
@@ -19,13 +17,6 @@ export function KakeboPage() {
   const settingsMutation = useKakeboSettings()
   const reflectionQuery = useKakeboReflection(year, month)
   const [tempMonthLimit, setTempMonthLimit] = useState(data?.settings.monthLimit?.toString() || '')
-
-  const handleMonthChange = (date: Date | null) => {
-    if (date) {
-      setCurrentDate(date)
-      setTempMonthLimit(data?.settings.monthLimit?.toString() || '')
-    }
-  }
 
   const handleSaveSettings = () => {
     const limit = tempMonthLimit ? parseFloat(tempMonthLimit) : null
@@ -40,12 +31,15 @@ export function KakeboPage() {
       <Flex justify="space-between" align="center" mb="lg">
         <Title order={1}>Kakebo — Учёт условных единиц</Title>
         <Group>
-          <DatePickerInput
-            value={currentDate}
-            onChange={handleMonthChange}
+          <Input
             type="month"
-            placeholder="Выберите месяц"
-            w={200}
+            value={`${year.toString().padStart(4, '0')}-${month.toString().padStart(2, '0')}`}
+            onChange={(e) => {
+              const [y, m] = e.currentTarget.value.split('-').map(Number)
+              setCurrentDate(new Date(y, m - 1))
+              setTempMonthLimit(data?.settings.monthLimit?.toString() || '')
+            }}
+            style={{ width: 200 }}
           />
           <Button
             leftSection={<Settings size={16} />}
@@ -115,7 +109,7 @@ export function KakeboPage() {
               { value: '10000', label: '10000 у.е.' },
             ]}
             value={tempMonthLimit}
-            onChange={setTempMonthLimit}
+            onChange={(value) => setTempMonthLimit(value ?? '')}
             clearable
             placeholder="Без лимита"
             w="100%"
@@ -133,3 +127,5 @@ export function KakeboPage() {
     </Box>
   )
 }
+
+export default KakeboPage

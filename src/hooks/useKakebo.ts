@@ -1,7 +1,11 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { kakeboService } from '@/services/kakebo.service'
-import { notifications } from '@mantine/notifications'
-import type { KakeboEntry, KakeboReflection } from '@/types/kakebo'
+import type { KakeboEntry, KakeboReflection as ReflectionType } from '@/types/kakebo'
+
+// Простая система уведомлений через console
+const notify = (title: string, message: string, color: 'green' | 'red' = 'green') => {
+  console.log(`[${color.toUpperCase()}] ${title}: ${message}`)
+}
 
 export function useKakeboMonth(year: number, month: number) {
   return useQuery({
@@ -18,18 +22,10 @@ export function useKakeboSettings() {
     mutationFn: kakeboService.updateSettings,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['kakebo'] })
-      notifications.show({
-        title: 'Готово',
-        message: 'Настройки обновлены',
-        color: 'green'
-      })
+      notify('Готово', 'Настройки обновлены', 'green')
     },
-    onError: (error) => {
-      notifications.show({
-        title: 'Ошибка',
-        message: error.message,
-        color: 'red'
-      })
+    onError: (error: any) => {
+      notify('Ошибка', error.message || 'Не удалось обновить настройки', 'red')
     }
   })
 }
@@ -41,18 +37,10 @@ export function useAddKakeboEntry() {
     mutationFn: kakeboService.createEntry,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['kakebo'] })
-      notifications.show({
-        title: 'Готово',
-        message: 'Запись добавлена',
-        color: 'green'
-      })
+      notify('Готово', 'Запись добавлена', 'green')
     },
-    onError: (error) => {
-      notifications.show({
-        title: 'Ошибка',
-        message: error.message,
-        color: 'red'
-      })
+    onError: (error: any) => {
+      notify('Ошибка', error.message || 'Не удалось добавить запись', 'red')
     }
   })
 }
@@ -65,11 +53,7 @@ export function useUpdateKakeboEntry() {
       kakeboService.updateEntry(id, data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['kakebo'] })
-      notifications.show({
-        title: 'Готово',
-        message: 'Запись обновлена',
-        color: 'green'
-      })
+      notify('Готово', 'Запись обновлена', 'green')
     }
   })
 }
@@ -81,11 +65,7 @@ export function useDeleteKakeboEntry() {
     mutationFn: kakeboService.deleteEntry,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['kakebo'] })
-      notifications.show({
-        title: 'Готово',
-        message: 'Запись удалена',
-        color: 'green'
-      })
+      notify('Готово', 'Запись удалена', 'green')
     }
   })
 }
@@ -105,11 +85,7 @@ export function useSaveKakeboReflection() {
     mutationFn: kakeboService.saveReflection,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['kakebo', 'reflection'] })
-      notifications.show({
-        title: 'Готово',
-        message: 'Рефлексия сохранена',
-        color: 'green'
-      })
+      notify('Готово', 'Рефлексия сохранена', 'green')
     }
   })
 }

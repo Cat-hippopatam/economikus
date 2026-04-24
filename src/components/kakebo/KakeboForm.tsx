@@ -1,7 +1,6 @@
-import { useState } from 'react'
 import { useForm } from '@mantine/form'
 import { Group, TextInput, Select, NumberInput, Switch } from '@mantine/core'
-import { Button } from '@mantine/core'
+import { Button, Text } from '@mantine/core'
 import { Calendar } from 'lucide-react'
 import { useAddKakeboEntry } from '@/hooks/useKakebo'
 import type { KakeboCategory } from '@/types/kakebo'
@@ -28,12 +27,12 @@ export function KakeboForm({ onSuccess }: KakeboFormProps) {
       isNecessary: false,
     },
     validate: {
-      description: (value) => (value.trim().length < 1 ? 'Введите описание' : null),
-      amount: (value) => (value <= 0 ? 'Сумма должна быть больше 0' : null),
+      description: (value: string) => (value.trim().length < 1 ? 'Введите описание' : null),
+      amount: (value: number) => (value <= 0 ? 'Сумма должна быть больше 0' : null),
     },
   })
 
-  const handleSubmit = form.onSubmit((values) => {
+  const handleSubmit = form.onSubmit((values: typeof form.values) => {
     addMutation.mutate(
       {
         ...values,

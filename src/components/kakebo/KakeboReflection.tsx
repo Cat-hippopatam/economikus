@@ -1,12 +1,12 @@
 import { useState } from 'react'
-import { Box, Paper, Title, Group, TextInput, Textarea, Button, Modal, Card, Text, SimpleGrid } from '@mantine/core'
+import { Box, Paper, Title, Group, TextInput, Textarea, Button, Modal, Card, SimpleGrid } from '@mantine/core'
 import { Brain } from 'lucide-react'
 import { useSaveKakeboReflection } from '@/hooks/useKakebo'
 import type { KakeboReflection as ReflectionType } from '@/types/kakebo'
+import { Text } from '@mantine/core'
 
 interface KakeboReflectionProps {
   reflection: ReflectionType | null
-  onRefresh: () => void
 }
 
 export function KakeboReflection({ reflection, onRefresh }: KakeboReflectionProps) {
