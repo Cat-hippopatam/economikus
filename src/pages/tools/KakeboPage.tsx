@@ -24,7 +24,13 @@ export function KakeboPage() {
     setSettingsModalOpened(false)
   }
 
-  const isOverLimit = data?.settings.monthLimit && data.summary.totalSpent > data.settings.monthLimit
+  const isOverLimit = data?.settings.monthLimit && data.summary.totalSpent > (data.settings.monthLimit || 0)
+  const remainingLimit = data?.settings.monthLimit 
+    ? data.settings.monthLimit - data.summary.totalSpent 
+    : null
+  const limitPercent = data?.settings.monthLimit && data.settings.monthLimit > 0
+    ? Math.min((data.summary.totalSpent / data.settings.monthLimit) * 100, 100)
+    : 0
 
   return (
     <Box p="md">
@@ -59,8 +65,14 @@ export function KakeboPage() {
           <KakeboStats
             title="Потрачено"
             value={data?.summary.totalSpent || 0}
-            subtitle={`Лимит: ${data?.settings.monthLimit || 'не установлен'}`}
-            color={isOverLimit ? 'red' : 'green'}
+            subtitle={
+              data?.settings.monthLimit 
+                ? `Лимит: ${data.settings.monthLimit} у.е. | Осталось: ${remainingLimit?.toFixed(0) || 0} у.е.`
+                : 'Лимит не установлен'
+            }
+            color={isOverLimit ? 'red' : data?.settings.monthLimit ? 'green' : 'gray'}
+            percent={limitPercent}
+            showProgress={!!data?.settings.monthLimit}
           />
         </Grid.Col>
         <Grid.Col span={{ base: 12, md: 6 }}>
