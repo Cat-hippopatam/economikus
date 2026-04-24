@@ -649,6 +649,34 @@ author.get('/lessons', async (c) => {
   })
 })
 
+// === POST /author/lessons/upload-cover — загрузить обложку урока ===
+author.post('/lessons/upload-cover', async (c) => {
+  try {
+    const formData = await c.req.parseBody()
+    const cover = formData['cover'] as File | undefined
+
+    if (!cover || !(cover instanceof File)) {
+      return c.json({ error: 'Файл обложки не найден' }, 400)
+    }
+
+    console.log('[Lesson Cover Upload] Received file:', cover.name, 'size:', cover.size, 'type:', cover.type)
+
+    // Используем mediaStorage для загрузки
+    const { mediaStorage } = await import('../lib/mediaStorage')
+    
+    const coverUrl = await mediaStorage.upload(cover, 'covers')
+    console.log('[Lesson Cover Upload] File uploaded to:', coverUrl)
+
+    return c.json({ coverUrl })
+  } catch (error) {
+    console.error('[Lesson Cover Upload] Error:', error)
+    if (error instanceof Error) {
+      return c.json({ error: error.message }, 400)
+    }
+    return c.json({ error: 'Ошибка загрузки обложки' }, 500)
+  }
+})
+
 // === POST /author/lessons — создать урок ===
 author.post('/lessons', async (c) => {
   try {
