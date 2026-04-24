@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Box, Table, Text, Paper, Group, Badge, TextInput, ActionIcon, Button, Modal, NumberInput, Select, Switch } from '@mantine/core'
+import { Box, Table, Text, Paper, Group, Badge, TextInput, ActionIcon, Button, Modal, NumberInput, Select, Switch, Stack, SimpleGrid, ScrollArea } from '@mantine/core'
 import { Search, Pencil, Trash2, Calendar } from 'lucide-react'
 import { useDeleteKakeboEntry, useUpdateKakeboEntry } from '@/hooks/useKakebo'
 import type { KakeboEntry, KakeboCategory } from '@/types/kakebo'
@@ -86,39 +86,89 @@ export function KakeboList({ entries, isLoading, onRefresh }: KakeboListProps) {
           value={searchTerm}
           onChange={(e) => setSearchTerm(e.currentTarget.value)}
           leftSection={<Search size={16} />}
-          w={250}
+          w={{ base: 150, sm: 250 }}
         />
       </Group>
 
-      <Table highlightOnHover stickyHeader>
-        <Table.Thead>
-          <Table.Tr>
-            <Table.Th><Calendar size={16} /></Table.Th>
-            <Table.Th>Категория</Table.Th>
-            <Table.Th>Описание</Table.Th>
-            <Table.Th>Сумма</Table.Th>
-            <Table.Th>Тип</Table.Th>
-            <Table.Th>Действия</Table.Th>
-          </Table.Tr>
-        </Table.Thead>
-        <Table.Tbody>
-          {filteredEntries.map((entry) => (
-            <Table.Tr key={entry.id}>
-              <Table.Td>{new Date(entry.date).toLocaleDateString('ru-RU')}</Table.Td>
-              <Table.Td>
-                <Badge color={CATEGORY_COLORS[entry.category]}>
+      {/* Таблица для десктопа */}
+      <ScrollArea h={{ base: 'auto', lg: 400 }} type="auto">
+        <Table highlightOnHover stickyHeader visibleFrom="lg">
+          <Table.Thead>
+            <Table.Tr>
+              <Table.Th><Calendar size={16} /></Table.Th>
+              <Table.Th>Категория</Table.Th>
+              <Table.Th>Описание</Table.Th>
+              <Table.Th>Сумма</Table.Th>
+              <Table.Th>Тип</Table.Th>
+              <Table.Th>Действия</Table.Th>
+            </Table.Tr>
+          </Table.Thead>
+          <Table.Tbody>
+            {filteredEntries.map((entry) => (
+              <Table.Tr key={entry.id}>
+                <Table.Td>{new Date(entry.date).toLocaleDateString('ru-RU')}</Table.Td>
+                <Table.Td>
+                  <Badge color={CATEGORY_COLORS[entry.category]}>
+                    {CATEGORY_LABELS[entry.category]}
+                  </Badge>
+                </Table.Td>
+                <Table.Td>{entry.description}</Table.Td>
+                <Table.Td fw={700}>{entry.amount.toFixed(2)} у.е.</Table.Td>
+                <Table.Td>
+                  <Badge variant={entry.isNecessary ? 'light' : 'filled'} color={entry.isNecessary ? 'green' : 'orange'}>
+                    {entry.isNecessary ? 'Необходимо' : 'Необязательно'}
+                  </Badge>
+                </Table.Td>
+                <Table.Td>
+                  <Group gap="xs" justify="flex-end">
+                    <ActionIcon onClick={() => handleEdit(entry)} variant="light">
+                      <Pencil size={16} />
+                    </ActionIcon>
+                    <ActionIcon
+                      onClick={() => {
+                        setEntryToDelete(entry.id)
+                        setDeleteModalOpened(true)
+                      }}
+                      color="red"
+                      variant="light"
+                    >
+                      <Trash2 size={16} />
+                    </ActionIcon>
+                  </Group>
+                </Table.Td>
+              </Table.Tr>
+            ))}
+          </Table.Tbody>
+        </Table>
+      </ScrollArea>
+
+      {/* Карточки для мобильных */}
+      <SimpleGrid cols={1} spacing="sm" hiddenFrom="lg">
+        {filteredEntries.map((entry) => (
+          <Paper key={entry.id} p="sm" withBorder>
+            <Stack gap="xs">
+              <Group justify="space-between">
+                <Group gap="xs">
+                  <Calendar size={16} color="var(--mantine-color-blue-6)" />
+                  <Text size="sm">{new Date(entry.date).toLocaleDateString('ru-RU')}</Text>
+                </Group>
+                <Badge color={CATEGORY_COLORS[entry.category]} size="sm">
                   {CATEGORY_LABELS[entry.category]}
                 </Badge>
-              </Table.Td>
-              <Table.Td>{entry.description}</Table.Td>
-              <Table.Td fw={700}>{entry.amount.toFixed(2)} у.е.</Table.Td>
-              <Table.Td>
-                <Badge variant={entry.isNecessary ? 'light' : 'filled'} color={entry.isNecessary ? 'green' : 'orange'}>
-                  {entry.isNecessary ? 'Необходимо' : 'Необязательно'}
-                </Badge>
-              </Table.Td>
-              <Table.Td>
-                <Group gap="xs" justify="flex-end">
+              </Group>
+              <Text size="md" fw={500}>{entry.description}</Text>
+              <Group justify="space-between" align="flex-end">
+                <Stack gap={0}>
+                  <Text size="xs" c="dimmed">Сумма</Text>
+                  <Text size="lg" fw={700}>{entry.amount.toFixed(2)} у.е.</Text>
+                </Stack>
+                <Stack gap={0}>
+                  <Text size="xs" c="dimmed">Тип</Text>
+                  <Badge variant={entry.isNecessary ? 'light' : 'filled'} color={entry.isNecessary ? 'green' : 'orange'} size="sm">
+                    {entry.isNecessary ? 'Необходимо' : 'Необязательно'}
+                  </Badge>
+                </Stack>
+                <Group gap="xs">
                   <ActionIcon onClick={() => handleEdit(entry)} variant="light">
                     <Pencil size={16} />
                   </ActionIcon>
@@ -133,11 +183,12 @@ export function KakeboList({ entries, isLoading, onRefresh }: KakeboListProps) {
                     <Trash2 size={16} />
                   </ActionIcon>
                 </Group>
-              </Table.Td>
-            </Table.Tr>
-          ))}
-        </Table.Tbody>
-      </Table>
+              </Group>
+            </Stack>
+          </Paper>
+        ))}
+      </SimpleGrid>
+
       <Group justify="flex-end" mt="sm">
         <Text size="sm" c="dimmed">
           Всего записей: {filteredEntries.length}

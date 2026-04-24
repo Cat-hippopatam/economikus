@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Group, TextInput, Select, NumberInput, Switch, Text, Button } from '@mantine/core'
+import { Group, TextInput, Select, NumberInput, Switch, Text, Button, Stack } from '@mantine/core'
 import { Calendar } from 'lucide-react'
 import { useAddKakeboEntry } from '@/hooks/useKakebo'
 import type { KakeboCategory } from '@/types/kakebo'
@@ -64,53 +64,59 @@ export function KakeboForm({ onSuccess }: KakeboFormProps) {
 
   return (
     <form onSubmit={(e) => { e.preventDefault(); handleSubmit(); }}>
-      <Group gap="sm" grow>
-        <TextInput
-          label="Дата"
-          type="date"
-          value={formData.date}
-          onChange={(e) => setFormData({ ...formData, date: e.currentTarget.value })}
-          leftSection={<Calendar size={16} />}
-        />
-        <Select
-          label="Категория"
-          data={CATEGORIES}
-          value={formData.category}
-          onChange={(v) => setFormData({ ...formData, category: v as KakeboCategory })}
-          searchable
-        />
+      <Stack gap="sm">
+        <Group gap="sm" wrap="wrap" >
+          <TextInput
+            label="Дата"
+            type="date"
+            value={formData.date}
+            onChange={(e) => setFormData({ ...formData, date: e.currentTarget.value })}
+            leftSection={<Calendar size={16} />}
+            style={{ flex: 1, minWidth: 150 }}
+          />
+          <Select
+            label="Категория"
+            data={CATEGORIES}
+            value={formData.category}
+            onChange={(v) => setFormData({ ...formData, category: v as KakeboCategory })}
+            searchable
+            style={{ flex: 1, minWidth: 180 }}
+          />
+        </Group>
         <TextInput
           label="Описание"
           placeholder="Что купили?"
           value={formData.description}
           onChange={(e) => setFormData({ ...formData, description: e.currentTarget.value })}
         />
-        <NumberInput
-          label="Сумма (у.е.)"
-          placeholder="0"
-          min={0}
-          step={10}
-          value={formData.amount}
-          onChange={(v) => setFormData({ ...formData, amount: v as number })}
-        />
-        <Switch
-          label="Необязательно"
-          checked={formData.isNecessary}
-          onChange={(e) => setFormData({ ...formData, isNecessary: e.currentTarget.checked })}
-          mt={30}
-        />
-        <Button
-          type="submit"
-          w={120}
-          loading={addMutation.isPending}
-        >
-          Добавить
-        </Button>
-      </Group>
-      {error && (
-        <Group mt="xs">
-          <Text c="red" size="sm">{error}</Text>
+        <Group gap="sm" align="flex-end">
+          <NumberInput
+            label="Сумма (у.е.)"
+            placeholder="0"
+            min={0}
+            step={10}
+            value={formData.amount}
+            onChange={(v) => setFormData({ ...formData, amount: v as number })}
+            style={{ flex: 1 }}
+          />
+          <Switch
+            label="Необязательно"
+            checked={formData.isNecessary}
+            onChange={(e) => setFormData({ ...formData, isNecessary: e.currentTarget.checked })}
+            style={{ flex: 1 }}
+          />
+          <Button
+            type="submit"
+            w={120}
+            loading={addMutation.isPending}
+            style={{ flex: 1 }}
+          >
+            Добавить
+          </Button>
         </Group>
+      </Stack>
+      {error && (
+        <Text c="red" size="sm" mt="xs">{error}</Text>
       )}
     </form>
   )
