@@ -1,0 +1,135 @@
+import { useState } from 'react'
+import { Box, Title, Grid, Paper, Text, Group, Select, Flex, Button, Modal } from '@mantine/core'
+import { DatePickerInput } from '@mantine/dates'
+import { Plus, Settings } from 'lucide-react'
+import { KakeboStats } from '@/components/kakebo/KakeboStats'
+import { KakeboForm } from '@/components/kakebo/KakeboForm'
+import { KakeboList } from '@/components/kakebo/KakeboList'
+import { KakeboReflection } from '@/components/kakebo/KakeboReflection'
+import { useKakeboMonth, useKakeboSettings, useKakeboReflection } from '@/hooks/useKakebo'
+import { modals } from '@mantine/modals'
+
+export function KakeboPage() {
+  const [currentDate, setCurrentDate] = useState(new Date())
+  const [settingsModalOpened, setSettingsModalOpened] = useState(false)
+  const year = currentDate.getFullYear()
+  const month = currentDate.getMonth() + 1
+
+  const { data, isLoading, refetch } = useKakeboMonth(year, month)
+  const settingsMutation = useKakeboSettings()
+  const reflectionQuery = useKakeboReflection(year, month)
+  const [tempMonthLimit, setTempMonthLimit] = useState(data?.settings.monthLimit?.toString() || '')
+
+  const handleMonthChange = (date: Date | null) => {
+    if (date) {
+      setCurrentDate(date)
+      setTempMonthLimit(data?.settings.monthLimit?.toString() || '')
+    }
+  }
+
+  const handleSaveSettings = () => {
+    const limit = tempMonthLimit ? parseFloat(tempMonthLimit) : null
+    settingsMutation.mutate({ monthLimit: limit })
+    setSettingsModalOpened(false)
+  }
+
+  const isOverLimit = data?.settings.monthLimit && data.summary.totalSpent > data.settings.monthLimit
+
+  return (
+    <Box p="md">
+      <Flex justify="space-between" align="center" mb="lg">
+        <Title order={1}>Kakebo — Учёт условных единиц</Title>
+        <Group>
+          <DatePickerInput
+            value={currentDate}
+            onChange={handleMonthChange}
+            type="month"
+            placeholder="Выберите месяц"
+            w={200}
+          />
+          <Button
+            leftSection={<Settings size={16} />}
+            onClick={() => {
+              setTempMonthLimit(data?.settings.monthLimit?.toString() || '')
+              setSettingsModalOpened(true)
+            }}
+          >
+            Лимит
+          </Button>
+        </Group>
+      </Flex>
+
+      {/* Статистика */}
+      <Grid mb="lg">
+        <Grid.Col span={{ base: 12, md: 6 }}>
+          <KakeboStats
+            title="Потрачено"
+            value={data?.summary.totalSpent || 0}
+            subtitle={`Лимит: ${data?.settings.monthLimit || 'не установлен'}`}
+            color={isOverLimit ? 'red' : 'green'}
+          />
+        </Grid.Col>
+        <Grid.Col span={{ base: 12, md: 6 }}>
+          <KakeboStats
+            title="Дней с записями"
+            value={`${data?.summary.daysWithEntries || 0}/${data?.summary.daysInMonth || 0}`}
+            color="blue"
+          />
+        </Grid.Col>
+      </Grid>
+
+      {/* Форма добавления */}
+      <Paper p="md" mb="md" withBorder>
+        <Group mb="sm">
+          <Plus size={20} />
+          <Text fw={500}>Добавить запись</Text>
+        </Group>
+        <KakeboForm onSuccess={() => refetch()} />
+      </Paper>
+
+      {/* Список трат */}
+      <KakeboList entries={data?.entries || []} isLoading={isLoading} onRefresh={refetch} />
+
+      {/* Рефлексия */}
+      {reflectionQuery.data && (
+        <KakeboReflection
+          reflection={reflectionQuery.data}
+          onRefresh={reflectionQuery.refetch}
+        />
+      )}
+
+      {/* Modal настроек */}
+      <Modal
+        opened={settingsModalOpened}
+        onClose={() => setSettingsModalOpened(false)}
+        title="Настройки месячного лимита"
+        centered
+      >
+        <Group gap="sm" mt="md">
+          <Select
+            label="Месячный лимит (у.е.)"
+            data={[
+              { value: '1000', label: '1000 у.е.' },
+              { value: '2000', label: '2000 у.е.' },
+              { value: '5000', label: '5000 у.е.' },
+              { value: '10000', label: '10000 у.е.' },
+            ]}
+            value={tempMonthLimit}
+            onChange={setTempMonthLimit}
+            clearable
+            placeholder="Без лимита"
+            w="100%"
+          />
+        </Group>
+        <Group justify="flex-end" mt="md">
+          <Button variant="subtle" onClick={() => setSettingsModalOpened(false)}>
+            Отмена
+          </Button>
+          <Button onClick={handleSaveSettings} loading={settingsMutation.isPending}>
+            Сохранить
+          </Button>
+        </Group>
+      </Modal>
+    </Box>
+  )
+}

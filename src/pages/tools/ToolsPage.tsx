@@ -1,7 +1,7 @@
 // src/pages/tools/ToolsPage.tsx
 import { Link } from 'react-router-dom'
 import { Container, Title, Text, SimpleGrid, Card, Group, ThemeIcon, Stack, Button, Badge } from '@mantine/core'
-import { Calculator, TrendingUp, PiggyBank, Percent, DollarSign, Wrench, ArrowRight, Home, Wallet } from 'lucide-react'
+import { Calculator, TrendingUp, PiggyBank, Percent, DollarSign, Wrench, ArrowRight, Home, Wallet, BookText } from 'lucide-react'
 
 interface Tool {
   id: string
@@ -66,6 +66,15 @@ const TOOLS: Tool[] = [
     icon: Wallet,
     link: '/tools/budget',
     status: 'coming',
+    category: 'Бюджет'
+  },
+  {
+    id: 'kakebo',
+    title: 'Kakebo',
+    description: 'Японская система ведения бюджета',
+    icon: BookText,
+    link: '/tools/kakebo',
+    status: 'ready',
     category: 'Бюджет'
   }
 ]

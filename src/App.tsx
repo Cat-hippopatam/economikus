@@ -15,6 +15,7 @@ const CatalogPage = lazy(() => import('./pages/catalog/CatalogPage'))
 const CoursePage = lazy(() => import('./pages/courses/CoursePage'))
 const LessonPage = lazy(() => import('./pages/lessons/LessonPage'))
 const ToolsPage = lazy(() => import('./pages/tools/ToolsPage'))
+const KakeboPage = lazy(() => import('./pages/tools/KakeboPage'))
 const InfoPage = lazy(() => import('./pages/info/InfoPage'))
 const PostulatesPage = lazy(() => import('./pages/postulates/PostulatesPage'))
 const TermsPage = lazy(() => import('./pages/legal/TermsPage'))
@@ -69,6 +70,7 @@ export default function App() {
           <Route path="/calculators" element={<Suspense fallback={<PageLoader />}><CalculatorsPage /></Suspense>} />
           <Route path="/calculators/:slug" element={<Suspense fallback={<PageLoader />}><CalculatorPage /></Suspense>} />
           <Route path="/tools" element={<Suspense fallback={<PageLoader />}><ToolsPage /></Suspense>} />
+          <Route path="/tools/kakebo" element={<Suspense fallback={<PageLoader />}><KakeboPage /></Suspense>} />
           <Route path="/info" element={<Suspense fallback={<PageLoader />}><InfoPage /></Suspense>} />
           <Route path="/postulates" element={<Suspense fallback={<PageLoader />}><PostulatesPage /></Suspense>} />
           <Route path="/terms" element={<Suspense fallback={<PageLoader />}><TermsPage /></Suspense>} />
