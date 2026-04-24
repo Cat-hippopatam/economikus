@@ -18,6 +18,7 @@ import moderationRoutes from './routes/moderation.routes'
 import authorRoutes from './routes/author.routes'
 import progressRoutes from './routes/progress.routes'
 import subscriptionsRoutes from './routes/subscriptions.routes'
+import kakeboRoutes from './routes/kakebo.routes'
 
 const app = new Hono()
 
@@ -1602,6 +1603,7 @@ app.route('/api/admin/moderation', moderationRoutes)
 app.route('/api/author', authorRoutes)
 app.route('/api/progress', progressRoutes)
 app.route('/api/subscriptions', subscriptionsRoutes)
+app.route('/api/kakebo', kakeboRoutes)
 
 // Health check
 app.get('/api/health', (c) => c.json({ status: 'ok' }))
