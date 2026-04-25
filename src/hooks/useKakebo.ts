@@ -89,3 +89,177 @@ export function useSaveKakeboReflection() {
     }
   })
 }
+
+// ==================== v2.0 Новые хуки ====================
+
+/**
+ * Хук для управления категориями
+ */
+export function useKakeboCategories(params?: { type?: 'SYSTEM' | 'CUSTOM'; includeChildren?: boolean }) {
+  return useQuery({
+    queryKey: ['kakebo', 'categories', params],
+    queryFn: () => kakeboService.getCategories(params),
+    staleTime: 1000 * 60 * 5,
+  })
+}
+
+export function useCreateCategory() {
+  const queryClient = useQueryClient()
+  
+  return useMutation({
+    mutationFn: kakeboService.createCategory,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['kakebo', 'categories'] })
+      notify('Готово', 'Категория создана', 'green')
+    },
+    onError: (error: any) => {
+      notify('Ошибка', error.message || 'Не удалось создать категорию', 'red')
+    }
+  })
+}
+
+export function useUpdateCategory() {
+  const queryClient = useQueryClient()
+  
+  return useMutation({
+    mutationFn: ({ id, data }: { id: string; data: Partial<any> }) =>
+      kakeboService.updateCategory(id, data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['kakebo', 'categories'] })
+      notify('Готово', 'Категория обновлена', 'green')
+    }
+  })
+}
+
+export function useDeleteCategory() {
+  const queryClient = useQueryClient()
+  
+  return useMutation({
+    mutationFn: kakeboService.deleteCategory,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['kakebo', 'categories'] })
+      notify('Готово', 'Категория удалена', 'green')
+    }
+  })
+}
+
+/**
+ * Хук для управления целями на месяц
+ */
+export function useKakeboGoal(year: number, month: number) {
+  return useQuery({
+    queryKey: ['kakebo', 'goal', year, month],
+    queryFn: () => kakeboService.getGoal(year, month),
+    select: (data) => data.goal,
+    staleTime: 1000 * 60 * 5,
+  })
+}
+
+export function useSaveKakeboGoal() {
+  const queryClient = useQueryClient()
+  
+  return useMutation({
+    mutationFn: kakeboService.saveGoal,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['kakebo', 'goal'] })
+      notify('Готово', 'Цель сохранена', 'green')
+    },
+    onError: (error: any) => {
+      notify('Ошибка', error.message || 'Не удалось сохранить цель', 'red')
+    }
+  })
+}
+
+/**
+ * Хук для управления фиксированными тратами
+ */
+export function useKakeboFixedExpenses(params?: { isActive?: boolean; categoryId?: string }) {
+  return useQuery({
+    queryKey: ['kakebo', 'fixed-expenses', params],
+    queryFn: () => kakeboService.getFixedExpenses(params),
+    staleTime: 1000 * 60 * 5,
+  })
+}
+
+export function useCreateFixedExpense() {
+  const queryClient = useQueryClient()
+  
+  return useMutation({
+    mutationFn: kakeboService.createFixedExpense,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['kakebo', 'fixed-expenses'] })
+      notify('Готово', 'Фиксированная трата создана', 'green')
+    },
+    onError: (error: any) => {
+      notify('Ошибка', error.message || 'Не удалось создать фиксированную трату', 'red')
+    }
+  })
+}
+
+export function useUpdateFixedExpense() {
+  const queryClient = useQueryClient()
+  
+  return useMutation({
+    mutationFn: ({ id, data }: { id: string; data: Partial<any> }) =>
+      kakeboService.updateFixedExpense(id, data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['kakebo', 'fixed-expenses'] })
+      notify('Готово', 'Фиксированная трата обновлена', 'green')
+    }
+  })
+}
+
+export function useDeleteFixedExpense() {
+  const queryClient = useQueryClient()
+  
+  return useMutation({
+    mutationFn: kakeboService.deleteFixedExpense,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['kakebo', 'fixed-expenses'] })
+      notify('Готово', 'Фиксированная трата удалена', 'green')
+    }
+  })
+}
+
+/**
+ * Хук для управления бюджетом
+ */
+export function useKakeboBudget(year: number, month: number) {
+  return useQuery({
+    queryKey: ['kakebo', 'budget', year, month],
+    queryFn: () => kakeboService.getBudget(year, month),
+    staleTime: 1000 * 60 * 5,
+  })
+}
+
+export function useUpdateKakeboBudget() {
+  const queryClient = useQueryClient()
+  
+  return useMutation({
+    mutationFn: ({ year, month, data }: { year: number; month: number; data: Partial<any> }) =>
+      kakeboService.updateBudget(year, month, data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['kakebo', 'budget'] })
+      notify('Готово', 'Бюджет обновлён', 'green')
+    }
+  })
+}
+
+/**
+ * Хук для генерации записей из фиксированных трат
+ */
+export function useGenerateKakeboEntries() {
+  const queryClient = useQueryClient()
+  
+  return useMutation({
+    mutationFn: ({ year, month }: { year: number; month: number }) =>
+      kakeboService.generateEntries(year, month),
+    onSuccess: (_, variables) => {
+      queryClient.invalidateQueries({ queryKey: ['kakebo', variables.year, variables.month] })
+      notify('Готово', 'Записи сгенерированы', 'green')
+    },
+    onError: (error: any) => {
+      notify('Ошибка', error.message || 'Не удалось сгенерировать записи', 'red')
+    }
+  })
+}

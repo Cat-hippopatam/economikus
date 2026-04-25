@@ -1,15 +1,9 @@
 import { useState } from 'react'
-import { Group, TextInput, Select, NumberInput, Switch, Text, Button, Stack } from '@mantine/core'
+import { Group, TextInput, NumberInput, Switch, Text, Button, Stack } from '@mantine/core'
 import { Calendar } from 'lucide-react'
 import { useAddKakeboEntry } from '@/hooks/useKakebo'
-import type { KakeboCategory } from '@/types/kakebo'
-
-const CATEGORIES: { value: KakeboCategory; label: string }[] = [
-  { value: 'LIFE', label: 'Жизнь (еда, транспорт, жильё)' },
-  { value: 'CULTURE', label: 'Культура (книги, развлечения)' },
-  { value: 'EXTRA', label: 'Дополнительное (покупки)' },
-  { value: 'UNEXPECTED', label: 'Непредвиденное' },
-]
+import { CategorySelector } from './CategorySelector'
+import type { KakeboCategoryLegacy } from '@/types/kakebo'
 
 interface KakeboFormProps {
   onSuccess?: () => void
@@ -19,7 +13,8 @@ export function KakeboForm({ onSuccess }: KakeboFormProps) {
   const addMutation = useAddKakeboEntry()
   const [formData, setFormData] = useState({
     date: new Date().toISOString().split('T')[0],
-    category: 'LIFE' as KakeboCategory,
+    categoryId: null as string | null,
+    categoryOld: 'LIFE' as KakeboCategoryLegacy, // fallback для совместимости
     description: '',
     amount: 0,
     isNecessary: false,
@@ -41,14 +36,19 @@ export function KakeboForm({ onSuccess }: KakeboFormProps) {
 
     addMutation.mutate(
       {
-        ...formData,
+        date: formData.date,
+        categoryId: formData.categoryId,
+        categoryOld: formData.categoryOld,
+        description: formData.description,
         amount: parseFloat(formData.amount.toString()),
+        isNecessary: formData.isNecessary,
       },
       {
         onSuccess: () => {
           setFormData({
             date: new Date().toISOString().split('T')[0],
-            category: 'LIFE',
+            categoryId: null,
+            categoryOld: 'LIFE',
             description: '',
             amount: 0,
             isNecessary: false,
@@ -62,10 +62,14 @@ export function KakeboForm({ onSuccess }: KakeboFormProps) {
     )
   }
 
+  const handleCategoryChange = (categoryId: string | null) => {
+    setFormData({ ...formData, categoryId })
+  }
+
   return (
     <form onSubmit={(e) => { e.preventDefault(); handleSubmit(); }}>
       <Stack gap="sm">
-        <Group gap="sm" wrap="wrap" >
+        <Group gap="sm" wrap="wrap">
           <TextInput
             label="Дата"
             type="date"
@@ -74,13 +78,10 @@ export function KakeboForm({ onSuccess }: KakeboFormProps) {
             leftSection={<Calendar size={16} />}
             style={{ flex: 1, minWidth: 150 }}
           />
-          <Select
-            label="Категория"
-            data={CATEGORIES}
-            value={formData.category}
-            onChange={(v) => setFormData({ ...formData, category: v as KakeboCategory })}
-            searchable
-            style={{ flex: 1, minWidth: 180 }}
+          <CategorySelector
+            value={formData.categoryId}
+            onChange={handleCategoryChange}
+            placeholder="Выберите категорию"
           />
         </Group>
         <TextInput

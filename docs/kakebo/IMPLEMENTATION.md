@@ -50,17 +50,17 @@
 | API Цели на месяц | ✅ Готово | Создание/обновление целей |
 | API Фиксированные траты | ✅ Готово | CRUD с автогенерацией записей |
 | API Бюджетное уравнение | ✅ Готово | Расчёт income - fixed - goals = remaining |
-| Автосоздание записей | ⬜ В планах | Генерация из fixed expenses |
-| Frontend Категории | ⬜ В планах | CategoryManager, CategorySelector |
-| Frontend Цели | ⬜ В планах | MonthlyGoalCard |
-| Frontend Фикс. траты | ⬜ В планах | FixedExpensesManager |
-| Дашборд с графиками | ⬜ В планах | Recharts визуализация |
+| Автосоздание записей | ✅ Готово | Генерация из fixed expenses при создании/удалении |
+| Frontend Категории | ✅ Готово | CategoryManager, CategorySelector |
+| Frontend Цели | ✅ Готово | MonthlyGoalCard |
+| Frontend Фикс. траты | ✅ Готово | FixedExpensesManager |
+| Frontend Бюджетное уравнение | ✅ Готово | BudgetEquation с прогресс-баром |
+| Дашборд с графиками | ✅ Готово | Pie, Bar, Line charts, фильтры, экспорт |
 
 ### ⏳ В планах
 
-- [ ] Графики по категориям
 - [ ] Экспорт данных (CSV/Excel)
-- [ ] Уведомления о приближении к лимиту
+- [ ] Уведомления о приближении к лимите
 - [ ] Годовая статистика
 - [ ] Сравнение с предыдущими месяцами
 

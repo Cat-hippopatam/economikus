@@ -1,10 +1,14 @@
 import { useState } from 'react'
-import { Box, Title, Grid, Paper, Text, Group, Select, Flex, Button, Modal, Input } from '@mantine/core'
-import { Plus, Settings } from 'lucide-react'
+import { Box, Title, Grid, Paper, Text, Group, Select, Flex, Button, Modal, Input, Anchor } from '@mantine/core'
+import { Plus, Settings, BarChart } from 'lucide-react'
 import { KakeboStats } from '@/components/kakebo/KakeboStats'
 import { KakeboForm } from '@/components/kakebo/KakeboForm'
 import { KakeboList } from '@/components/kakebo/KakeboList'
 import { KakeboReflection } from '@/components/kakebo/KakeboReflection'
+import { CategoryManager } from '@/components/kakebo/CategoryManager'
+import { FixedExpensesManager } from '@/components/kakebo/FixedExpensesManager'
+import { MonthlyGoalCard } from '@/components/kakebo/MonthlyGoalCard'
+import { BudgetEquation } from '@/components/kakebo/BudgetEquation'
 import { useKakeboMonth, useKakeboSettings, useKakeboReflection } from '@/hooks/useKakebo'
 
 export function KakeboPage() {
@@ -35,7 +39,15 @@ export function KakeboPage() {
   return (
     <Box p="md">
       <Flex justify="space-between" align="center" mb="lg">
-        <Title order={1}>Kakebo — Учёт условных единиц</Title>
+        <Group gap="md">
+          <Title order={1}>Kakebo — Учёт условных единиц</Title>
+          <Anchor href="/tools/kakebo/dashboard" target="_blank" size="sm" c="blue">
+            <Group gap="xs">
+              <BarChart size={16} />
+              <Text size="sm">Дашборд ↗</Text>
+            </Group>
+          </Anchor>
+        </Group>
         <Group>
           <Input
             type="month"
@@ -84,6 +96,12 @@ export function KakeboPage() {
         </Grid.Col>
       </Grid>
 
+      {/* Цель на месяц */}
+      <MonthlyGoalCard year={year} month={month} onRefresh={refetch} />
+
+      {/* Бюджетное уравнение */}
+      <BudgetEquation year={year} month={month} />
+
       {/* Форма добавления */}
       <Paper p="md" mb="md" withBorder>
         <Group mb="sm">
@@ -95,6 +113,16 @@ export function KakeboPage() {
 
       {/* Список трат */}
       <KakeboList entries={data?.entries || []} isLoading={isLoading} onRefresh={refetch} />
+
+      {/* Фиксированные траты */}
+      <Box mt="lg">
+        <FixedExpensesManager />
+      </Box>
+
+      {/* Управление категориями */}
+      <Box mt="lg">
+        <CategoryManager />
+      </Box>
 
       {/* Рефлексия */}
       {reflectionQuery.data && (

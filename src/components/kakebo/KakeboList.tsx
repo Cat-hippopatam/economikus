@@ -1,21 +1,38 @@
 import { useState } from 'react'
-import { Box, Table, Text, Paper, Group, Badge, TextInput, ActionIcon, Button, Modal, NumberInput, Select, Switch, Stack, SimpleGrid, ScrollArea } from '@mantine/core'
+import { Box, Table, Text, Paper, Group, Badge, TextInput, ActionIcon, Button, Modal, NumberInput, Switch, Stack, SimpleGrid, ScrollArea } from '@mantine/core'
 import { Search, Pencil, Trash2, Calendar } from 'lucide-react'
 import { useDeleteKakeboEntry, useUpdateKakeboEntry } from '@/hooks/useKakebo'
-import type { KakeboEntry, KakeboCategory } from '@/types/kakebo'
+import { CategorySelector } from './CategorySelector'
+import type { KakeboEntry } from '@/types/kakebo'
 
-const CATEGORY_COLORS: Record<KakeboCategory, string> = {
+const CATEGORY_COLORS: Record<string, string> = {
   LIFE: 'blue',
   CULTURE: 'green',
   EXTRA: 'orange',
   UNEXPECTED: 'red',
 }
 
-const CATEGORY_LABELS: Record<KakeboCategory, string> = {
+const CATEGORY_LABELS: Record<string, string> = {
   LIFE: 'Жизнь',
   CULTURE: 'Культура',
   EXTRA: 'Дополнительное',
   UNEXPECTED: 'Непредвиденное',
+}
+
+const getCategoryInfo = (entry: KakeboEntry) => {
+  if (entry.category?.name) {
+    return {
+      label: entry.category.name,
+      color: entry.category.color || 'blue',
+    }
+  }
+  if (entry.categoryOld) {
+    return {
+      label: CATEGORY_LABELS[entry.categoryOld] || entry.categoryOld,
+      color: CATEGORY_COLORS[entry.categoryOld] || 'gray',
+    }
+  }
+  return { label: 'Без категории', color: 'gray' }
 }
 
 interface KakeboListProps {
@@ -108,9 +125,14 @@ export function KakeboList({ entries, isLoading, onRefresh }: KakeboListProps) {
               <Table.Tr key={entry.id}>
                 <Table.Td>{new Date(entry.date).toLocaleDateString('ru-RU')}</Table.Td>
                 <Table.Td>
-                  <Badge color={CATEGORY_COLORS[entry.category]}>
-                    {CATEGORY_LABELS[entry.category]}
-                  </Badge>
+                  {(() => {
+                    const info = getCategoryInfo(entry)
+                    return (
+                      <Badge style={{ backgroundColor: info.color, color: 'white' }}>
+                        {info.label}
+                      </Badge>
+                    )
+                  })()}
                 </Table.Td>
                 <Table.Td>{entry.description}</Table.Td>
                 <Table.Td fw={700}>{entry.amount.toFixed(2)} у.е.</Table.Td>
@@ -152,9 +174,14 @@ export function KakeboList({ entries, isLoading, onRefresh }: KakeboListProps) {
                   <Calendar size={16} color="var(--mantine-color-blue-6)" />
                   <Text size="sm">{new Date(entry.date).toLocaleDateString('ru-RU')}</Text>
                 </Group>
-                <Badge color={CATEGORY_COLORS[entry.category]} size="sm">
-                  {CATEGORY_LABELS[entry.category]}
-                </Badge>
+                {(() => {
+                  const info = getCategoryInfo(entry)
+                  return (
+                    <Badge style={{ backgroundColor: info.color, color: 'white' }} size="sm">
+                      {info.label}
+                    </Badge>
+                  )
+                })()}
               </Group>
               <Text size="md" fw={500}>{entry.description}</Text>
               <Group justify="space-between" align="flex-end">
@@ -246,7 +273,8 @@ function EditEntryForm({
 }) {
   const [formData, setFormData] = useState<Partial<KakeboEntry>>({
     date: entry.date.split('T')[0],
-    category: entry.category,
+    categoryId: entry.categoryId || null,
+    categoryOld: entry.categoryOld,
     description: entry.description,
     amount: entry.amount,
     isNecessary: entry.isNecessary,
@@ -258,13 +286,12 @@ function EditEntryForm({
 
   return (
     <Box>
-      <Select
-        label="Категория"
-        data={Object.entries(CATEGORY_LABELS).map(([value, label]) => ({ value, label }))}
-        value={formData.category}
-        onChange={(v) => setFormData({ ...formData, category: v as KakeboCategory })}
-        mb="md"
-      />
+      <Group gap="sm" mb="md">
+        <CategorySelector
+          value={formData.categoryId || null}
+          onChange={(v) => setFormData({ ...formData, categoryId: v })}
+        />
+      </Group>
       <TextInput
         label="Описание"
         value={formData.description}

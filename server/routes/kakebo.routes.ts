@@ -4,6 +4,11 @@ import { prisma } from '../db'
 import { requireAuth, getCurrentProfile } from '../middleware/auth'
 import { AppError } from '../lib/errors'
 import { CategoryType } from '@prisma/client'
+import {
+  generateFixedExpensesForMonth,
+  createFutureEntriesForFixedExpense,
+  deleteFutureEntriesForFixedExpense,
+} from '../services/kakebo.service'
 
 const kakebo = new Hono()
 
@@ -162,32 +167,37 @@ kakebo.post('/', async (c) => {
 
   const body = await c.req.json()
   
-  // Пробуем новую схему с categoryId
-  let parsed = KakeboEntrySchema.safeParse(body)
+  // Сначала пробуем старую схему с category enum (для обратной совместимости)
+  let parsed = KakeboEntrySchemaLegacy.safeParse(body)
+  let data: any = null
   
-  // Если не прошло, пробуем старую схему с category enum
-  if (!parsed.success) {
-    parsed = KakeboEntrySchemaLegacy.safeParse(body)
-  }
-
-  if (!parsed.success) {
-    throw new AppError(400, 'Ошибка валидации', 'VALIDATION_ERROR', parsed.error)
-  }
-
-  const data: any = parsed.data
-  const dateObj = new Date(data.date)
-
-  // Преобразуем старую схему в новую
-  if ('category' in data && data.category) {
-    // Старая схема - ставим по умолчанию системную категорию
+  if (parsed.success) {
+    // Преобразуем старую схему в новую
+    const legacyData = parsed.data
     const categoryMap: Record<string, string> = {
       'LIFE': 'sys-life',
       'CULTURE': 'sys-culture',
       'EXTRA': 'sys-extra',
       'UNEXPECTED': 'sys-unexpected',
     }
-    data.categoryId = categoryMap[data.category]
+    data = {
+      categoryId: categoryMap[legacyData.category],
+      category: legacyData.category,
+      date: legacyData.date,
+      description: legacyData.description,
+      amount: legacyData.amount,
+      isNecessary: legacyData.isNecessary,
+    }
+  } else {
+    // Если не прошло, пробуем новую схему с categoryId
+    parsed = KakeboEntrySchema.safeParse(body)
+    if (!parsed.success) {
+      throw new AppError(400, `Ошибка валидации: ${parsed.error.message}`)
+    }
+    data = parsed.data
   }
+
+  const dateObj = new Date(data.date)
 
   const entry = await prisma.kakeboEntry.create({
     data: {
@@ -200,7 +210,7 @@ kakebo.post('/', async (c) => {
       description: data.description,
       amount: data.amount,
       isNecessary: data.isNecessary,
-    }
+    },
   })
 
   return c.json({ message: 'Запись создана', entry }, 201)
@@ -325,7 +335,8 @@ kakebo.get('/categories', async (c) => {
     ],
   }
 
-  if (typeFilter) {
+  // Проверка: typeFilter должен быть валидным enum значением
+  if (typeFilter && (typeFilter === 'SYSTEM' || typeFilter === 'CUSTOM')) {
     where.type = typeFilter
   }
 
@@ -362,7 +373,7 @@ kakebo.post('/categories', async (c) => {
   const parsed = KakeboCategorySchema.safeParse(body)
 
   if (!parsed.success) {
-    throw new AppError(400, 'Ошибка валидации', 'VALIDATION_ERROR', parsed.error)
+    throw new AppError(400, `Ошибка валидации: ${parsed.error.message}`)
   }
 
   const { name, parentId, isFixed, isEssential, icon, color } = parsed.data
@@ -424,7 +435,7 @@ kakebo.put('/categories/:id', async (c) => {
   const parsed = KakeboCategorySchema.partial().safeParse(body)
 
   if (!parsed.success) {
-    throw new AppError(400, 'Ошибка валидации', 'VALIDATION_ERROR', parsed.error)
+    throw new AppError(400, `Ошибка валидации: ${parsed.error.message}`)
   }
 
   // Проверка существования и принадлежности
@@ -545,7 +556,7 @@ kakebo.post('/goals', async (c) => {
   const parsed = KakeboMonthlyGoalSchema.safeParse(body)
 
   if (!parsed.success) {
-    throw new AppError(400, 'Ошибка валидации', 'VALIDATION_ERROR', parsed.error)
+    throw new AppError(400, `Ошибка валидации: ${parsed.error.message}`)
   }
 
   const { year, month, promise, targetSave, achieved } = parsed.data
@@ -607,7 +618,7 @@ kakebo.post('/fixed-expenses', async (c) => {
   const parsed = KakeboFixedExpenseSchema.safeParse(body)
 
   if (!parsed.success) {
-    throw new AppError(400, 'Ошибка валидации', 'VALIDATION_ERROR', parsed.error)
+    throw new AppError(400, `Ошибка валидации: ${parsed.error.message}`)
   }
 
   const { categoryId, description, amount, dayOfMonth, startDate, endDate, notes } = parsed.data
@@ -649,7 +660,16 @@ kakebo.post('/fixed-expenses', async (c) => {
     },
   })
 
-  // TODO: Создать автоматические записи на 4 месяца вперёд
+  // Создать автоматические записи на 4 месяца вперёд
+  await createFutureEntriesForFixedExpense(
+    fixedExpense.id,
+    profile.id,
+    categoryId,
+    description,
+    amount,
+    category.isEssential,
+    dayOfMonth
+  )
 
   return c.json({ message: 'Фиксированная трата создана', fixedExpense }, 201)
 })
@@ -665,7 +685,7 @@ kakebo.put('/fixed-expenses/:id', async (c) => {
   const parsed = KakeboFixedExpenseSchema.partial().safeParse(body)
 
   if (!parsed.success) {
-    throw new AppError(400, 'Ошибка валидации', 'VALIDATION_ERROR', parsed.error)
+    throw new AppError(400, `Ошибка валидации: ${parsed.error.message}`)
   }
 
   // Проверка существования и принадлежности
@@ -721,11 +741,24 @@ kakebo.delete('/fixed-expenses/:id', async (c) => {
     throw new AppError(404, 'Фиксированная трата не найдена', 'NOT_FOUND')
   }
 
+  // Получить данные фиксированной траты перед удалением
+  const expenseData = await prisma.kakeboFixedExpense.findUnique({
+    where: { id },
+    select: { categoryId: true, dayOfMonth: true },
+  })
+
   await prisma.kakeboFixedExpense.delete({
     where: { id },
   })
 
-  // TODO: Удалить автоматически созданные будущие записи
+  // Удалить автоматические будущие записи
+  if (expenseData) {
+    await deleteFutureEntriesForFixedExpense(
+      profile.id,
+      expenseData.categoryId,
+      expenseData.dayOfMonth
+    )
+  }
 
   return c.json({ message: 'Фиксированная трата удалена' })
 })
@@ -792,6 +825,24 @@ kakebo.get('/budget/:year/:month', async (c) => {
   })
 })
 
+// ==================== POST /api/kakebo/generate ====================
+// Сгенерировать записи из фиксированных трат для указанного месяца
+kakebo.post('/generate', async (c) => {
+  const profile = getCurrentProfile(c)
+  if (!profile) throw new AppError(401, 'Требуется авторизация')
+
+  const body = await c.req.json()
+  const year = z.number().int().min(1900).max(2100).parse(body.year)
+  const month = z.number().int().min(1).max(12).parse(body.month)
+
+  const result = await generateFixedExpensesForMonth(profile.id, year, month)
+
+  return c.json({
+    message: 'Генерация завершена',
+    result,
+  })
+})
+
 // ==================== PUT /api/kakebo/budget/:year/:month ====================
 // Обновить бюджет (доход)
 kakebo.put('/budget/:year/:month', async (c) => {
@@ -804,7 +855,7 @@ kakebo.put('/budget/:year/:month', async (c) => {
   const parsed = KakeboMonthlyBudgetSchema.safeParse(body)
 
   if (!parsed.success) {
-    throw new AppError(400, 'Ошибка валидации', 'VALIDATION_ERROR', parsed.error)
+    throw new AppError(400, `Ошибка валидации: ${parsed.error.message}`)
   }
 
   const { income } = parsed.data
