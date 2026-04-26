@@ -42,7 +42,7 @@ kakebo.use('*', requireAuth)
       "categoryId": "uuid",
       "category": {
         "id": "uuid",
-        "name": "LIFE",
+        "name": "Жизнь",
         "type": "SYSTEM"
       },
       "description": "Обед",
@@ -156,7 +156,7 @@ kakebo.use('*', requireAuth)
     {
       "id": "sys-life",
       "profileId": null,
-      "name": "LIFE",
+      "name": "Жизнь",
       "type": "SYSTEM",
       "parentId": null,
       "isFixed": false,
@@ -372,7 +372,7 @@ kakebo.use('*', requireAuth)
       "categoryId": "uuid",
       "category": {
         "id": "uuid",
-        "name": "LIFE",
+        "name": "Жизнь",
         "icon": "Home"
       },
       "description": "Аренда квартиры",
@@ -574,7 +574,7 @@ isOverBudget = remainingToSpend < 0
   "byCategory": [
     {
       "categoryId": "sys-life",
-      "categoryName": "LIFE",
+      "categoryName": "Жизнь",
       "categoryIcon": "Home",
       "categoryColor": "#339af0",
       "amount": 21000,

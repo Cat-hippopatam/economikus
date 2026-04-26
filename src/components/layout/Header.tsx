@@ -132,7 +132,7 @@ export function Header() {
           </Link>
 
  {/* Навигация - десктоп */}
-<Group gap="xs" visibleFrom="sm">
+<Group gap="xs" visibleFrom="xl">
  {NAV_LINKS.filter(link => 
  ['/catalog', '/calculators', '/info'].includes(link.to)
  ).map((link) => {
@@ -182,8 +182,8 @@ export function Header() {
 </Menu>
 </Group>
 
- {/* Кнопки входа/регистрации - видны всегда на десктопе */}
-<Group gap="xs" visibleFrom="sm">
+ {/* Кнопки входа/регистрации - видны с xl */}
+<Group gap="xs" visibleFrom="xl">
  {user ? (
 <Menu position="bottom-end" shadow="md" width={200}>
 <Menu.Target>
@@ -304,11 +304,11 @@ export function Header() {
  )}
 </Group>
      
- {/* Бургер меню - для экранов меньше md */}
+ {/* Бургер меню - для экранов меньше xl */}
 <Burger 
  opened={opened} 
  onClick={toggle} 
- hiddenFrom="md"
+ hiddenFrom="xl"
  size="sm"
 />
         </Group>

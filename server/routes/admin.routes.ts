@@ -177,12 +177,14 @@ admin.get('/lessons', async (c) => {
   const limit = Math.min(100, Math.max(1, parseInt(c.req.query('limit') || '20')))
   const moduleId = c.req.query('moduleId')
   const status = c.req.query('status')
+  const lessonType = c.req.query('lessonType')
   const search = c.req.query('search')
   const skip = (page - 1) * limit
 
   const where: Record<string, unknown> = { deletedAt: null }
   if (moduleId) where.moduleId = moduleId
   if (status) where.status = status
+  if (lessonType) where.lessonType = lessonType
   if (search) where.OR = [{ title: { contains: search } }, { description: { contains: search } }]
 
   const [items, total] = await Promise.all([

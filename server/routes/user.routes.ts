@@ -10,14 +10,14 @@ const user = new Hono()
 
 // ���������� �����
 user.use('/me', requireAuth)
-user.use('/profile', requireAuth)
+user.use('/profile/*', requireAuth)
 user.use('/password', requireAuth)
-user.use('/avatar', requireAuth)
-user.use('/history', requireAuth)
-user.use('/favorites', requireAuth)
-user.use('/progress', requireAuth)
+user.use('/avatar/*', requireAuth)
+user.use('/history/*', requireAuth)
+user.use('/favorites/*', requireAuth)
+user.use('/progress/*', requireAuth)
 user.use('/certificates', requireAuth)
-user.use('/account-deletion', requireAuth)
+user.use('/account-deletion/*', requireAuth)
 
 // === GET /user/me � ������� ������������ ===
 user.get('/me', async (c) => {

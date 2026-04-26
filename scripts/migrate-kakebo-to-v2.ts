@@ -2,7 +2,7 @@
  * Миграция данных Kakebo v1.0 → v2.0
  * 
  * Задачи:
- * 1. Создать системные категории (LIFE, CULTURE, EXTRA, UNEXPECTED)
+ * 1. Создать системные категории с русскими названиями (Жизнь, Культура, Дополнительное, Непредвиденное)
  * 2. Перенести все записи в новые категории
  * 3. Проверить целостность данных
  */
@@ -21,14 +21,14 @@ async function migrate() {
   console.log('🚀 Начало миграции Kakebo v1.0 → v2.0')
 
   try {
-    // 1. Создать системные категории
+    // 1. Создать системные категории (с русскими названиями)
     console.log('\n📁 Создание системных категорий...')
     
     const systemCategories = [
-      { id: 'sys-life', name: 'LIFE', isEssential: true, order: 1, icon: 'Home', color: '#339af0' },
-      { id: 'sys-culture', name: 'CULTURE', isEssential: true, order: 2, icon: 'Book', color: '#228be6' },
-      { id: 'sys-extra', name: 'EXTRA', isEssential: false, order: 3, icon: 'ShoppingCart', color: '#e03131' },
-      { id: 'sys-unexpected', name: 'UNEXPECTED', isEssential: false, order: 4, icon: 'AlertCircle', color: '#fa5252' },
+      { id: 'sys-life', name: 'Жизнь', isEssential: true, order: 1, icon: 'Home', color: '#339af0' },
+      { id: 'sys-culture', name: 'Культура', isEssential: true, order: 2, icon: 'Book', color: '#228be6' },
+      { id: 'sys-extra', name: 'Дополнительное', isEssential: false, order: 3, icon: 'ShoppingCart', color: '#e03131' },
+      { id: 'sys-unexpected', name: 'Непредвиденное', isEssential: false, order: 4, icon: 'AlertCircle', color: '#fa5252' },
     ]
 
     const createdCategories = await Promise.all(
@@ -44,12 +44,33 @@ async function migrate() {
             icon: cat.icon,
             color: cat.color,
           },
-          update: {},
+          update: {
+            name: cat.name, // Обновляем имя на русское, если категория уже существовала
+          },
         })
       )
     )
 
-    console.log(`✅ Создано ${createdCategories.length} системных категорий`)
+    console.log(`✅ Создано/обновлено ${createdCategories.length} системных категорий`)
+
+    // Обновить английские названия на русские для существующих категорий
+    console.log('\n🔄 Обновление названий категорий на русские...')
+    const nameUpdates = [
+      { id: 'sys-life', from: 'LIFE', to: 'Жизнь' },
+      { id: 'sys-culture', from: 'CULTURE', to: 'Культура' },
+      { id: 'sys-extra', from: 'EXTRA', to: 'Дополнительное' },
+      { id: 'sys-unexpected', from: 'UNEXPECTED', to: 'Непредвиденное' },
+    ]
+
+    for (const update of nameUpdates) {
+      const updated = await prisma.kakeboCategory.updateMany({
+        where: { id: update.id, name: update.from },
+        data: { name: update.to },
+      })
+      if (updated.count > 0) {
+        console.log(`  ✅ Обновлена категория "${update.from}" → "${update.to}"`)
+      }
+    }
 
     // 2. Перенести все записи
     console.log('\n📝 Перенос записей в новые категории...')

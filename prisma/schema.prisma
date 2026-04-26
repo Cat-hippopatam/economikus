@@ -630,7 +630,7 @@ model KakeboEntry {
   month       Int
 
   categoryId  String?  @db.Char(36)  // ← НОВОЕ: ссылка на категорию (nullable для миграции)
-  category    KakeboCategory? @relation(fields: [categoryId], references: [id])
+  category    KakeboCategory? @relation(fields: [categoryId], references: [id], onDelete: Cascade)
 
   // ← ВРЕМЕННО: для обратной совместимости при миграции (старое enum поле)
   categoryOld String   @map("category") @db.VarChar(50) @default("LIFE")
@@ -661,7 +661,7 @@ model KakeboCategory {
   type        CategoryType   @default(CUSTOM)
   
   parentId    String?        @db.Char(36)  // Родительская категория (иерархия)
-  parent      KakeboCategory? @relation("CategoryToParent", fields: [parentId], references: [id])
+  parent      KakeboCategory? @relation("CategoryToParent", fields: [parentId], references: [id], onDelete: Cascade)
   children    KakeboCategory[] @relation("CategoryToParent")
 
   isFixed     Boolean        @default(false)  // Фиксированная трата?
@@ -750,7 +750,7 @@ model KakeboFixedExpense {
   profile     Profile @relation(fields: [profileId], references: [id], onDelete: Cascade)
 
   categoryId  String  @db.Char(36)
-  category    KakeboCategory @relation(fields: [categoryId], references: [id], onDelete: Restrict)
+  category    KakeboCategory @relation(fields: [categoryId], references: [id], onDelete: Cascade)
 
   description String   @db.VarChar(255)
   amount      Float
@@ -773,7 +773,7 @@ model KakeboFixedExpense {
 // Бюджет на месяц — НОВАЯ МОДЕЛЬ
 model KakeboMonthlyBudget {
   id         String @id @default(uuid()) @db.Char(36)
-  profileId  String @unique @db.Char(36)
+  profileId  String @db.Char(36)
   year       Int
   month      Int
 

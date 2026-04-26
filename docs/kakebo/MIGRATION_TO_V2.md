@@ -155,10 +155,10 @@ npx prisma db push
 ```sql
 INSERT INTO kakebo_category (id, name, type, is_essential, icon, order, created_at, updated_at)
 VALUES
-  ('sys-life', 'LIFE', 'SYSTEM', true, 'Home', 1, NOW(), NOW()),
-  ('sys-culture', 'CULTURE', 'SYSTEM', true, 'Book', 2, NOW(), NOW()),
-  ('sys-extra', 'EXTRA', 'SYSTEM', false, 'Shopping', 3, NOW(), NOW()),
-  ('sys-unexpected', 'UNEXPECTED', 'SYSTEM', false, 'Alert', 4, NOW(), NOW());
+  ('sys-life', 'Жизнь', 'SYSTEM', true, 'Home', 1, NOW(), NOW()),
+  ('sys-culture', 'Культура', 'SYSTEM', true, 'Book', 2, NOW(), NOW()),
+  ('sys-extra', 'Дополнительное', 'SYSTEM', false, 'ShoppingCart', 3, NOW(), NOW()),
+  ('sys-unexpected', 'Непредвиденное', 'SYSTEM', false, 'AlertCircle', 4, NOW(), NOW());
 ```
 
 #### 2.2 Перенести записи в новые категории
@@ -193,19 +193,27 @@ import { PrismaClient } from '@prisma/client'
 const prisma = new PrismaClient()
 
 async function migrate() {
-  // 1. Создать системные категории
+  // 1. Создать системные категории (с русскими названиями)
   const categories = await Promise.all([
-    prisma.kakeboCategory.create({
-      data: { id: 'sys-life', name: 'LIFE', type: 'SYSTEM', isEssential: true, order: 1 }
+    prisma.kakeboCategory.upsert({
+      data: { id: 'sys-life', name: 'Жизнь', type: 'SYSTEM', isEssential: true, order: 1 },
+      where: { id: 'sys-life' },
+      update: { name: 'Жизнь' }
     }),
-    prisma.kakeboCategory.create({
-      data: { id: 'sys-culture', name: 'CULTURE', type: 'SYSTEM', isEssential: true, order: 2 }
+    prisma.kakeboCategory.upsert({
+      data: { id: 'sys-culture', name: 'Культура', type: 'SYSTEM', isEssential: true, order: 2 },
+      where: { id: 'sys-culture' },
+      update: { name: 'Культура' }
     }),
-    prisma.kakeboCategory.create({
-      data: { id: 'sys-extra', name: 'EXTRA', type: 'SYSTEM', isEssential: false, order: 3 }
+    prisma.kakeboCategory.upsert({
+      data: { id: 'sys-extra', name: 'Дополнительное', type: 'SYSTEM', isEssential: false, order: 3 },
+      where: { id: 'sys-extra' },
+      update: { name: 'Дополнительное' }
     }),
-    prisma.kakeboCategory.create({
-      data: { id: 'sys-unexpected', name: 'UNEXPECTED', type: 'SYSTEM', isEssential: false, order: 4 }
+    prisma.kakeboCategory.upsert({
+      data: { id: 'sys-unexpected', name: 'Непредвиденное', type: 'SYSTEM', isEssential: false, order: 4 },
+      where: { id: 'sys-unexpected' },
+      update: { name: 'Непредвиденное' }
     })
   ])
 

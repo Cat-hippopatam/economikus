@@ -19,12 +19,8 @@ export function CourseCard({ course }: CourseCardProps) {
   const difficulty = DIFFICULTY_CONFIG[course.difficultyLevel] || DIFFICULTY_CONFIG.BEGINNER
 
   const handleClick = () => {
-    // Перенаправляем на профиль автора с активной вкладкой подписок
-    if (course.author?.nickname) {
-      navigate(`/user/${course.author.nickname}?tab=subscriptions`)
-    } else {
-      navigate(`/courses/${course.slug}`)
-    }
+    // Всегда переходим на страницу курса
+    navigate(`/courses/${course.slug}`)
   }
 
   return (

@@ -17,7 +17,6 @@ import {
   Skeleton,
   ThemeIcon,
   Divider,
-  ScrollArea,
   List,
   ActionIcon,
   Tooltip,
@@ -382,58 +381,56 @@ function Sidebar({
         </ActionIcon>
       </Group>
       <Divider />
-      <ScrollArea h="calc(100vh - 200px)">
-        <Stack gap="md">
-          {modules
-            .sort((a, b) => a.sortOrder - b.sortOrder)
-            .map(module => (
-              <Box key={module.id}>
-                <Text fw={500} size="sm" mb="xs">
-                  {module.title}
-                </Text>
-                <Stack gap="xs">
-                  {module.lessons
-                    .sort((a: any, b: any) => a.sortOrder - b.sortOrder)
-                    .map((lesson: any) => {
-                      const isActive = lesson.id === currentLessonId
-                      const isCompleted = false // TODO: проверять прогресс
-                      
-                      return (
-                        <Paper
-                          key={lesson.id}
-                          component={Link}
-                          to={`/courses/${courseSlug}/lessons/${lesson.slug}`}
-                          p="xs"
-                          withBorder
-                          style={{
-                            cursor: 'pointer',
-                            backgroundColor: isActive ? 'var(--mantine-color-blue-0)' : undefined,
-                            borderColor: isActive ? 'var(--mantine-color-blue-5)' : undefined,
-                            textDecoration: 'none',
-                            display: 'block',
-                          }}
-                        >
-                          <Group gap="xs" wrap="nowrap">
-                            <ThemeIcon
-                              size="sm"
-                              variant={isCompleted ? 'filled' : 'light'}
-                              color={isCompleted ? 'green' : 'gray'}
-                            >
-                              {isCompleted ? <Check size={12} /> : <LessonTypeIcon type={lesson.lessonType} size={12} />}
-                            </ThemeIcon>
-                            <Text size="sm" style={{ flex: 1 }} c={isActive ? 'blue' : undefined}>
-                              {lesson.title}
-                            </Text>
-                            {lesson.isPremium && <Crown size={12} color="#F4A261" />}
-                          </Group>
-                        </Paper>
-                      )
-                    })}
-                </Stack>
-              </Box>
-            ))}
-        </Stack>
-      </ScrollArea>
+      <Stack gap="md">
+        {modules
+          .sort((a, b) => a.sortOrder - b.sortOrder)
+          .map(module => (
+            <Box key={module.id}>
+              <Text fw={500} size="sm" mb="xs">
+                {module.title}
+              </Text>
+              <Stack gap="xs">
+                {module.lessons
+                  .sort((a: any, b: any) => a.sortOrder - b.sortOrder)
+                  .map((lesson: any) => {
+                    const isActive = lesson.id === currentLessonId
+                    const isCompleted = false // TODO: проверять прогресс
+                    
+                    return (
+                      <Paper
+                        key={lesson.id}
+                        component={Link}
+                        to={`/courses/${courseSlug}/lessons/${lesson.slug}`}
+                        p="xs"
+                        withBorder
+                        style={{
+                          cursor: 'pointer',
+                          backgroundColor: isActive ? 'var(--mantine-color-blue-0)' : undefined,
+                          borderColor: isActive ? 'var(--mantine-color-blue-5)' : undefined,
+                          textDecoration: 'none',
+                          display: 'block',
+                        }}
+                      >
+                        <Group gap="xs" wrap="nowrap">
+                          <ThemeIcon
+                            size="sm"
+                            variant={isCompleted ? 'filled' : 'light'}
+                            color={isCompleted ? 'green' : 'gray'}
+                          >
+                            {isCompleted ? <Check size={12} /> : <LessonTypeIcon type={lesson.lessonType} size={12} />}
+                          </ThemeIcon>
+                          <Text size="sm" style={{ flex: 1 }} c={isActive ? 'blue' : undefined}>
+                            {lesson.title}
+                          </Text>
+                          {lesson.isPremium && <Crown size={12} color="#F4A261" />}
+                        </Group>
+                      </Paper>
+                    )
+                  })}
+              </Stack>
+            </Box>
+          ))}
+      </Stack>
     </Stack>
   )
 
@@ -499,7 +496,7 @@ export default function LessonPage() {
   const { lesson, modules, progress, loading, error, markCompleted } = useLesson(courseSlug, lessonSlug)
   const { hasAccess, loading: accessLoading, error: accessError, course: courseInfo } = useLessonAccess(courseSlug)
   const { profile } = useAuth()
-  const { items: favorites, fetchFavorites } = useUserFavorites()
+  const { items: favorites, fetchFavorites, removeFavorite } = useUserFavorites()
   const [sidebarOpen, setSidebarOpen] = useState(false)
   const [favoriteLoading, setFavoriteLoading] = useState(false)
 
@@ -522,10 +519,7 @@ export default function LessonPage() {
       if (isFavorite) {
         const favorite = favorites.find(f => f.lesson?.id === lesson.id)
         if (favorite) {
-          await fetch(`${APP_CONFIG.apiUrl}/user/favorites/${favorite.id}`, {
-            method: 'DELETE',
-            credentials: 'include'
-          })
+          await removeFavorite(favorite.id)
         }
       } else {
         await fetch(`${APP_CONFIG.apiUrl}/user/favorites`, {
@@ -534,8 +528,8 @@ export default function LessonPage() {
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ lessonId: lesson.id })
         })
+        await fetchFavorites()
       }
-      await fetchFavorites()
     } catch (err) {
       console.error('Error toggling favorite:', err)
     } finally {
@@ -700,9 +694,6 @@ export default function LessonPage() {
                 flexShrink: 0,
                 position: 'sticky',
                 top: 140, // 60 (header) + 80 (шапка урока)
-                height: 'fit-content',
-                maxHeight: 'calc(100vh - 140px)',
-                overflowY: 'auto',
               }}
             >
               <Sidebar

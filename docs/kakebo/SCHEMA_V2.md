@@ -286,10 +286,10 @@ npx prisma db push
 ```sql
 INSERT INTO kakebo_category (id, name, type, is_essential, order, created_at, updated_at)
 VALUES
-  ('sys-life', 'LIFE', 'SYSTEM', true, 1, NOW(), NOW()),
-  ('sys-culture', 'CULTURE', 'SYSTEM', true, 2, NOW(), NOW()),
-  ('sys-extra', 'EXTRA', 'SYSTEM', false, 3, NOW(), NOW()),
-  ('sys-unexpected', 'UNEXPECTED', 'SYSTEM', false, 4, NOW(), NOW());
+  ('sys-life', 'Жизнь', 'SYSTEM', true, 1, NOW(), NOW()),
+  ('sys-culture', 'Культура', 'SYSTEM', true, 2, NOW(), NOW()),
+  ('sys-extra', 'Дополнительное', 'SYSTEM', false, 3, NOW(), NOW()),
+  ('sys-unexpected', 'Непредвиденное', 'SYSTEM', false, 4, NOW(), NOW());
 ```
 
 ### Шаг 5: Перенести записи
@@ -315,10 +315,10 @@ WHERE category_old = 'LIFE';
 ### Системные категории
 ```typescript
 const SYSTEM_CATEGORIES = {
-  LIFE: { id: 'sys-life', name: 'LIFE', isEssential: true, order: 1 },
-  CULTURE: { id: 'sys-culture', name: 'CULTURE', isEssential: true, order: 2 },
-  EXTRA: { id: 'sys-extra', name: 'EXTRA', isEssential: false, order: 3 },
-  UNEXPECTED: { id: 'sys-unexpected', name: 'UNEXPECTED', isEssential: false, order: 4 }
+  LIFE: { id: 'sys-life', name: 'Жизнь', isEssential: true, order: 1 },
+  CULTURE: { id: 'sys-culture', name: 'Культура', isEssential: true, order: 2 },
+  EXTRA: { id: 'sys-extra', name: 'Дополнительное', isEssential: false, order: 3 },
+  UNEXPECTED: { id: 'sys-unexpected', name: 'Непредвиденное', isEssential: false, order: 4 }
 }
 ```
 
@@ -329,7 +329,7 @@ const CATEGORY_ICONS = {
   CULTURE: 'Book',
   EXTRA: 'ShoppingCart',
   UNEXPECTED: 'AlertCircle',
-  // Пользовательские:
+
   TRANSPORT: 'Car',
   FOOD: 'Utensils',
   SHOPPING: 'Bag',
@@ -342,10 +342,10 @@ const CATEGORY_ICONS = {
 ### Цвета для графиков
 ```typescript
 const CATEGORY_COLORS = {
-  LIFE: '#339af0',      // Синий
-  CULTURE: '#228be6',   // Голубой
-  EXTRA: '#e03131',     // Красный
-  UNEXPECTED: '#fa5252' // Розовый
+  LIFE: '#339af0',
+  CULTURE: '#228be6',
+  EXTRA: '#e03131',
+  UNEXPECTED: '#fa5252'
 }
 ```
 

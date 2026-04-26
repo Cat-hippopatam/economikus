@@ -81,7 +81,7 @@ export function KakeboForm({ onSuccess }: KakeboFormProps) {
           <CategorySelector
             value={formData.categoryId}
             onChange={handleCategoryChange}
-            placeholder="Выберите категорию"
+            placeholder="Категория"
           />
         </Group>
         <TextInput

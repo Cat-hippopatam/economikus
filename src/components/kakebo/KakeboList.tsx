@@ -108,8 +108,8 @@ export function KakeboList({ entries, isLoading, onRefresh }: KakeboListProps) {
       </Group>
 
       {/* Таблица для десктопа */}
-      <ScrollArea h={{ base: 'auto', lg: 400 }} type="auto">
-        <Table highlightOnHover stickyHeader visibleFrom="lg">
+      <ScrollArea type="auto" style={{ maxHeight: 400 }}>
+        <Table highlightOnHover stickyHeader visibleFrom="md">
           <Table.Thead>
             <Table.Tr>
               <Table.Th><Calendar size={16} /></Table.Th>
@@ -128,23 +128,25 @@ export function KakeboList({ entries, isLoading, onRefresh }: KakeboListProps) {
                   {(() => {
                     const info = getCategoryInfo(entry)
                     return (
-                      <Badge style={{ backgroundColor: info.color, color: 'white' }}>
+                      <Badge style={{ backgroundColor: info.color, color: 'white' }} size="sm">
                         {info.label}
                       </Badge>
                     )
                   })()}
                 </Table.Td>
-                <Table.Td>{entry.description}</Table.Td>
+                <Table.Td>
+                  <Text size="sm" lineClamp={2}>{entry.description}</Text>
+                </Table.Td>
                 <Table.Td fw={700}>{entry.amount.toFixed(2)} у.е.</Table.Td>
                 <Table.Td>
-                  <Badge variant={entry.isNecessary ? 'light' : 'filled'} color={entry.isNecessary ? 'green' : 'orange'}>
+                  <Badge variant={entry.isNecessary ? 'light' : 'filled'} color={entry.isNecessary ? 'green' : 'orange'} size="sm">
                     {entry.isNecessary ? 'Необходимо' : 'Необязательно'}
                   </Badge>
                 </Table.Td>
                 <Table.Td>
                   <Group gap="xs" justify="flex-end">
-                    <ActionIcon onClick={() => handleEdit(entry)} variant="light">
-                      <Pencil size={16} />
+                    <ActionIcon onClick={() => handleEdit(entry)} variant="light" size="sm">
+                      <Pencil size={14} />
                     </ActionIcon>
                     <ActionIcon
                       onClick={() => {
@@ -153,8 +155,9 @@ export function KakeboList({ entries, isLoading, onRefresh }: KakeboListProps) {
                       }}
                       color="red"
                       variant="light"
+                      size="sm"
                     >
-                      <Trash2 size={16} />
+                      <Trash2 size={14} />
                     </ActionIcon>
                   </Group>
                 </Table.Td>
@@ -165,39 +168,39 @@ export function KakeboList({ entries, isLoading, onRefresh }: KakeboListProps) {
       </ScrollArea>
 
       {/* Карточки для мобильных */}
-      <SimpleGrid cols={1} spacing="sm" hiddenFrom="lg">
+      <SimpleGrid cols={1} spacing="sm" hiddenFrom="md">
         {filteredEntries.map((entry) => (
-          <Paper key={entry.id} p="sm" withBorder>
+          <Paper key={entry.id} p="xs" withBorder>
             <Stack gap="xs">
               <Group justify="space-between">
                 <Group gap="xs">
-                  <Calendar size={16} color="var(--mantine-color-blue-6)" />
-                  <Text size="sm">{new Date(entry.date).toLocaleDateString('ru-RU')}</Text>
+                  <Calendar size={14} color="var(--mantine-color-blue-6)" />
+                  <Text size="xs">{new Date(entry.date).toLocaleDateString('ru-RU')}</Text>
                 </Group>
                 {(() => {
                   const info = getCategoryInfo(entry)
                   return (
-                    <Badge style={{ backgroundColor: info.color, color: 'white' }} size="sm">
+                    <Badge style={{ backgroundColor: info.color, color: 'white' }} size="xs">
                       {info.label}
                     </Badge>
                   )
                 })()}
               </Group>
-              <Text size="md" fw={500}>{entry.description}</Text>
+              <Text size="sm" fw={500} lineClamp={2}>{entry.description}</Text>
               <Group justify="space-between" align="flex-end">
-                <Stack gap={0}>
+                <Stack gap={2}>
                   <Text size="xs" c="dimmed">Сумма</Text>
-                  <Text size="lg" fw={700}>{entry.amount.toFixed(2)} у.е.</Text>
+                  <Text size="md" fw={700}>{entry.amount.toFixed(2)} у.е.</Text>
                 </Stack>
-                <Stack gap={0}>
+                <Stack gap={2}>
                   <Text size="xs" c="dimmed">Тип</Text>
-                  <Badge variant={entry.isNecessary ? 'light' : 'filled'} color={entry.isNecessary ? 'green' : 'orange'} size="sm">
+                  <Badge variant={entry.isNecessary ? 'light' : 'filled'} color={entry.isNecessary ? 'green' : 'orange'} size="xs">
                     {entry.isNecessary ? 'Необходимо' : 'Необязательно'}
                   </Badge>
                 </Stack>
                 <Group gap="xs">
-                  <ActionIcon onClick={() => handleEdit(entry)} variant="light">
-                    <Pencil size={16} />
+                  <ActionIcon onClick={() => handleEdit(entry)} variant="light" size="sm">
+                    <Pencil size={14} />
                   </ActionIcon>
                   <ActionIcon
                     onClick={() => {
@@ -206,8 +209,9 @@ export function KakeboList({ entries, isLoading, onRefresh }: KakeboListProps) {
                     }}
                     color="red"
                     variant="light"
+                    size="sm"
                   >
-                    <Trash2 size={16} />
+                    <Trash2 size={14} />
                   </ActionIcon>
                 </Group>
               </Group>
@@ -286,10 +290,11 @@ function EditEntryForm({
 
   return (
     <Box>
-      <Group gap="sm" mb="md">
+      <Group gap="sm" wrap="wrap" mb="md">
         <CategorySelector
           value={formData.categoryId || null}
           onChange={(v) => setFormData({ ...formData, categoryId: v })}
+          placeholder="Категория"
         />
       </Group>
       <TextInput
@@ -298,19 +303,21 @@ function EditEntryForm({
         onChange={(e) => setFormData({ ...formData, description: e.currentTarget.value })}
         mb="md"
       />
-      <NumberInput
-        label="Сумма"
-        value={formData.amount}
-        onChange={(v) => setFormData({ ...formData, amount: v as number })}
-        mb="md"
-      />
-      <Switch
-        label="Необязательно"
-        checked={formData.isNecessary}
-        onChange={(e) => setFormData({ ...formData, isNecessary: e.currentTarget.checked })}
-        mb="md"
-      />
-      <Group justify="flex-end">
+      <Group gap="sm" align="flex-end">
+        <NumberInput
+          label="Сумма"
+          value={formData.amount}
+          onChange={(v) => setFormData({ ...formData, amount: v as number })}
+          style={{ flex: 1 }}
+        />
+        <Switch
+          label="Необязательно"
+          checked={formData.isNecessary}
+          onChange={(e) => setFormData({ ...formData, isNecessary: e.currentTarget.checked })}
+          style={{ flex: 1 }}
+        />
+      </Group>
+      <Group justify="flex-end" mt="md">
         <Button variant="subtle" onClick={onCancel}>
           Отмена
         </Button>

@@ -37,6 +37,7 @@ export function useAddKakeboEntry() {
     mutationFn: kakeboService.createEntry,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['kakebo'] })
+      queryClient.invalidateQueries({ queryKey: ['kakebo', 'budget'] })
       notify('Готово', 'Запись добавлена', 'green')
     },
     onError: (error: any) => {
@@ -135,10 +136,14 @@ export function useDeleteCategory() {
   const queryClient = useQueryClient()
   
   return useMutation({
-    mutationFn: kakeboService.deleteCategory,
+    mutationFn: ({ id }: { id: string }) =>
+      kakeboService.deleteCategory(id),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['kakebo', 'categories'] })
       notify('Готово', 'Категория удалена', 'green')
+    },
+    onError: (error: any) => {
+      notify('Ошибка', error.message || 'Не удалось удалить категорию', 'red')
     }
   })
 }
@@ -160,8 +165,11 @@ export function useSaveKakeboGoal() {
   
   return useMutation({
     mutationFn: kakeboService.saveGoal,
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['kakebo', 'goal'] })
+    onSuccess: (_, variables) => {
+      // Инвалидируем конкретный месяц
+      queryClient.invalidateQueries({ queryKey: ['kakebo', 'goal', variables.year, variables.month] })
+      // Также инвалидируем бюджет т.к. там используется savingGoal
+      queryClient.invalidateQueries({ queryKey: ['kakebo', 'budget', variables.year, variables.month] })
       notify('Готово', 'Цель сохранена', 'green')
     },
     onError: (error: any) => {
@@ -188,6 +196,8 @@ export function useCreateFixedExpense() {
     mutationFn: kakeboService.createFixedExpense,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['kakebo', 'fixed-expenses'] })
+      queryClient.invalidateQueries({ queryKey: ['kakebo', 'budget'] })
+      queryClient.invalidateQueries({ queryKey: ['kakebo'] })
       notify('Готово', 'Фиксированная трата создана', 'green')
     },
     onError: (error: any) => {
@@ -204,6 +214,8 @@ export function useUpdateFixedExpense() {
       kakeboService.updateFixedExpense(id, data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['kakebo', 'fixed-expenses'] })
+      queryClient.invalidateQueries({ queryKey: ['kakebo', 'budget'] })
+      queryClient.invalidateQueries({ queryKey: ['kakebo'] })
       notify('Готово', 'Фиксированная трата обновлена', 'green')
     }
   })
@@ -216,6 +228,8 @@ export function useDeleteFixedExpense() {
     mutationFn: kakeboService.deleteFixedExpense,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['kakebo', 'fixed-expenses'] })
+      queryClient.invalidateQueries({ queryKey: ['kakebo', 'budget'] })
+      queryClient.invalidateQueries({ queryKey: ['kakebo'] })
       notify('Готово', 'Фиксированная трата удалена', 'green')
     }
   })

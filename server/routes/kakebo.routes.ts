@@ -20,7 +20,10 @@ kakebo.use('*', requireAuth)
 // Устаревшая схема для совместимости
 const KakeboEntrySchema = z.object({
   date: z.string().refine(val => !isNaN(Date.parse(val)), 'Неверная дата'),
-  categoryId: z.string().uuid('Неверный ID категории'),
+  categoryId: z.union([
+    z.string().uuid('Неверный ID категории'),
+    z.string().refine(val => /^sys-(life|culture|extra|unexpected)$/.test(val), 'Неверный ID категории'),
+  ]).optional().nullable(),
   description: z.string().min(1, 'Описание обязательно').max(500, 'Слишком длинно'),
   amount: z.number().positive('Сумма должна быть больше 0'),
   isNecessary: z.boolean().optional().default(false),
@@ -190,7 +193,12 @@ kakebo.post('/', async (c) => {
     }
   } else {
     // Если не прошло, пробуем новую схему с categoryId
-    parsed = KakeboEntrySchema.safeParse(body)
+    // Очищаем categoryId от пустых строк перед валидацией
+    const cleanedBody = {
+      ...body,
+      categoryId: body.categoryId === '' ? null : body.categoryId,
+    }
+    parsed = KakeboEntrySchema.safeParse(cleanedBody)
     if (!parsed.success) {
       throw new AppError(400, `Ошибка валидации: ${parsed.error.message}`)
     }
@@ -254,9 +262,15 @@ kakebo.put('/:id', async (c) => {
   const parsed = KakeboEntrySchema.partial().safeParse(body)
   if (!parsed.success) throw new AppError(400, 'Ошибка валидации')
 
+  // Преобразуем дату в Date объект если она есть
+  const updateData: any = parsed.data
+  if (updateData.date) {
+    updateData.date = new Date(updateData.date)
+  }
+
   const entry = await prisma.kakeboEntry.update({
     where: { id },
-    data: parsed.data
+    data: updateData
   })
 
   return c.json({ message: 'Запись обновлена', entry })
@@ -482,7 +496,7 @@ kakebo.put('/categories/:id', async (c) => {
 })
 
 // ==================== DELETE /api/kakebo/categories/:id ====================
-// Удалить категорию
+// Удалить категорию (каскадно с записями)
 kakebo.delete('/categories/:id', async (c) => {
   const profile = getCurrentProfile(c)
   if (!profile) throw new AppError(401, 'Требуется авторизация')
@@ -509,25 +523,20 @@ kakebo.delete('/categories/:id', async (c) => {
     throw new AppError(403, 'SYSTEM категории нельзя удалять', 'FORBIDDEN')
   }
 
-  // Проверка наличия записей
+  // Получаем количество записей для уведомления
   const entriesCount = await prisma.kakeboEntry.count({
     where: { categoryId: id },
   })
 
-  if (entriesCount > 0) {
-    throw new AppError(
-      409,
-      'Нельзя удалить категорию с записями',
-      'CATEGORY_HAS_ENTRIES',
-      { entriesCount }
-    )
-  }
-
+  // Удаляем категорию (каскадно удалятся и записи благодаря onDelete: Cascade в схеме)
   await prisma.kakeboCategory.delete({
     where: { id },
   })
 
-  return c.json({ message: 'Категория удалена' })
+  return c.json({
+    message: 'Категория удалена',
+    entriesDeleted: entriesCount > 0 ? entriesCount : undefined
+  })
 })
 
 // ==================== GET /api/kakebo/goals ====================

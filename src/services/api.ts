@@ -69,11 +69,17 @@ class ApiService {
 
     // Обрабатываем ответ
     if (!response.ok) {
-      const error: ApiError = await response.json().catch(() => ({
+      const errorData: any = await response.json().catch(() => ({
         error: 'Неизвестная ошибка',
         status: response.status,
       }))
-      throw new ApiErrorClass(error.error, error.message, error.code, response.status)
+      throw new ApiErrorClass(
+        errorData.error || 'Неизвестная ошибка',
+        errorData.message || errorData.error,
+        errorData.code,
+        response.status,
+        errorData.details
+      )
     }
 
     // Для пустых ответов (204 No Content)
@@ -116,8 +122,19 @@ class ApiService {
     })
   }
 
-  delete<T>(endpoint: string): Promise<T> {
-    return this.request<T>(endpoint, { method: 'DELETE' })
+  delete<T>(endpoint: string, config?: { params?: Record<string, string | number | boolean | undefined>; body?: unknown }): Promise<T> {
+    const { params, body, ...rest } = config || {}
+    const headers: Record<string, string> = {}
+    if (body) {
+      headers['Content-Type'] = 'application/json'
+    }
+    return this.request<T>(endpoint, { 
+      method: 'DELETE',
+      ...rest,
+      body: body ? JSON.stringify(body) : undefined,
+      headers,
+      params
+    })
   }
 }
 
@@ -128,13 +145,15 @@ export class ApiErrorClass extends Error {
   error: string
   code?: string
   status?: number
+  details?: any
   
-  constructor(error: string, message?: string, code?: string, status?: number) {
+  constructor(error: string, message?: string, code?: string, status?: number, details?: any) {
     super(message || error)
     this.name = 'ApiError'
     this.error = error
     this.code = code
     this.status = status
+    this.details = details
   }
 }
 

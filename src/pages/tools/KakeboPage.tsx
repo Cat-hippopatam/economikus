@@ -97,10 +97,10 @@ export function KakeboPage() {
       </Grid>
 
       {/* Цель на месяц */}
-      <MonthlyGoalCard year={year} month={month} onRefresh={refetch} />
+      <MonthlyGoalCard key={`goal-${year}-${month}`} year={year} month={month} onRefresh={refetch} />
 
       {/* Бюджетное уравнение */}
-      <BudgetEquation year={year} month={month} />
+      <BudgetEquation key={`budget-${year}-${month}`} year={year} month={month} />
 
       {/* Форма добавления */}
       <Paper p="md" mb="md" withBorder>

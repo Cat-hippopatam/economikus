@@ -77,7 +77,7 @@ export const kakeboService = {
   /**
    * Удалить категорию
    */
-  deleteCategory: (id: string): Promise<{ message: string }> =>
+  deleteCategory: (id: string): Promise<{ message: string; entriesDeleted?: number }> =>
     api.delete(`/kakebo/categories/${id}`),
 
   /**
