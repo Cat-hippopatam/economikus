@@ -21,4 +21,23 @@ export default defineConfig({
   build: {
     chunkSizeWarningLimit: 1500,
   },
+  server: {
+    port: 5173,
+    proxy: {
+      '/api': {
+        target: 'http://localhost:3000',
+        changeOrigin: true,
+        // Передаём cookie
+        configure: (proxy, _options) => {
+          proxy.on('proxyReq', (proxyReq, req, _res) => {
+            // Копируем cookie из запроса
+            const cookie = req.headers.cookie
+            if (cookie) {
+              proxyReq.setHeader('Cookie', cookie)
+            }
+          })
+        }
+      }
+    }
+  }
 })

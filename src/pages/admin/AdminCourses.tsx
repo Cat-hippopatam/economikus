@@ -5,6 +5,7 @@
  */
 
 import { useState } from 'react'
+import { Link } from 'react-router-dom'
 import {
   Box, Button, Card, Group, Text, Badge, Table, TextInput,
   Select, Pagination, ActionIcon, Menu, Skeleton, Alert, Stack
@@ -148,7 +149,7 @@ export function AdminCourses() {
                         </ActionIcon>
                       </Menu.Target>
                       <Menu.Dropdown>
-                        <Menu.Item leftSection={<Eye size={14} />}>
+                        <Menu.Item leftSection={<Eye size={14} />} component={Link} to={`/courses/${course.slug}`}>
                           Просмотр
                         </Menu.Item>
                         <Menu.Item leftSection={<Pencil size={14} />} onClick={() => openEdit(course)}>

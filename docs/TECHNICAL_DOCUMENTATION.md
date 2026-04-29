@@ -569,7 +569,7 @@ import { DIFFICULTY_CONFIG } from '@/constants'
 
 ## 12. Roadmap
 
-### 12.1 Выполнено
+### 12.1 Выполнено ✅
 
 - [x] Аутентификация (Cookie сессии, bcryptjs)
 - [x] Каталог курсов (фильтры, поиск, пагинация)
@@ -581,7 +581,7 @@ import { DIFFICULTY_CONFIG } from '@/constants'
 - [x] Прогресс обучения (курсы, уроки, сертификаты)
 - [x] История просмотров
 - [x] Избранное (коллекции, заметки)
-- [x] Система подписок (API)
+- [x] Система подписок (API готово)
 - [x] Управление модулями — drag&drop
 - [x] Контент уроков (Text, Video, Audio, Quiz)
 - [x] Реакции и комментарии
@@ -591,7 +591,6 @@ import { DIFFICULTY_CONFIG } from '@/constants'
 
 ### 12.2 Краткосрочные задачи
 
-- [ ] **Тестирование медиа-загрузки** — полный цикл тестов для всех типов файлов
 - [ ] Frontend подписок (компоненты, интеграция)
 - [ ] OAuth провайдеры (Google, VK, Yandex)
 - [ ] Schema.org микроразметка
@@ -622,21 +621,17 @@ import { DIFFICULTY_CONFIG } from '@/constants'
 
 | Документ | Описание | Статус |
 |----------|----------|--------|
-| `OPTIMIZATION_GUIDE.md` | Правила оптимизации и стандарты разработки | ✅ Актуален |
-| `REFACTORING_PLAN.md` | План рефакторинга | ✅ Актуален |
-| `AUTHOR_PANEL_PLAN.md` | План панели автора | ✅ Актуален |
-| `LESSON_CONTENT_PLAN.md` | План контента уроков | ✅ Актуален |
-| `MEDIA_STORAGE_CONFIG.md` | Конфигурация медиа-хранилища | ✅ Актуален |
-| `MEDIA_UPLOAD_GUIDE.md` | Руководство по загрузке медиа | ✅ Актуален |
-| `MEDIA_UPLOAD_TEST_PLAN.md` | План тестирования загрузки медиа | 📝 Новое |
-| `SUBSCRIPTIONS_PLAN.md` | Стратегия подписок | ✅ Актуален |
-| `SUBSCRIPTIONS_API.md` | API подписок | ✅ Актуален |
-| `SEO_PLAN.md` | План SEO оптимизации | ✅ Актуален |
-| `PROJECT_STRUCTURE.md` | Структура проекта | ✅ Актуален |
-| `PROJECT_DOCUMENTATION.md` | Общее описание проекта | ✅ Актуален |
-| `TZ.md` | Техническое задание (ГОСТ) | ✅ Актуально |
+| [PROJECT_DOCUMENTATION.md](./PROJECT_DOCUMENTATION.md) | Общее описание проекта | ✅ Актуален |
+| [PROJECT_ANALYSIS_SUMMARY.md](./PROJECT_ANALYSIS_SUMMARY.md) | Полный анализ проекта | ✅ Актуален |
+| [OPTIMIZATION_GUIDE.md](./OPTIMIZATION_GUIDE.md) | Руководство по оптимизации | ✅ Актуален |
+| [AUTHOR_PANEL_PLAN.md](./AUTHOR_PANEL_PLAN.md) | План панели автора | ✅ Актуален |
+| [LESSON_CONTENT_PLAN.md](./LESSON_CONTENT_PLAN.md) | План контента уроков | ✅ Актуален |
+| [MEDIA_STORAGE_CONFIG.md](./MEDIA_STORAGE_CONFIG.md) | Конфигурация медиа-хранилища | ✅ Актуален |
+| [SUBSCRIPTIONS_API.md](./SUBSCRIPTIONS_API.md) | API подписок | ✅ Актуален |
+| [SEO_PLAN.md](./SEO_PLAN.md) | План SEO оптимизации | ✅ Актуален |
+| [kakebo/README.md](./kakebo/README.md) | Kakebo бюджет | ✅ Актуален |
 
 ---
 
 *Документация обновлена: Март 2026*
-*Версия: 6.0 (актуализированная)*
+*Версия: 7.0 (актуализированная)*

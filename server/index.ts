@@ -66,7 +66,6 @@ app.onError((err, c) => {
 })
 
 // OpenAPI документация
-const API_SERVER_URL = process.env.API_URL || 'http://localhost:3000'
 app.get('/api/doc', (c) => {
   return c.json({
     openapi: '3.0.0',
@@ -76,7 +75,7 @@ app.get('/api/doc', (c) => {
       description: 'API образовательной платформы Economikus'
     },
     servers: [
-      { url: API_SERVER_URL + '/api', description: 'API Server' }
+      { url: '/api', description: 'API Server (relative path for proxy support)' }
     ],
     tags: [
       { name: 'Auth', description: 'Авторизация и регистрация' },
@@ -90,7 +89,8 @@ app.get('/api/doc', (c) => {
       { name: 'Admin', description: 'Админ-панель' },
       { name: 'Moderation', description: 'Модерация контента' },
       { name: 'Progress', description: 'Прогресс обучения' },
-      { name: 'Subscriptions', description: 'Подписки' }
+      { name: 'Subscriptions', description: 'Подписки и платежи' },
+      { name: 'Kakebo', description: 'Японская система бюджета' }
     ],
     paths: {
       '/auth/register': {
@@ -1581,14 +1581,347 @@ app.get('/api/doc', (c) => {
             '401': { description: 'Не авторизован' }
           }
         }
+      },
+      // === KAKEBO ENDPOINTS ===
+      '/kakebo/entries': {
+        get: {
+          tags: ['Kakebo'],
+          summary: 'Список записей о тратах',
+          parameters: [
+            { name: 'year', in: 'query', schema: { type: 'integer' } },
+            { name: 'month', in: 'query', schema: { type: 'integer' } },
+            { name: 'categoryId', in: 'query', schema: { type: 'string', format: 'uuid' } }
+          ],
+          responses: {
+            '200': { description: 'Список записей' },
+            '401': { description: 'Не авторизован' }
+          }
+        },
+        post: {
+          tags: ['Kakebo'],
+          summary: 'Добавить запись о тратах',
+          requestBody: {
+            required: true,
+            content: {
+              'application/json': {
+                schema: {
+                  type: 'object',
+                  required: ['date', 'amount'],
+                  properties: {
+                    date: { type: 'string', format: 'date' },
+                    categoryId: { type: 'string', format: 'uuid' },
+                    description: { type: 'string', maxLength: 500 },
+                    amount: { type: 'number', minimum: 0.01 },
+                    isNecessary: { type: 'boolean' }
+                  }
+                }
+              }
+            }
+          },
+          responses: {
+            '201': { description: 'Запись создана' },
+            '400': { description: 'Ошибка валидации' },
+            '401': { description: 'Не авторизован' }
+          }
+        }
+      },
+      '/kakebo/entries/{id}': {
+        patch: {
+          tags: ['Kakebo'],
+          summary: 'Обновить запись',
+          parameters: [
+            { name: 'id', in: 'path', required: true, schema: { type: 'string', format: 'uuid' } }
+          ],
+          requestBody: {
+            content: {
+              'application/json': {
+                schema: {
+                  type: 'object',
+                  properties: {
+                    date: { type: 'string', format: 'date' },
+                    categoryId: { type: 'string', format: 'uuid' },
+                    description: { type: 'string' },
+                    amount: { type: 'number' },
+                    isNecessary: { type: 'boolean' }
+                  }
+                }
+              }
+            }
+          },
+          responses: {
+            '200': { description: 'Запись обновлена' },
+            '404': { description: 'Запись не найдена' }
+          }
+        },
+        delete: {
+          tags: ['Kakebo'],
+          summary: 'Удалить запись',
+          parameters: [
+            { name: 'id', in: 'path', required: true, schema: { type: 'string', format: 'uuid' } }
+          ],
+          responses: {
+            '200': { description: 'Запись удалена' },
+            '404': { description: 'Запись не найдена' }
+          }
+        }
+      },
+      '/kakebo/categories': {
+        get: {
+          tags: ['Kakebo'],
+          summary: 'Список категорий',
+          responses: {
+            '200': { description: 'Список категорий' },
+            '401': { description: 'Не авторизован' }
+          }
+        },
+        post: {
+          tags: ['Kakebo'],
+          summary: 'Создать категорию',
+          requestBody: {
+            required: true,
+            content: {
+              'application/json': {
+                schema: {
+                  type: 'object',
+                  required: ['name', 'type'],
+                  properties: {
+                    name: { type: 'string', minLength: 1, maxLength: 50 },
+                    type: { type: 'string', enum: ['SYSTEM', 'CUSTOM'] },
+                    parentId: { type: 'string', format: 'uuid' }
+                  }
+                }
+              }
+            }
+          },
+          responses: {
+            '201': { description: 'Категория создана' },
+            '400': { description: 'Ошибка валидации' }
+          }
+        }
+      },
+      '/kakebo/settings': {
+        get: {
+          tags: ['Kakebo'],
+          summary: 'Настройки бюджета',
+          responses: {
+            '200': { description: 'Настройки' },
+            '401': { description: 'Не авторизован' }
+          }
+        },
+        patch: {
+          tags: ['Kakebo'],
+          summary: 'Обновить настройки',
+          requestBody: {
+            content: {
+              'application/json': {
+                schema: {
+                  type: 'object',
+                  properties: {
+                    monthlyIncome: { type: 'number', minimum: 0 }
+                  }
+                }
+              }
+            }
+          },
+          responses: {
+            '200': { description: 'Настройки обновлены' }
+          }
+        }
+      },
+      '/kakebo/reflections': {
+        get: {
+          tags: ['Kakebo'],
+          summary: 'Рефлексия за месяц',
+          parameters: [
+            { name: 'year', in: 'query', schema: { type: 'integer' } },
+            { name: 'month', in: 'query', schema: { type: 'integer' } }
+          ],
+          responses: {
+            '200': { description: 'Рефлексия' },
+            '401': { description: 'Не авторизован' }
+          }
+        },
+        post: {
+          tags: ['Kakebo'],
+          summary: 'Добавить рефлексию',
+          requestBody: {
+            required: true,
+            content: {
+              'application/json': {
+                schema: {
+                  type: 'object',
+                  required: ['year', 'month'],
+                  properties: {
+                    year: { type: 'integer', minimum: 2020 },
+                    month: { type: 'integer', minimum: 1, maximum: 12 },
+                    improvements: { type: 'string', maxLength: 1000 },
+                    whatWentWell: { type: 'string', maxLength: 1000 },
+                    whatCouldImprove: { type: 'string', maxLength: 1000 }
+                  }
+                }
+              }
+            }
+          },
+          responses: {
+            '201': { description: 'Рефлексия создана' },
+            '400': { description: 'Ошибка валидации' }
+          }
+        }
+      },
+      '/kakebo/monthly-goals': {
+        get: {
+          tags: ['Kakebo'],
+          summary: 'Цели на месяц',
+          parameters: [
+            { name: 'year', in: 'query', schema: { type: 'integer' } },
+            { name: 'month', in: 'query', schema: { type: 'integer' } }
+          ],
+          responses: {
+            '200': { description: 'Цели' },
+            '401': { description: 'Не авторизован' }
+          }
+        },
+        post: {
+          tags: ['Kakebo'],
+          summary: 'Установить цели на месяц',
+          requestBody: {
+            required: true,
+            content: {
+              'application/json': {
+                schema: {
+                  type: 'object',
+                  required: ['year', 'month', 'promise'],
+                  properties: {
+                    year: { type: 'integer', minimum: 2020 },
+                    month: { type: 'integer', minimum: 1, maximum: 12 },
+                    promise: { type: 'string', maxLength: 500 },
+                    plannedSavings: { type: 'number', minimum: 0 }
+                  }
+                }
+              }
+            }
+          },
+          responses: {
+            '201': { description: 'Цели установлены' },
+            '400': { description: 'Ошибка валидации' }
+          }
+        }
+      },
+      '/kakebo/monthly-budgets': {
+        get: {
+          tags: ['Kakebo'],
+          summary: 'Бюджет на месяц',
+          parameters: [
+            { name: 'year', in: 'query', schema: { type: 'integer' } },
+            { name: 'month', in: 'query', schema: { type: 'integer' } }
+          ],
+          responses: {
+            '200': { description: 'Бюджет' },
+            '401': { description: 'Не авторизован' }
+          }
+        },
+        post: {
+          tags: ['Kakebo'],
+          summary: 'Установить бюджет на месяц',
+          requestBody: {
+            required: true,
+            content: {
+              'application/json': {
+                schema: {
+                  type: 'object',
+                  required: ['year', 'month', 'income'],
+                  properties: {
+                    year: { type: 'integer', minimum: 2020 },
+                    month: { type: 'integer', minimum: 1, maximum: 12 },
+                    income: { type: 'number', minimum: 0 },
+                    plannedExpenses: { type: 'number', minimum: 0 }
+                  }
+                }
+              }
+            }
+          },
+          responses: {
+            '201': { description: 'Бюджет установлен' },
+            '400': { description: 'Ошибка валидации' }
+          }
+        }
+      },
+      '/kakebo/report': {
+        get: {
+          tags: ['Kakebo'],
+          summary: 'Месячный отчёт',
+          description: 'Возвращает полную статистику за месяц: доходы, расходы по категориям, накопления',
+          parameters: [
+            { name: 'year', in: 'query', required: true, schema: { type: 'integer' } },
+            { name: 'month', in: 'query', required: true, schema: { type: 'integer' } }
+          ],
+          responses: {
+            '200': {
+              description: 'Месячный отчёт',
+              content: {
+                'application/json': {
+                  schema: {
+                    type: 'object',
+                    properties: {
+                      month: {
+                        type: 'object',
+                        properties: {
+                          year: { type: 'integer' },
+                          month: { type: 'integer' }
+                        }
+                      },
+                      income: { type: 'number' },
+                      expenses: {
+                        type: 'object',
+                        properties: {
+                          total: { type: 'number' },
+                          necessary: { type: 'number' },
+                          unnecessary: { type: 'number' },
+                          byCategory: {
+                            type: 'array',
+                            items: {
+                              type: 'object',
+                              properties: {
+                                categoryId: { type: 'string' },
+                                name: { type: 'string' },
+                                amount: { type: 'number' },
+                                percentage: { type: 'number' }
+                              }
+                            }
+                          }
+                        }
+                      },
+                      savings: {
+                        type: 'object',
+                        properties: {
+                          planned: { type: 'number' },
+                          actual: { type: 'number' },
+                          percentage: { type: 'number' }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            },
+            '401': { description: 'Не авторизован' }
+          }
+        }
       }
     }
   })
 })
 
-// Swagger UI
-const API_URL = process.env.API_URL || '/api'
-app.get('/api/swagger', swaggerUI({ url: `${API_URL}/doc` }))
+// Swagger UI с поддержкой cookie авторизации
+app.get('/api/swagger', swaggerUI({ 
+  url: '/api/doc',
+  swaggerOptions: {
+    requestInterceptor: (req) => {
+      req.credentials = 'include'
+      return req
+    }
+  }
+}))
 
 // API роуты
 app.route('/api/auth', authRoutes)
