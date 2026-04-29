@@ -47,7 +47,7 @@ export function AdminModeration() {
   const [loading, setLoading] = useState(false)
   const [page, setPage] = useState(1)
   const [totalPages, setTotalPages] = useState(1)
-  const [rejectModal, setRejectModal] = useState<{ opened: boolean; id: string; type: 'comment' | 'content' } | null>(null)
+  const [rejectModal, setRejectModal] = useState<{ opened: boolean; id: string; type: 'comment' | 'content'; contentType?: 'COURSE' | 'LESSON' } | null>(null)
   const [rejectReason, setRejectReason] = useState('')
 
   useEffect(() => {
@@ -120,10 +120,12 @@ export function AdminModeration() {
 
   const handleRejectContent = async (id: string, type: 'COURSE' | 'LESSON') => {
     try {
-      await api.patch(`/admin/${type.toLowerCase()}s/${id}`, { 
-        status: 'DRAFT',
-        rejectionReason: rejectReason 
-      })
+      // Для уроков не отправляем rejectionReason, только статус
+      const payload = type === 'LESSON' 
+        ? { status: 'DRAFT' }
+        : { status: 'DRAFT', rejectionReason: rejectReason }
+      
+      await api.patch(`/admin/${type.toLowerCase()}s/${id}`, payload)
       setRejectModal(null)
       setRejectReason('')
       fetchContent()
@@ -316,7 +318,7 @@ export function AdminModeration() {
                             size="xs"
                             color="red"
                             variant="light"
-                            onClick={() => setRejectModal({ opened: true, id: item.id, type: 'content' })}
+                            onClick={() => setRejectModal({ opened: true, id: item.id, type: 'content', contentType: item.type })}
                           >
                             Отклонить
                           </Button>
@@ -364,8 +366,8 @@ export function AdminModeration() {
               onClick={() => {
                 if (rejectModal?.type === 'comment') {
                   handleRejectComment(rejectModal.id)
-                } else if (rejectModal?.type === 'content') {
-                  handleRejectContent(rejectModal.id, 'COURSE') // TODO: передать правильный тип
+                } else if (rejectModal?.type === 'content' && rejectModal.contentType) {
+                  handleRejectContent(rejectModal.id, rejectModal.contentType)
                 }
               }}
             >

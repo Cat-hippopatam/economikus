@@ -287,15 +287,15 @@ function LessonContent({ lesson }: { lesson: any }) {
               <Stack gap="lg">
                 {content.questions.map((q: any, i: number) => (
                   <Paper key={i} p="md" withBorder>
-                    <Text fw={500} mb="sm">{i + 1}. {q.question}</Text>
+                    <Text fw={500} mb="sm">{i + 1}. {q.text}</Text>
                     <List listStyleType="none" spacing="xs">
-                      {q.options?.map((opt: string, j: number) => (
-                        <List.Item key={j}>
+                      {q.options?.map((opt: any, j: number) => (
+                        <List.Item key={opt.id || j}>
                           <Group gap="xs">
                             <ThemeIcon size="sm" variant="light" color="gray">
                               {String.fromCharCode(65 + j)}
                             </ThemeIcon>
-                            <Text size="sm">{opt}</Text>
+                            <Text size="sm">{opt.text}</Text>
                           </Group>
                         </List.Item>
                       ))}

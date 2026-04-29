@@ -103,10 +103,11 @@ export function useAuthorLesson(): UseAuthorLessonReturn {
         showSuccess('Урок создан')
       }
       return true
-    } catch (err: unknown) {
-      const message = id ? 'Ошибка обновления урока' : 'Ошибка создания урока'
-      setError(message)
-      showError(message)
+    } catch (err: any) {
+      // Извлекаем конкретное сообщение об ошибке с бэкенда
+      const errorMessage = err?.error || err?.message || (id ? 'Ошибка обновления урока' : 'Ошибка создания урока')
+      setError(errorMessage)
+      showError(errorMessage)
       console.error('Lesson save error:', err)
       return false
     } finally {

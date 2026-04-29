@@ -23,11 +23,12 @@ import {
   NumberInput,
   Tabs,
   Paper,
+  Alert,
 } from '@mantine/core'
 import { useForm, Controller } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
-import { Save, ArrowLeft, Upload, FileText, Eye } from 'lucide-react'
+import { Save, ArrowLeft, Upload, FileText, Eye, AlertCircle } from 'lucide-react'
 import { useAuthorLesson } from '@/hooks/useAuthorLesson'
 import { useCourseModules } from '@/hooks/useCourseModules'
 import { useLessonContent, type QuizQuestion } from '@/hooks/useLessonContent'
@@ -43,7 +44,7 @@ const LessonSchema = z.object({
   lessonType: z.string().min(1, 'Выберите тип урока'),
   moduleId: z.string().nullable().optional(),
   coverImage: z.string().optional(),
-  duration: z.number().min(0).max(600).nullable().optional(),
+  duration: z.number().min(0, 'Длительность не может быть отрицательной').max(300, 'Длительность не может превышать 300 минут (5 часов)').nullable().optional(),
   isPremium: z.boolean(),
   status: z.string(),
   tags: z.array(z.string()).optional(),
@@ -413,7 +414,7 @@ export function AuthorLessonFormPage() {
   const { id } = useParams<{ id: string }>()
   const isEdit = !!id
 
-  const { lesson, loading, saving, fetchLesson, saveLesson, uploadCover } = useAuthorLesson()
+  const { lesson, loading, saving, error, fetchLesson, saveLesson, uploadCover } = useAuthorLesson()
   const { courses } = useCourseModules(undefined)
   const { tags } = useTagOptions()
   const {
@@ -550,6 +551,17 @@ export function AuthorLessonFormPage() {
           </Button>
         </Group>
       </Group>
+
+      {/* Ошибка с бэкенда */}
+      {error && (
+        <Alert 
+          color="red" 
+          icon={<AlertCircle size={16} />}
+          title="Ошибка"
+        >
+          {error}
+        </Alert>
+      )}
 
       {/* Вкладки */}
       {isEdit ? (
@@ -717,7 +729,7 @@ function SettingsForm({
                 <TextInput
                   label="URL-адрес (slug)"
                   placeholder="vvedenie-v-investirovanie"
-                  description="Используется в URL урока"
+                  description="Используется в URL урока. Только латинские буквы, цифры и дефисы."
                   required
                   {...register('slug')}
                   error={errors.slug?.message}
@@ -782,11 +794,13 @@ function SettingsForm({
                       render={({ field }) => (
                         <NumberInput
                           label="Длительность (минуты)"
+                          description="Максимум 300 минут (5 часов)"
                           placeholder="15"
                           min={0}
-                          max={600}
+                          max={300}
                           value={field.value ?? undefined}
                           onChange={(value) => field.onChange(value === '' ? undefined : Number(value))}
+                          error={errors.duration?.message}
                         />
                       )}
                     />

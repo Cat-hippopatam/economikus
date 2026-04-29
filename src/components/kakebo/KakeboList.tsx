@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { Box, Table, Text, Paper, Group, Badge, TextInput, ActionIcon, Button, Modal, NumberInput, Switch, Stack, SimpleGrid, ScrollArea } from '@mantine/core'
-import { Search, Pencil, Trash2, Calendar } from 'lucide-react'
+import { Search, Pencil, Trash2, Calendar, Download } from 'lucide-react'
 import { useDeleteKakeboEntry, useUpdateKakeboEntry } from '@/hooks/useKakebo'
 import { CategorySelector } from './CategorySelector'
 import type { KakeboEntry } from '@/types/kakebo'
@@ -80,6 +80,50 @@ export function KakeboList({ entries, isLoading, onRefresh }: KakeboListProps) {
     }
   }
 
+  const exportToCSV = () => {
+    if (filteredEntries.length === 0) {
+      alert('Нет данных для экспорта')
+      return
+    }
+
+    const headers = ['Дата', 'Категория', 'Описание', 'Сумма (у.е.)', 'Тип']
+    const csvRows = [headers.join(',')]
+
+    filteredEntries.forEach((entry) => {
+      const info = getCategoryInfo(entry)
+      const type = entry.isNecessary ? 'Необходимо' : 'Необязательно'
+      const date = new Date(entry.date).toLocaleDateString('ru-RU')
+      
+      const row = [
+        `"${date}"`,
+        `"${info.label}"`,
+        `"${entry.description.replace(/"/g, '""')}"`,
+        entry.amount.toFixed(2),
+        `"${type}"`
+      ]
+      csvRows.push(row.join(','))
+    })
+
+    const csvContent = csvRows.join('\r\n')
+    
+    // Добавляем BOM для корректного отображения кириллицы в Excel
+    const blob = new Blob(['\uFEFF' + csvContent], { type: 'text/csv;charset=utf-8;' })
+    
+    const year = new Date().getFullYear()
+    const month = String(new Date().getMonth() + 1).padStart(2, '0')
+    
+    // Создаём ссылку и инициируем скачивание
+    const link = document.createElement('a')
+    const url = URL.createObjectURL(blob)
+    link.href = url
+    link.download = `kakebo_${year}_${month}.csv`
+    link.style.display = 'none'
+    document.body.appendChild(link)
+    link.click()
+    document.body.removeChild(link)
+    URL.revokeObjectURL(url)
+  }
+
   if (isLoading) {
     return <Text ta="center" c="dimmed">Загрузка...</Text>
   }
@@ -97,14 +141,25 @@ export function KakeboList({ entries, isLoading, onRefresh }: KakeboListProps) {
   return (
     <Paper p="md" withBorder>
       <Group justify="space-between" mb="sm">
-        <Text fw={500}>Траты за месяц</Text>
-        <TextInput
-          placeholder="Поиск..."
-          value={searchTerm}
-          onChange={(e) => setSearchTerm(e.currentTarget.value)}
-          leftSection={<Search size={16} />}
-          w={{ base: 150, sm: 250 }}
-        />
+        <Group gap="sm">
+          <Text fw={500}>Траты за месяц</Text>
+          <TextInput
+            placeholder="Поиск..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.currentTarget.value)}
+            leftSection={<Search size={16} />}
+            w={{ base: 150, sm: 250 }}
+          />
+        </Group>
+        <Button
+          variant="light"
+          size="sm"
+          leftSection={<Download size={16} />}
+          onClick={exportToCSV}
+          disabled={filteredEntries.length === 0}
+        >
+          Экспорт CSV
+        </Button>
       </Group>
 
       {/* Таблица для десктопа */}

@@ -109,7 +109,14 @@ admin.patch('/courses/:id', async (c) => {
   const id = c.req.param('id')
   const { title, slug, description, coverImage, difficultyLevel, duration, isPremium, status, tagIds } = await c.req.json()
 
-  if (slug && await prisma.course.findFirst({ where: { slug, NOT: { id } } })) return c.json({ error: '���� � ����� slug ��� ����������' }, 400)
+  // Проверяем существование курса (включая удалённые)
+  const existingCourse = await prisma.course.findUnique({ where: { id } })
+  if (!existingCourse) {
+    console.log(`Course not found with id: ${id}`)
+    return c.json({ error: 'Курс не найден' }, 404)
+  }
+
+  if (slug && await prisma.course.findFirst({ where: { slug, NOT: { id } } })) return c.json({ error: 'Курс с таким slug уже существует' }, 400)
 
   if (tagIds !== undefined) {
     await prisma.courseTag.deleteMany({ where: { courseId: id } })
@@ -121,8 +128,11 @@ admin.patch('/courses/:id', async (c) => {
 })
 
 admin.delete('/courses/:id', async (c) => {
-  await prisma.course.update({ where: { id: c.req.param('id') }, data: { deletedAt: new Date() } })
-  return c.json({ message: '���� �����' })
+  const id = c.req.param('id')
+  const course = await prisma.course.findUnique({ where: { id } })
+  if (!course) return c.json({ error: 'Курс не найден' }, 404)
+  await prisma.course.update({ where: { id }, data: { deletedAt: new Date() } })
+  return c.json({ message: 'Курс удалён' })
 })
 
 // === MODULES ===
@@ -157,8 +167,13 @@ admin.post('/modules', async (c) => {
 })
 
 admin.patch('/modules/:id', async (c) => {
+  const id = c.req.param('id')
   const { title, description, sortOrder } = await c.req.json()
-  const module = await prisma.module.update({ where: { id: c.req.param('id') }, data: { title, description, sortOrder } })
+  
+  const existingModule = await prisma.module.findUnique({ where: { id } })
+  if (!existingModule) return c.json({ error: 'Модуль не найден' }, 404)
+  
+  const module = await prisma.module.update({ where: { id }, data: { title, description, sortOrder } })
   return c.json(module)
 })
 
@@ -199,14 +214,24 @@ admin.post('/lessons', async (c) => {
   const profile = getCurrentProfile(c)
   const { moduleId, title, slug, description, lessonType, duration, isPremium, status, sortOrder, tagIds } = await c.req.json()
   
-  if (await prisma.lesson.findUnique({ where: { slug } })) return c.json({ error: '���� � ����� slug ��� ����������' }, 400)
+  // Валидация длительности - максимум 300 минут (5 часов)
+  if (duration !== undefined && duration !== null && duration > 300) {
+    return c.json({ error: 'Длительность урока не может превышать 300 минут (5 часов)' }, 400)
+  }
+  
+  if (await prisma.lesson.findUnique({ where: { slug } })) return c.json({ error: 'Slug уже занят' }, 400)
 
   const maxOrder = await prisma.lesson.findFirst({ where: { moduleId, deletedAt: null }, orderBy: { sortOrder: 'desc' }, select: { sortOrder: true } })
   const lesson = await prisma.lesson.create({
     data: { moduleId, title, slug, description, lessonType: lessonType || 'ARTICLE', duration: duration || 0, isPremium: isPremium || false, status: status || 'DRAFT', sortOrder: sortOrder ?? (maxOrder?.sortOrder ?? 0) + 1, authorProfileId: profile!.id, tags: tagIds ? { create: tagIds.map((tagId: string) => ({ tagId })) } : undefined },
     include: { tags: { include: { tag: true } } }
   })
-  await prisma.module.update({ where: { id: moduleId }, data: { lessonsCount: { increment: 1 } } })
+  
+  // Обновляем lessonsCount модуля только если moduleId передан
+  if (moduleId) {
+    await prisma.module.update({ where: { id: moduleId }, data: { lessonsCount: { increment: 1 } } })
+  }
+  
   return c.json(lesson, 201)
 })
 
@@ -214,7 +239,16 @@ admin.patch('/lessons/:id', async (c) => {
   const id = c.req.param('id')
   const { title, slug, description, lessonType, duration, isPremium, status, sortOrder, moduleId, tagIds } = await c.req.json()
 
-  if (slug && await prisma.lesson.findFirst({ where: { slug, NOT: { id } } })) return c.json({ error: '���� � ����� slug ��� ����������' }, 400)
+  // Проверяем существование урока
+  const existingLesson = await prisma.lesson.findUnique({ where: { id } })
+  if (!existingLesson) return c.json({ error: 'Урок не найден' }, 404)
+
+  // Валидация длительности - максимум 300 минут (5 часов)
+  if (duration !== undefined && duration !== null && duration > 300) {
+    return c.json({ error: 'Длительность урока не может превышать 300 минут (5 часов)' }, 400)
+  }
+
+  if (slug && await prisma.lesson.findFirst({ where: { slug, NOT: { id } } })) return c.json({ error: 'Урок с таким slug уже существует' }, 400)
 
   if (tagIds !== undefined) {
     await prisma.lessonTag.deleteMany({ where: { lessonId: id } })

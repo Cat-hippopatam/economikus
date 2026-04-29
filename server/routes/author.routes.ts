@@ -701,6 +701,11 @@ author.post('/lessons', async (c) => {
       throw new AppError(400, 'Укажите тип урока')
     }
 
+    // Валидация длительности - максимум 300 минут (5 часов)
+    if (duration !== undefined && duration !== null && duration > 300) {
+      throw new AppError(400, 'Длительность урока не может превышать 300 минут (5 часов)')
+    }
+
     // Валидация статуса - автор может создавать только DRAFT и PENDING_REVIEW
     const allowedStatuses = ['DRAFT', 'PENDING_REVIEW']
     const finalStatus = allowedStatuses.includes(status) ? status : 'DRAFT'
@@ -813,6 +818,11 @@ author.patch('/lessons/:id', async (c) => {
   // Валидация статуса - автор может устанавливать только DRAFT и PENDING_REVIEW
   const allowedStatuses = ['DRAFT', 'PENDING_REVIEW']
   const finalStatus = allowedStatuses.includes(status) ? status : existing.status
+
+  // Валидация длительности - максимум 300 минут (5 часов)
+  if (duration !== undefined && duration !== null && duration > 300) {
+    throw new AppError(400, 'Длительность урока не может превышать 300 минут (5 часов)')
+  }
 
   // Проверка уникальности slug
   const newSlug = slug || (title ? title.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '') : null)

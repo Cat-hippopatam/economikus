@@ -146,7 +146,16 @@ export function AdminContentModerationPage() {
 
   // Обновление статуса урока
   const handleStatusChange = async (newStatus: 'PUBLISHED' | 'REJECTED') => {
-    if (!selectedLesson) return
+    if (!selectedLesson) {
+      console.error('No lesson selected!')
+      return
+    }
+    
+    console.log('=== handleStatusChange called ===')
+    console.log('selectedLesson:', selectedLesson)
+    console.log('newStatus:', newStatus)
+    console.log('Expected URL:', `/admin/lessons/${selectedLesson}`)
+    console.log('Request payload:', { status: newStatus })
     
     try {
       await api.patch(`/admin/lessons/${selectedLesson}`, { status: newStatus })
@@ -166,8 +175,12 @@ export function AdminContentModerationPage() {
           lesson: { ...contentData.lesson, status: newStatus }
         })
       }
-    } catch (error) {
-      console.error('Error updating status:', error)
+      
+      console.log('✅ Lesson status updated successfully')
+    } catch (error: any) {
+      console.error('❌ Error updating status:', error)
+      console.error('Error details:', error?.response?.data || error)
+      console.error('Error status:', error?.status)
     }
   }
 
@@ -272,22 +285,22 @@ export function AdminContentModerationPage() {
                       <Accordion.Control>
                         <Group>
                           <Badge>{i + 1}</Badge>
-                          <Text>{q.question}</Text>
+                          <Text>{q.text}</Text>
                         </Group>
                       </Accordion.Control>
                       <Accordion.Panel>
                         <List listStyleType="none" spacing="xs">
-                          {q.options?.map((opt: string, j: number) => (
-                            <List.Item key={j}>
+                          {q.options?.map((opt: any, j: number) => (
+                            <List.Item key={opt.id || j}>
                               <Group gap="xs">
                                 <ThemeIcon 
                                   size="sm" 
-                                  color={j === q.correctIndex ? 'green' : 'gray'}
-                                  variant={j === q.correctIndex ? 'filled' : 'light'}
+                                  color={opt.id === q.correctOptionId ? 'green' : 'gray'}
+                                  variant={opt.id === q.correctOptionId ? 'filled' : 'light'}
                                 >
-                                  {j === q.correctIndex ? <Check size={12} /> : String.fromCharCode(65 + j)}
+                                  {opt.id === q.correctOptionId ? <Check size={12} /> : String.fromCharCode(65 + j)}
                                 </ThemeIcon>
-                                <Text>{opt}</Text>
+                                <Text>{opt.text}</Text>
                               </Group>
                             </List.Item>
                           ))}
