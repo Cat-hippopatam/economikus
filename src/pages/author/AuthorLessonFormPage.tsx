@@ -523,6 +523,31 @@ export function AuthorLessonFormPage() {
     return <LoadingState text="Загрузка урока..." />
   }
 
+  // Показываем ошибку сразу после загрузки
+  if (error && isEdit) {
+    return (
+      <Stack gap="lg">
+        <Group>
+          <Button
+            variant="subtle"
+            leftSection={<ArrowLeft size={16} />}
+            onClick={() => navigate('/author/lessons')}
+          >
+            Назад
+          </Button>
+          <Title order={2}>Ошибка загрузки урока</Title>
+        </Group>
+        <Alert 
+          color="red" 
+          icon={<AlertCircle size={16} />}
+          title="Ошибка"
+        >
+          {error}
+        </Alert>
+      </Stack>
+    )
+  }
+
   return (
     <Stack gap="lg">
       {/* Заголовок */}
@@ -826,18 +851,28 @@ function SettingsForm({
                 <Controller
                   name="tags"
                   control={control}
-                  render={({ field }) => (
-                    <MultiSelect
-                      label="Теги"
-                      placeholder="Выберите теги"
-                      data={tags.map((tag: { id: string; name: string }) => ({ value: tag.id, label: tag.name }))}
-                      value={field.value || []}
-                      onChange={(value) => field.onChange(value)}
-                      searchable
-                      clearable
-                      maxValues={5}
-                    />
-                  )}
+                  render={({ field }) => {
+                    const selectedCount = field.value?.length || 0
+                    const isAtLimit = selectedCount >= 5
+
+                    return (
+                      <>
+                        <MultiSelect
+                          label="Теги"
+                          placeholder="Выберите теги"
+                          data={tags.map((tag: { id: string; name: string }) => ({ value: tag.id, label: tag.name }))}
+                          value={field.value || []}
+                          onChange={(value) => field.onChange(value)}
+                          searchable
+                          clearable
+                          maxValues={5}
+                        />
+                        <Text size="xs" c={isAtLimit ? 'red' : 'dimmed'}>
+                          {isAtLimit ? 'Достигнут лимит 5 тегов' : `${selectedCount}/5 тегов`}
+                        </Text>
+                      </>
+                    )
+                  }}
                 />
 
                 <Switch

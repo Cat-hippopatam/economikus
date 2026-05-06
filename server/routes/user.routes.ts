@@ -4,6 +4,7 @@ import { prisma } from '../db'
 import { AppError } from '../lib/errors'
 import { requireAuth, getCurrentUser, getCurrentProfile } from '../middleware/auth'
 import { compare, hash } from 'bcryptjs'
+import { mediaStorage } from '../lib/mediaStorage'
 import type { FavoriteWhereInput } from '../types'
 
 const user = new Hono()
@@ -136,25 +137,18 @@ user.post('/avatar', async (c) => {
       throw new AppError(400, '��������� ������ �����������')
     }
 
-    // ��������� ������ (���� 2MB ��� base64)
-    if (file.size > 2 * 1024 * 1024) {
-      throw new AppError(400, '������������ ������: 2MB')
+    // ��������� ������ (���� 5MB)
+    if (file.size > 5 * 1024 * 1024) {
+      throw new AppError(400, 'Максимальный размер файла: 5MB')
     }
 
-    // ������������ � base64
-    const arrayBuffer = await file.arrayBuffer()
-    const base64 = Buffer.from(arrayBuffer).toString('base64')
-    const dataUrl = `data:${file.type};base64,${base64}`
-
-    // ��������� ������ dataUrl (MySQL TEXT = 65535 ����)
-    if (dataUrl.length > 65535) {
-      throw new AppError(400, '����������� ������� �������. ��������� ���� ������ 1MB')
-    }
+    // ��������� ��������� mediaStorage
+    const avatarUrl = await mediaStorage.upload(file, 'avatars', profile.id)
 
     // ��������� �������
     const updated = await prisma.profile.update({
       where: { id: profile.id },
-      data: { avatarUrl: dataUrl }
+      data: { avatarUrl }
     })
 
     return c.json({ 
@@ -164,7 +158,10 @@ user.post('/avatar', async (c) => {
   } catch (error) {
     console.error('Error uploading avatar:', error)
     if (error instanceof AppError) throw error
-    throw new AppError(500, '������ �������� �������')
+    if (error instanceof Error && error.message === 'Maximum file size exceeded') {
+      throw new AppError(400, 'Файл слишком большой. Максимальный размер: 5MB')
+    }
+    throw new AppError(500, 'Ошибка загрузки файла')
   }
 })
 

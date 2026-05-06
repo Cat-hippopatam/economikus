@@ -107,9 +107,9 @@ export function useAuthorCourse(): UseAuthorCourseReturn {
   }, [showError, showSuccess])
 
   const uploadCover = useCallback(async (file: File): Promise<string | null> => {
-    // Проверка размера (макс 5MB для обложек)
-    if (file.size > 5 * 1024 * 1024) {
-      showError('Размер файла не должен превышать 5MB')
+    // Проверка размера (макс 10MB для обложек)
+    if (file.size > 10 * 1024 * 1024) {
+      showError('Размер файла не должен превышать 10MB')
       return null
     }
 

@@ -16,7 +16,7 @@ interface AvatarUploaderProps {
 
 // Константы - единая точка изменения
 const ACCEPTED_TYPES = 'image/jpeg,image/png,image/gif,image/webp'
-const HELPER_TEXT = 'JPG, PNG, GIF, WebP. Макс 2MB'
+const HELPER_TEXT = 'JPG, PNG, GIF, WebP. Макс 5MB'
 
 export function AvatarUploader({ 
   currentAvatar, 

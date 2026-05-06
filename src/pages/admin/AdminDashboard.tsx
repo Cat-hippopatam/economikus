@@ -78,8 +78,20 @@ export function AdminDashboard() {
                 </Group>
                 <Text size="xl" fw={700}>{stat.value.toLocaleString()}</Text>
                 {stat.badge && (
-                  <Badge color="green" variant="light" size="sm" mt="xs">
-                    <Check size={12} style={{ marginRight: 4 }} />
+                  <Badge 
+                    color="green" 
+                    variant="light" 
+                    size="sm" 
+                    mt="xs"
+                    styles={{
+                      label: {
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: 4
+                      }
+                    }}
+                  >
+                    <Check size={12} />
                     {stat.badge}
                   </Badge>
                 )}

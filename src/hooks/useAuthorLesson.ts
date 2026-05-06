@@ -55,9 +55,12 @@ export function useAuthorLesson(): UseAuthorLessonReturn {
     setLoading(true)
     setError(null)
     try {
+      console.log('[useAuthorLesson] Fetching lesson:', id)
       const data = await api.get<{ lesson: LessonFromAPI }>(`/author/lessons/${id}`)
+      console.log('[useAuthorLesson] Lesson data received:', JSON.stringify(data, null, 2))
+      
       // Маппинг данных
-      setLesson({
+      const lessonData = {
         title: data.lesson.title,
         slug: data.lesson.slug,
         description: data.lesson.description,
@@ -67,9 +70,14 @@ export function useAuthorLesson(): UseAuthorLessonReturn {
         duration: data.lesson.duration,
         isPremium: data.lesson.isPremium,
         status: data.lesson.status,
-        tags: data.lesson.tags?.map(t => t.id) || [],
-      })
+        tags: data.lesson.tags?.map((t: any) => t.id) || [],
+      }
+      
+      console.log('[useAuthorLesson] Mapped lesson data:', JSON.stringify(lessonData, null, 2))
+      setLesson(lessonData)
+      console.log('[useAuthorLesson] Lesson state set successfully')
     } catch (err) {
+      console.error('[useAuthorLesson] Fetch lesson error:', err)
       const message = 'Ошибка загрузки урока'
       setError(message)
       showError(message)
@@ -117,8 +125,8 @@ export function useAuthorLesson(): UseAuthorLessonReturn {
 
   const uploadCover = useCallback(async (file: File): Promise<string | null> => {
     // Проверка размера (макс 5MB для обложек)
-    if (file.size > 5 * 1024 * 1024) {
-      showError('Размер файла не должен превышать 5MB')
+    if (file.size > 10 * 1024 * 1024) {
+      showError('Размер файла не должен превышать 10MB')
       return null
     }
 

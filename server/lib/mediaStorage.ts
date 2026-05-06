@@ -32,7 +32,7 @@ interface MediaStorageConfig {
 
 // Максимальные размеры по умолчанию (в байтах)
 const DEFAULT_MAX_SIZES: Record<MediaCategory, number> = {
-  avatars: 2 * 1024 * 1024,        // 2MB
+  avatars: 5 * 1024 * 1024,        // 5MB
   covers: 5 * 1024 * 1024,         // 5MB
   audio: 50 * 1024 * 1024,         // 50MB
   video: 500 * 1024 * 1024,        // 500MB
@@ -183,9 +183,10 @@ class MediaStorageService {
       console.log(`[MediaStorage] Attempting WebP conversion for ${category}`)
       try {
         finalBuffer = await this.convertToWebP(buffer, this.config.webpQuality)
-        console.log(`[MediaStorage] Converted to WebP: ${filePath}, new size: ${finalBuffer.length} bytes`)
+        console.log(`[MediaStorage] ✓ Converted to WebP: ${filePath}, size: ${originalBuffer.length} → ${finalBuffer.length} bytes`)
       } catch (error) {
-        console.warn('[MediaStorage] WebP конвертация не удалась, сохраняем оригинал:', error)
+        console.warn(`[MediaStorage] ⚠️ WebP конвертация не удалась, сохраняем оригинал:`, error.message)
+        // Сохраняем оригинальный файл если конвертация не удалась
       }
     }
 
@@ -198,9 +199,16 @@ class MediaStorageService {
       // Проверяем что файл действительно записался
       if (existsSync(filePath)) {
         const stats = statSync(filePath)
-        console.log(`[MediaStorage] File size on disk: ${stats.size} bytes`)
+        console.log(`[MediaStorage] ✓ File size on disk: ${stats.size} bytes`)
+        
+        // Проверка на пустой файл
+        if (stats.size === 0) {
+          console.error(`[MediaStorage] ✗ ERROR: File is empty!`)
+          throw new Error('Saved file is empty')
+        }
       } else {
         console.error(`[MediaStorage] ✗ ERROR: File does not exist after write: ${filePath}`)
+        throw new Error('File was not saved')
       }
     } catch (writeError) {
       console.error(`[MediaStorage] ✗ ERROR writing file:`, writeError)
@@ -210,7 +218,7 @@ class MediaStorageService {
     // Возвращаем URL с прямыми слэшами
     const relativePath = `${category}/${normalizedSubPath}`
     const url = this.getUrl(relativePath)
-    console.log(`[MediaStorage] Returning URL: ${url}`)
+    console.log(`[MediaStorage] ✓ Returning URL: ${url}`)
     return url
   }
 

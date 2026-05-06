@@ -54,12 +54,12 @@ export function KakeboPage() {
   return (
     <Box p={{ base: 'sm', md: 'md' }}>
       {/* Заголовок и фильтры */}
-      <Paper p="sm" mb="md" withBorder>
+      <Paper p={{ base: 'xs', sm: 'sm' }} mb="md" withBorder>
         <Group justify="space-between" align="flex-start">
           {/* Заголовок */}
           <Box>
             <Group gap="xs">
-              <Title order={2} m={0}>Kakebo</Title>
+              <Title order={3} m={0}>Kakebo</Title>
               <Anchor 
                 href="/tools/kakebo/dashboard" 
                 target="_blank" 
@@ -89,6 +89,7 @@ export function KakeboPage() {
                 setTempMonthLimit(data?.settings.monthLimit?.toString() || '')
               }}
               style={{ width: 180 }}
+              size="sm"
             />
             <Button
               leftSection={<Settings size={16} />}
@@ -116,7 +117,7 @@ export function KakeboPage() {
 
         {/* Фильтры для мобильных (сворачиваемые) */}
         <Collapse in={filtersExpanded} mt="sm">
-          <Group gap="sm" wrap="wrap">
+          <Group gap="xs" wrap="wrap">
             <Input
               type="month"
               value={`${year.toString().padStart(4, '0')}-${month.toString().padStart(2, '0')}`}
@@ -126,6 +127,7 @@ export function KakeboPage() {
                 setTempMonthLimit(data?.settings.monthLimit?.toString() || '')
               }}
               style={{ width: '100%' }}
+              size="sm"
             />
             <Button
               fullWidth
@@ -134,6 +136,7 @@ export function KakeboPage() {
                 setTempMonthLimit(data?.settings.monthLimit?.toString() || '')
                 setSettingsModalOpened(true)
               }}
+              size="sm"
             >
               Лимит
             </Button>
@@ -142,7 +145,7 @@ export function KakeboPage() {
       </Paper>
 
       {/* Статистика */}
-      <SimpleGrid cols={{ base: 1, sm: 2 }} spacing="sm" mb="md">
+      <SimpleGrid cols={{ base: 1, sm: 2 }} spacing="xs" mb="md">
         <KakeboStats
           title="Потрачено"
           value={data?.summary.totalSpent || 0}
@@ -181,18 +184,18 @@ export function KakeboPage() {
       <KakeboList entries={data?.entries || []} isLoading={isLoading} onRefresh={refetch} />
 
       {/* Фиксированные траты */}
-      <Box mt={{ base: 'lg', md: 'xl' }}>
+      <Box mt={{ base: 'md', md: 'xl' }}>
         <FixedExpensesManager />
       </Box>
 
       {/* Управление категориями */}
-      <Box mt={{ base: 'lg', md: 'xl' }}>
+      <Box mt={{ base: 'md', md: 'xl' }}>
         <CategoryManager />
       </Box>
 
       {/* Рефлексия */}
       {reflectionQuery.data && (
-        <Box mt={{ base: 'lg', md: 'xl' }}>
+        <Box mt={{ base: 'md', md: 'xl' }}>
           <KakeboReflection
             reflection={reflectionQuery.data}
           />

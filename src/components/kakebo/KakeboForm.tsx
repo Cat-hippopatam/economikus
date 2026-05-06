@@ -68,15 +68,16 @@ export function KakeboForm({ onSuccess }: KakeboFormProps) {
 
   return (
     <form onSubmit={(e) => { e.preventDefault(); handleSubmit(); }}>
-      <Stack gap="sm">
-        <Group gap="sm" wrap="wrap">
+      <Stack gap="xs">
+        <Group gap="xs" wrap="wrap">
           <TextInput
             label="Дата"
             type="date"
             value={formData.date}
             onChange={(e) => setFormData({ ...formData, date: e.currentTarget.value })}
-            leftSection={<Calendar size={16} />}
-            style={{ flex: 1, minWidth: 150 }}
+            leftSection={<Calendar size={14} />}
+            style={{ flex: 1, minWidth: 120 }}
+            size="sm"
           />
           <CategorySelector
             value={formData.categoryId}
@@ -89,35 +90,40 @@ export function KakeboForm({ onSuccess }: KakeboFormProps) {
           placeholder="Что купили?"
           value={formData.description}
           onChange={(e) => setFormData({ ...formData, description: e.currentTarget.value })}
+          size="sm"
         />
-        <Group gap="sm" align="flex-end">
-          <NumberInput
-            label="Сумма (у.е.)"
-            placeholder="0"
-            min={0}
-            step={10}
-            value={formData.amount}
-            onChange={(v) => setFormData({ ...formData, amount: v as number })}
-            style={{ flex: 1 }}
-          />
-          <Switch
-            label="Необязательно"
-            checked={formData.isNecessary}
-            onChange={(e) => setFormData({ ...formData, isNecessary: e.currentTarget.checked })}
-            style={{ flex: 1 }}
-          />
-          <Button
-            type="submit"
-            w={120}
-            loading={addMutation.isPending}
-            style={{ flex: 1 }}
-          >
-            Добавить
-          </Button>
-        </Group>
+        <Stack gap="xs">
+          <Group gap="xs" wrap="wrap">
+            <NumberInput
+              label="Сумма (у.е.)"
+              placeholder="0"
+              min={0}
+              step={10}
+              value={formData.amount}
+              onChange={(v) => setFormData({ ...formData, amount: v as number })}
+              style={{ flex: 1, minWidth: 120 }}
+              size="sm"
+            />
+            <Switch
+              label="Необязательно"
+              checked={formData.isNecessary}
+              onChange={(e) => setFormData({ ...formData, isNecessary: e.currentTarget.checked })}
+              style={{ flex: 1, minWidth: 120 }}
+              size="sm"
+            />
+            <Button
+              type="submit"
+              style={{ flex: 1, minWidth: 120 }}
+              loading={addMutation.isPending}
+              size="sm"
+            >
+              Добавить
+            </Button>
+          </Group>
+        </Stack>
       </Stack>
       {error && (
-        <Text c="red" size="sm" mt="xs">{error}</Text>
+        <Text c="red" size="xs" mt="xs">{error}</Text>
       )}
     </form>
   )

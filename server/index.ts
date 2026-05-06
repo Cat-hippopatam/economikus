@@ -3,6 +3,7 @@ import { Hono } from 'hono'
 import { cors } from 'hono/cors'
 import { logger } from 'hono/logger'
 import { serve } from '@hono/node-server'
+import { serveStatic } from '@hono/node-server/serve-static'
 import { swaggerUI } from '@hono/swagger-ui'
 import { AppError } from './lib/errors'
 import { requireAdmin } from './middleware/auth'
@@ -25,6 +26,13 @@ const app = new Hono()
 // Middleware
 app.use('*', logger())
 app.use('*', cors({ origin: process.env.FRONTEND_URL || 'http://localhost:5173', credentials: true }))
+
+// Убираем CSP заголовки для Swagger UI
+app.use('/api/swagger', async (c, next) => {
+  await next()
+  c.header('Content-Security-Policy', '')
+  c.header('X-Content-Security-Policy-Report-Only', '')
+})
 
 // Защита phpmyadmin — доступ только для админов
 app.get('/phpmyadmin/*', async (c, next) => {
@@ -65,7 +73,24 @@ app.onError((err, c) => {
   return c.json({ error: 'Internal server error' }, 500)
 })
 
-// OpenAPI документация
+// Swagger UI с поддержкой cookie авторизации (ПУБЛИЧНО)
+// Используем swaggerUI с локальными ресурсами
+app.get('/api/swagger', swaggerUI({ 
+  url: '/api/doc',
+  swaggerOptions: {
+    requestInterceptor: (req) => {
+      req.credentials = 'include'
+      return req
+    }
+  }
+}))
+
+// Отдаём статику Swagger UI из node_modules
+app.use('/api/swagger-assets/*', serveStatic({
+  root: './node_modules/swagger-ui-dist'
+}))
+
+// OpenAPI спецификация (ПУБЛИЧНО)
 app.get('/api/doc', (c) => {
   return c.json({
     openapi: '3.0.0',
@@ -1911,17 +1936,6 @@ app.get('/api/doc', (c) => {
     }
   })
 })
-
-// Swagger UI с поддержкой cookie авторизации
-app.get('/api/swagger', swaggerUI({ 
-  url: '/api/doc',
-  swaggerOptions: {
-    requestInterceptor: (req) => {
-      req.credentials = 'include'
-      return req
-    }
-  }
-}))
 
 // API роуты
 app.route('/api/auth', authRoutes)

@@ -331,7 +331,18 @@ author.get('/courses', async (c) => {
       take: limit,
       include: {
         _count: { select: { modules: true, progress: true } },
-        tags: true,
+        tags: { 
+          include: { 
+            tag: { 
+              select: { 
+                id: true, 
+                name: true, 
+                slug: true, 
+                color: true 
+              } 
+            } 
+          } 
+        },
       }
     }),
     prisma.course.count({ where }),
@@ -352,7 +363,7 @@ author.get('/courses', async (c) => {
       viewsCount: course.viewsCount,
       createdAt: course.createdAt,
       publishedAt: course.publishedAt,
-      tags: course.tags,
+      tags: course.tags?.map(t => t.tag) || [],
     })),
     pagination: {
       page,
@@ -396,6 +407,11 @@ author.post('/courses', async (c) => {
       throw new AppError(400, 'Курс с таким URL уже существует')
     }
 
+    // Валидация тегов - максимум 5 тегов
+    if (tags && tags.length > 5) {
+      throw new AppError(400, 'Максимум 5 тегов на курс')
+    }
+
     const courseData = {
       title: title.trim(),
       slug: newSlug,
@@ -413,6 +429,41 @@ author.post('/courses', async (c) => {
       data: courseData,
       include: { tags: true }
     })
+
+    // Если есть теги, создаем связи
+    if (tags && tags.length > 0) {
+      await prisma.courseTag.createMany({
+        data: tags.map((tagId: string) => ({
+          courseId: course.id,
+          tagId
+        }))
+      })
+      
+      // Обновляем курс с новыми тегами
+      const updatedCourse = await prisma.course.findFirst({
+        where: { id: course.id },
+        include: {
+          tags: {
+            include: { 
+              tag: { 
+                select: { 
+                  id: true, 
+                  name: true, 
+                  slug: true, 
+                  color: true 
+                } 
+              } 
+            } 
+          }
+        }
+      })
+      
+      console.log('Course created:', updatedCourse?.id)
+      return c.json({ 
+        ...updatedCourse, 
+        tags: updatedCourse?.tags.map(t => t.tag) || [] 
+      }, 201)
+    }
 
     console.log('Course created:', course.id)
     return c.json({ course }, 201)
@@ -471,7 +522,18 @@ author.get('/courses/:id', async (c) => {
           _count: { select: { lessons: true } }
         }
       },
-      tags: true,
+      tags: {
+        include: {
+          tag: {
+            select: {
+              id: true,
+              name: true,
+              slug: true,
+              color: true
+            }
+          }
+        }
+      },
     }
   })
 
@@ -479,7 +541,12 @@ author.get('/courses/:id', async (c) => {
     throw new AppError(404, 'Курс не найден')
   }
 
-  return c.json({ course })
+  return c.json({ 
+    course: { 
+      ...course, 
+      tags: course.tags?.map(t => t.tag) || [] 
+    }
+  })
 })
 
 // === PATCH /author/courses/:id — обновить курс ===
@@ -507,6 +574,11 @@ author.patch('/courses/:id', async (c) => {
   const allowedStatuses = ['DRAFT', 'PENDING_REVIEW']
   const finalStatus = allowedStatuses.includes(status) ? status : existing.status
 
+  // Валидация тегов - максимум 5 тегов
+  if (tags && tags.length > 5) {
+    throw new AppError(400, 'Максимум 5 тегов на курс')
+  }
+
   // Проверка уникальности slug (исключая текущий курс)
   const newSlug = slug || (title ? title.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '') : null)
   if (newSlug) {
@@ -521,7 +593,8 @@ author.patch('/courses/:id', async (c) => {
       throw new AppError(400, 'Курс с таким URL уже существует')
     }
   }
-// _____5
+
+  // Обновляем курс без тегов сначала
   const course = await prisma.course.update({
     where: { id },
     data: {
@@ -532,15 +605,51 @@ author.patch('/courses/:id', async (c) => {
       ...(difficultyLevel !== undefined && { difficultyLevel }),
       ...(isPremium !== undefined && { isPremium }),
       status: finalStatus,
-      ...(tags && {
-        tags: {
-          // set: [],
-          set: tags.map((id: string) => ({ id }))
-        }
-      }),
     },
     include: { tags: true }
   })
+
+  // Если есть теги, обновляем связи
+  if (tags && tags.length > 0) {
+    // Удаляем все старые связи
+    await prisma.courseTag.deleteMany({
+      where: { courseId: id }
+    })
+    
+    // Создаём новые связи
+    await prisma.courseTag.createMany({
+      data: tags.map((tagId: string) => ({
+        courseId: id,
+        tagId
+      }))
+    })
+    
+    // Обновляем курс с новыми тегами
+    const updatedCourse = await prisma.course.findFirst({
+      where: { id },
+      include: { 
+        tags: { 
+          include: { 
+            tag: { 
+              select: { 
+                id: true, 
+                name: true, 
+                slug: true, 
+                color: true 
+              } 
+            } 
+          } 
+        } 
+      }
+    })
+    
+    return c.json({ 
+      course: { 
+        ...updatedCourse, 
+        tags: updatedCourse?.tags.map(t => t.tag) || [] 
+      }
+    })
+  }
 
   return c.json({ course })
 })
@@ -614,13 +723,24 @@ author.get('/lessons', async (c) => {
             course: { select: { id: true, title: true } }
           }
         },
-        tags: true,
+        tags: { 
+          include: { 
+            tag: { 
+              select: { 
+                id: true, 
+                name: true, 
+                slug: true, 
+                color: true 
+              } 
+            } 
+          } 
+        },
       }
     }),
     prisma.lesson.count({ where }),
   ])
 
-  return c.json({
+  return c.json({ 
     items: items.map(lesson => ({
       id: lesson.id,
       title: lesson.title,
@@ -638,7 +758,7 @@ author.get('/lessons', async (c) => {
         title: lesson.module.title,
         course: lesson.module.course,
       } : null,
-      tags: lesson.tags,
+      tags: lesson.tags?.map(t => t.tag) || [],
     })),
     pagination: {
       page,
@@ -733,7 +853,12 @@ author.post('/lessons', async (c) => {
         throw new AppError(400, 'Модуль не найден или не принадлежит вам')
       }
     }
-// _____5
+
+    // Валидация тегов - максимум 5 тегов
+    if (tags && tags.length > 5) {
+      throw new AppError(400, 'Максимум 5 тегов на урок')
+    }
+
     const lesson = await prisma.lesson.create({
       data: {
         title: title.trim(),
@@ -746,14 +871,44 @@ author.post('/lessons', async (c) => {
         isPremium: isPremium || false,
         status: finalStatus,
         authorProfileId: profile.id,
-        ...(tags && tags.length > 0 && {
-          tags: {
-            set: tags.map((id: string) => ({ id }))
-          }
-        }),
       },
       include: { tags: true }
     })
+
+    // Если есть теги, создаем связи
+    if (tags && tags.length > 0) {
+      await prisma.lessonTag.createMany({
+        data: tags.map((tagId: string) => ({
+          lessonId: lesson.id,
+          tagId
+        }))
+      })
+      
+      // Обновляем урок с новыми тегами
+      const updatedLesson = await prisma.lesson.findFirst({
+        where: { id: lesson.id },
+        include: {
+          tags: { 
+            include: { 
+              tag: { 
+                select: { 
+                  id: true, 
+                  name: true, 
+                  slug: true, 
+                  color: true 
+                } 
+              } 
+            } 
+          } 
+        }
+      })
+      
+      console.log('Lesson created:', updatedLesson?.id)
+      return c.json({ 
+        ...updatedLesson, 
+        tags: updatedLesson?.tags.map(t => t.tag) || [] 
+      }, 201)
+    }
 
     console.log('Lesson created:', lesson.id)
     return c.json({ lesson }, 201)
@@ -783,7 +938,18 @@ author.get('/lessons/:id', async (c) => {
           course: { select: { id: true, title: true } }
         }
       },
-      tags: true,
+      tags: {
+        include: {
+          tag: {
+            select: {
+              id: true,
+              name: true,
+              slug: true,
+              color: true
+            }
+          }
+        }
+      },
     }
   })
 
@@ -791,7 +957,12 @@ author.get('/lessons/:id', async (c) => {
     throw new AppError(404, 'Урок не найден')
   }
 
-  return c.json({ lesson })
+  return c.json({ 
+    lesson: { 
+      ...lesson, 
+      tags: lesson.tags?.map(t => t.tag) || [] 
+    }
+  })
 })
 
 // === PATCH /author/lessons/:id — обновить урок ===
@@ -824,6 +995,11 @@ author.patch('/lessons/:id', async (c) => {
     throw new AppError(400, 'Длительность урока не может превышать 300 минут (5 часов)')
   }
 
+  // Валидация тегов - максимум 5 тегов
+  if (tags && tags.length > 5) {
+    throw new AppError(400, 'Максимум 5 тегов на урок')
+  }
+
   // Проверка уникальности slug
   const newSlug = slug || (title ? title.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '') : null)
   if (newSlug && newSlug !== existing.slug) {
@@ -838,7 +1014,8 @@ author.patch('/lessons/:id', async (c) => {
       throw new AppError(400, 'Урок с таким URL уже существует')
     }
   }
-// _____5
+
+  // Обновляем урок без тегов сначала
   const lesson = await prisma.lesson.update({
     where: { id },
     data: {
@@ -851,15 +1028,51 @@ author.patch('/lessons/:id', async (c) => {
       ...(duration !== undefined && { duration }),
       ...(isPremium !== undefined && { isPremium }),
       status: finalStatus,
-      ...(tags && {
-        tags: {
-          // set: [],
-          set: tags.map((id: string) => ({ id }))
-        }
-      }),
     },
     include: { tags: true }
   })
+
+  // Если есть теги, обновляем связи
+  if (tags && tags.length > 0) {
+    // Удаляем все старые связи
+    await prisma.lessonTag.deleteMany({
+      where: { lessonId: id }
+    })
+    
+    // Создаём новые связи
+    await prisma.lessonTag.createMany({
+      data: tags.map((tagId: string) => ({
+        lessonId: id,
+        tagId
+      }))
+    })
+    
+    // Обновляем урок с новыми тегами
+    const updatedLesson = await prisma.lesson.findFirst({
+      where: { id },
+      include: { 
+        tags: { 
+          include: { 
+            tag: { 
+              select: { 
+                id: true, 
+                name: true, 
+                slug: true, 
+                color: true 
+              } 
+            } 
+          } 
+        } 
+      }
+    })
+    
+    return c.json({ 
+      lesson: { 
+        ...updatedLesson, 
+        tags: updatedLesson?.tags.map(t => t.tag) || [] 
+      }
+    })
+  }
 
   return c.json({ lesson })
 })

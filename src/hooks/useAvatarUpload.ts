@@ -14,7 +14,7 @@ interface UseAvatarUploadReturn {
 }
 
 // Константы - единая точка изменения
-const MAX_FILE_SIZE = 2 * 1024 * 1024 // 2MB
+const MAX_FILE_SIZE = 5 * 1024 * 1024 // 5MB
 const ALLOWED_TYPES = ['image/jpeg', 'image/png', 'image/gif', 'image/webp']
 
 export function useAvatarUpload(): UseAvatarUploadReturn {
@@ -34,7 +34,7 @@ export function useAvatarUpload(): UseAvatarUploadReturn {
 
     // Валидация размера файла
     if (file.size > MAX_FILE_SIZE) {
-      showError('Максимальный размер файла: 2MB')
+      showError('Максимальный размер файла: 5MB')
       return null
     }
 
@@ -63,7 +63,7 @@ export function useAvatarUpload(): UseAvatarUploadReturn {
       await refreshProfile?.()
       console.log('[useAvatarUpload] Profile refreshed')
       
-      showSuccess('Аватар обновлён')
+      showSuccess('Аватар успешно загружен')
       return data.avatarUrl
     } catch (error) {
       console.error('[useAvatarUpload] Error:', error)

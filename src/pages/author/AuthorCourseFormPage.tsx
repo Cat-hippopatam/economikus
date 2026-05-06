@@ -271,22 +271,39 @@ export function AuthorCourseFormPage() {
                     </Grid.Col>
                   </Grid>
 
-                  <Controller
-                    name="tags"
-                    control={control}
-                    render={({ field }) => (
-                      <MultiSelect
-                        label="Теги"
-                        placeholder="Выберите теги"
-                        data={tagOptions}
-                        value={field.value || []}
-                        onChange={(value) => field.onChange(value)}
-                        searchable
-                        clearable
-                        maxValues={5}
-                      />
-                    )}
-                  />
+                <Controller
+                  name="tags"
+                  control={control}
+                  render={({ field }) => {
+                    const selectedCount = field.value?.length || 0
+                    const isAtLimit = selectedCount >= 5
+                    
+                    return (
+                      <>
+                        <MultiSelect
+                          label="Теги"
+                          placeholder="Выберите теги"
+                          data={tagOptions}
+                          value={field.value || []}
+                          onChange={(value) => field.onChange(value)}
+                          searchable
+                          clearable
+                          maxValues={5}
+                          styles={{
+                            label: {
+                              display: 'flex',
+                              alignItems: 'center',
+                              justifyContent: 'space-between',
+                            }
+                          }}
+                        />
+                        <Text size="xs" c={isAtLimit ? 'red' : 'dimmed'}>
+                          {isAtLimit ? 'Достигнут лимит 5 тегов' : `${selectedCount}/5 тегов`}
+                        </Text>
+                      </>
+                    )
+                  }}
+                />
 
                   <Switch
                     label="Премиум курс"
